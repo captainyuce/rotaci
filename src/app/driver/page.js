@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import Map from '@/components/Map/MapComponent'
 import { initialVehicles } from '@/lib/data'
 import { useRouter } from 'next/navigation'
