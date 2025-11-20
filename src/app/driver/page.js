@@ -12,9 +12,11 @@ export default function DriverPage() {
     const [notifications, setNotifications] = useState([])
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-        if (!user) {
-            router.push('/login');
+        if (typeof window !== 'undefined') {
+            const user = JSON.parse(localStorage.getItem('currentUser'));
+            if (!user) {
+                router.push('/login');
+            }
         }
     }, []);
 
