@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Map from '@/components/Map/MapComponent'
 import { initialVehicles, initialPendingOrders, currentUser as defaultUser, initialUsers, ROLES, ROLE_LABELS, MENU_ITEMS, SPECIAL_PERMISSIONS } from '@/lib/data'
+import { getUsers, addUser } from '@/lib/api'
 import { getRoute } from '@/lib/routing'
 import { Menu, Truck, Package, Check, X, Clock, AlertTriangle, User, Users, ClipboardList, Settings } from 'lucide-react'
 import Sidebar from '@/components/Layout/Sidebar'
@@ -511,14 +512,8 @@ export default function Dashboard() {
     }, []);
 
     // --- User Management Logic ---
-    const [users, setUsers] = useState(() => {
-        // Load users from localStorage on initial render (only on client-side)
-        if (typeof window !== 'undefined') {
-            const savedUsers = localStorage.getItem('appUsers');
-            return savedUsers ? JSON.parse(savedUsers) : initialUsers;
-        }
-        return initialUsers;
-    });
+    const [users, setUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(true);
 
     const [newUser, setNewUser] = useState({
         username: '',
@@ -528,24 +523,37 @@ export default function Dashboard() {
         permissions: ['dashboard', 'new_shipment', 'pool'] // Default permissions
     });
 
-    // Persist users to localStorage whenever they change (only on client-side)
+    // Load users from API on mount
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('appUsers', JSON.stringify(users));
+        async function fetchUsers() {
+            try {
+                const usersData = await getUsers();
+                setUsers(usersData);
+            } catch (error) {
+                console.error('Failed to load users:', error);
+            } finally {
+                setLoadingUsers(false);
+            }
         }
-    }, [users]);
+        fetchUsers();
+    }, []);
 
-    const handleAddUser = () => {
+    const handleAddUser = async () => {
         if (newUser.username && newUser.password && newUser.name && newUser.permissions.length > 0) {
-            setUsers([...users, { ...newUser, id: Date.now() }]);
-            setNewUser({
-                username: '',
-                password: '',
-                name: '',
-                role: ROLES.WAREHOUSE_MANAGER,
-                permissions: ['dashboard', 'new_shipment', 'pool']
-            });
-            alert('Kullanıcı eklendi!');
+            try {
+                const addedUser = await addUser(newUser);
+                setUsers([...users, addedUser]);
+                setNewUser({
+                    username: '',
+                    password: '',
+                    name: '',
+                    role: ROLES.WAREHOUSE_MANAGER,
+                    permissions: ['dashboard', 'new_shipment', 'pool']
+                });
+                alert('Kullanıcı eklendi!');
+            } catch (error) {
+                alert('Kullanıcı eklenirken hata oluştu!');
+            }
         } else {
             alert('Lütfen tüm alanları doldurun ve en az bir yetki seçin!');
         }

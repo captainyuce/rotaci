@@ -2,31 +2,35 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { initialUsers } from '@/lib/data'
 import { Truck } from 'lucide-react'
+import { login } from '@/lib/api'
 
 export default function LoginPage() {
+    const router = useRouter()
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
-    const router = useRouter()
+    const [loading, setLoading] = useState(false)
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault()
+        setError('')
+        setLoading(true)
 
-        // Load users from localStorage
-        const savedUsers = localStorage.getItem('appUsers');
-        const allUsers = savedUsers ? JSON.parse(savedUsers) : initialUsers;
+        try {
+            const result = await login(username, password)
 
-        // Simple mock auth
-        const user = allUsers.find(u => u.username === username && u.password === password)
-
-        if (user) {
-            // Store user in localStorage for simple persistence
-            localStorage.setItem('currentUser', JSON.stringify(user))
-            router.push('/dashboard')
-        } else {
-            setError('Kullanıcı adı veya şifre hatalı!')
+            if (result.success) {
+                // Store user in localStorage for session management
+                localStorage.setItem('currentUser', JSON.stringify(result.user))
+                router.push('/dashboard')
+            } else {
+                setError('Kullanıcı adı veya şifre hatalı!')
+            }
+        } catch (err) {
+            setError('Giriş yapılırken bir hata oluştu!')
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -71,9 +75,10 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors font-medium"
+                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading}
                     >
-                        Giriş Yap
+                        {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
                     </button>
                 </form>
             </div>
