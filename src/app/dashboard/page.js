@@ -512,9 +512,12 @@ export default function Dashboard() {
 
     // --- User Management Logic ---
     const [users, setUsers] = useState(() => {
-        // Load users from localStorage on initial render
-        const savedUsers = localStorage.getItem('appUsers');
-        return savedUsers ? JSON.parse(savedUsers) : initialUsers;
+        // Load users from localStorage on initial render (only on client-side)
+        if (typeof window !== 'undefined') {
+            const savedUsers = localStorage.getItem('appUsers');
+            return savedUsers ? JSON.parse(savedUsers) : initialUsers;
+        }
+        return initialUsers;
     });
 
     const [newUser, setNewUser] = useState({
@@ -525,9 +528,11 @@ export default function Dashboard() {
         permissions: ['dashboard', 'new_shipment', 'pool'] // Default permissions
     });
 
-    // Persist users to localStorage whenever they change
+    // Persist users to localStorage whenever they change (only on client-side)
     useEffect(() => {
-        localStorage.setItem('appUsers', JSON.stringify(users));
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('appUsers', JSON.stringify(users));
+        }
     }, [users]);
 
     const handleAddUser = () => {
