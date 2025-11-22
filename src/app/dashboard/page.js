@@ -549,192 +549,181 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             ))}
-                        </div>                                        </span>
-                                    </div >
-        <div className="mt-3 flex gap-2">
-            <button className="flex-1 btn bg-slate-100 text-slate-600 text-xs hover:bg-slate-200">Düzenle</button>
-            <button className="flex-1 btn bg-red-50 text-red-600 text-xs hover:bg-red-100">Sil</button>
-        </div>
-                                </div >
-                            ))
-}
-                        </div >
-                    </div >
-                );
-
-
-
-            default: // 'dashboard'
-return null;
-        }
-    }
-
-// --- Auth Check ---
-useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user) {
-        router.push('/login');
-    } else {
-        // Migration for old 'manager' role
-        if (user.role === 'manager') {
-            user.role = ROLES.WAREHOUSE_MANAGER;
-        }
-        // Migration: Add default permissions if missing
-        if (!user.permissions) {
-            if (user.role === ROLES.ADMIN || user.role === ROLES.BOSS) {
-                user.permissions = ['dashboard', 'new_shipment', 'pool', 'approval', 'vehicle_management', 'user_management', 'can_assign_shipments', 'can_approve_shipments'];
-            } else if (user.role === ROLES.WAREHOUSE_MANAGER || user.role === ROLES.SHIPMENT_MANAGER) {
-                user.permissions = ['dashboard', 'new_shipment', 'pool', 'can_assign_shipments'];
-            } else {
-                user.permissions = ['dashboard', 'new_shipment', 'pool'];
-            }
-            localStorage.setItem('currentUser', JSON.stringify(user));
-        }
-        setCurrentUser(user);
-    }
-}, []);
-
-// --- User Management Logic ---
-const [users, setUsers] = useState([]);
-const [loadingUsers, setLoadingUsers] = useState(true);
-
-const [newUser, setNewUser] = useState({
-    username: '',
-    password: '',
-    name: '',
-    role: ROLES.WAREHOUSE_MANAGER,
-    permissions: ['dashboard', 'new_shipment', 'pool'] // Default permissions
-});
-
-// Load users from API on mount
-useEffect(() => {
-    async function fetchUsers() {
-        try {
-            const usersData = await getUsers();
-            setUsers(usersData);
-        } catch (error) {
-            console.error('Failed to load users:', error);
-        } finally {
-            setLoadingUsers(false);
-        }
-    }
-    fetchUsers();
-}, []);
-
-const handleAddUser = async () => {
-    if (newUser.username && newUser.password && newUser.name && newUser.permissions.length > 0) {
-        try {
-            const addedUser = await addUser(newUser);
-            setUsers([...users, addedUser]);
-            setNewUser({
-                username: '',
-                password: '',
-                name: '',
-                role: ROLES.WAREHOUSE_MANAGER,
-                permissions: ['dashboard', 'new_shipment', 'pool']
-            });
-            alert('Kullanıcı eklendi!');
-        } catch (error) {
-            alert('Kullanıcı eklenirken hata oluştu!');
-        }
-    } else {
-        alert('Lütfen tüm alanları doldurun ve en az bir yetki seçin!');
-    }
-};
-
-// --- Main Render ---
-
-if (!currentUser) return null; // Prevent flash of content
-
-return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-        <Sidebar
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            currentView={currentView}
-            setView={setCurrentView}
-            currentUser={currentUser}
-        />
-
-        {/* Header */}
-        <header className="h-16 bg-white border-b flex items-center px-6 justify-between shrink-0 z-30 relative shadow-sm">
-            <div className="flex items-center gap-4 z-50">
-                <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative z-50">
-                    <Menu size={24} className="text-gray-600" />
-                </button>
-                <h1 className="text-xl font-bold text-slate-800">
-                    {currentView === 'dashboard' && 'Genel Bakış'}
-                    {currentView === 'new_shipment' && 'Yeni Sevkiyat Girişi'}
-                    {currentView === 'pool' && 'Sevkiyat Havuzu'}
-                    {currentView === 'approval' && 'Onay Bekleyenler'}
-                    {currentView === 'vehicle_management' && 'Araç Yönetimi'}
-                    {currentView === 'user_management' && 'Kullanıcı Yönetimi'}
-                </h1>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <div className="hidden md:flex flex-col items-end">
-                    <span className="text-sm font-bold text-slate-700">{currentUser.name}</span>
-                    <span className="text-xs text-slate-500 uppercase">{ROLE_LABELS[currentUser.role] || currentUser.role}</span>
-                </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                    {currentUser.name ? currentUser.name.charAt(0) : 'U'}
-                </div>
-            </div>
-        </header>
-
-        {/* Main Content Area (Split View) */}
-        <div className="flex flex-1 overflow-hidden relative">
-
-            {/* Left Panel (Content) - Width varies based on view */}
-            <div
-                className={`transition-all duration-300 ease-in-out h-full flex-shrink-0 ${currentView === 'dashboard' ? 'w-0' : 'w-full md:w-[400px] lg:w-[450px]'}`}
-                style={{ overflow: 'hidden' }} // Hide content when width is 0
-            >
-                <div className="w-full h-full" style={{ width: currentView === 'dashboard' ? '0' : '100%' }}>
-                    {renderContentPanel()}
-                </div>
-            </div>
-
-            {/* Right Panel (Map) - Always Visible */}
-            <div className="flex-1 relative h-full bg-slate-200">
-                <Map
-                    vehicles={vehicles}
-                    onMapClick={handleMapClick}
-                    selectedLocation={selectedLocation}
-                    pendingOrders={pendingOrders}
-                />
-
-                {/* Dashboard Overlay: Vehicle Status Bar */}
-                {currentView === 'dashboard' && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t p-4 z-[1000] overflow-x-auto">
-                        <div className="flex gap-4 min-w-max">
-                            {vehicles.map(v => (
-                                <div key={v.id} className="w-64 bg-white rounded-lg shadow-sm border p-3 text-sm">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="font-bold text-slate-800">{v.name}</span>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${v.currentLoad > v.capacity ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                                            {v.status === 'moving' ? 'Hareket' : 'Duruyor'}
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                                        <div
-                                            className={`h-2 rounded-full ${v.currentLoad > v.capacity ? 'bg-red-500' : 'bg-blue-500'}`}
-                                            style={{ width: `${Math.min((v.currentLoad / v.capacity) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-gray-500">
-                                        <span>{v.currentLoad}/{v.capacity} kg</span>
-                                        <span>Hedef: {v.nextStop}</span>
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </div>
-                )}
-            </div>
+                );
 
+            default: // 'dashboard'
+                return null;
+        }
+    }
+
+    // --- Auth Check ---
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+            router.push('/login');
+        } else {
+            // Migration for old 'manager' role
+            if (user.role === 'manager') {
+                user.role = ROLES.WAREHOUSE_MANAGER;
+            }
+            // Migration: Add default permissions if missing
+            if (!user.permissions) {
+                if (user.role === ROLES.ADMIN || user.role === ROLES.BOSS) {
+                    user.permissions = ['dashboard', 'new_shipment', 'pool', 'approval', 'vehicle_management', 'user_management', 'can_assign_shipments', 'can_approve_shipments'];
+                } else if (user.role === ROLES.WAREHOUSE_MANAGER || user.role === ROLES.SHIPMENT_MANAGER) {
+                    user.permissions = ['dashboard', 'new_shipment', 'pool', 'can_assign_shipments'];
+                } else {
+                    user.permissions = ['dashboard', 'new_shipment', 'pool'];
+                }
+                localStorage.setItem('currentUser', JSON.stringify(user));
+            }
+            setCurrentUser(user);
+        }
+    }, []);
+
+    // --- User Management Logic ---
+    const [users, setUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(true);
+
+    const [newUser, setNewUser] = useState({
+        username: '',
+        password: '',
+        name: '',
+        role: ROLES.WAREHOUSE_MANAGER,
+        permissions: ['dashboard', 'new_shipment', 'pool'] // Default permissions
+    });
+
+    // Load users from API on mount
+    useEffect(() => {
+        async function fetchUsers() {
+            try {
+                const usersData = await getUsers();
+                setUsers(usersData);
+            } catch (error) {
+                console.error('Failed to load users:', error);
+            } finally {
+                setLoadingUsers(false);
+            }
+        }
+        fetchUsers();
+    }, []);
+
+    const handleAddUser = async () => {
+        if (newUser.username && newUser.password && newUser.name && newUser.permissions.length > 0) {
+            try {
+                const addedUser = await addUser(newUser);
+                setUsers([...users, addedUser]);
+                setNewUser({
+                    username: '',
+                    password: '',
+                    name: '',
+                    role: ROLES.WAREHOUSE_MANAGER,
+                    permissions: ['dashboard', 'new_shipment', 'pool']
+                });
+                alert('Kullanıcı eklendi!');
+            } catch (error) {
+                alert('Kullanıcı eklenirken hata oluştu!');
+            }
+        } else {
+            alert('Lütfen tüm alanları doldurun ve en az bir yetki seçin!');
+        }
+    };
+
+    // --- Main Render ---
+
+    if (!currentUser) return null; // Prevent flash of content
+
+    return (
+        <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+            <Sidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                currentView={currentView}
+                setView={setCurrentView}
+                currentUser={currentUser}
+            />
+
+            {/* Header */}
+            <header className="h-16 bg-white border-b flex items-center px-6 justify-between shrink-0 z-30 relative shadow-sm">
+                <div className="flex items-center gap-4 z-50">
+                    <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative z-50">
+                        <Menu size={24} className="text-gray-600" />
+                    </button>
+                    <h1 className="text-xl font-bold text-slate-800">
+                        {currentView === 'dashboard' && 'Genel Bakış'}
+                        {currentView === 'new_shipment' && 'Yeni Sevkiyat Girişi'}
+                        {currentView === 'pool' && 'Sevkiyat Havuzu'}
+                        {currentView === 'approval' && 'Onay Bekleyenler'}
+                        {currentView === 'vehicle_management' && 'Araç Yönetimi'}
+                        {currentView === 'user_management' && 'Kullanıcı Yönetimi'}
+                    </h1>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:flex flex-col items-end">
+                        <span className="text-sm font-bold text-slate-700">{currentUser.name}</span>
+                        <span className="text-xs text-slate-500 uppercase">{ROLE_LABELS[currentUser.role] || currentUser.role}</span>
+                    </div>
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                        {currentUser.name ? currentUser.name.charAt(0) : 'U'}
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content Area (Split View) */}
+            <div className="flex flex-1 overflow-hidden relative">
+
+                {/* Left Panel (Content) - Width varies based on view */}
+                <div
+                    className={`transition-all duration-300 ease-in-out h-full flex-shrink-0 ${currentView === 'dashboard' ? 'w-0' : 'w-full md:w-[400px] lg:w-[450px]'}`}
+                    style={{ overflow: 'hidden' }} // Hide content when width is 0
+                >
+                    <div className="w-full h-full" style={{ width: currentView === 'dashboard' ? '0' : '100%' }}>
+                        {renderContentPanel()}
+                    </div>
+                </div>
+
+                {/* Right Panel (Map) - Always Visible */}
+                <div className="flex-1 relative h-full bg-slate-200">
+                    <Map
+                        vehicles={vehicles}
+                        onMapClick={handleMapClick}
+                        selectedLocation={selectedLocation}
+                        pendingOrders={pendingOrders}
+                    />
+
+                    {/* Dashboard Overlay: Vehicle Status Bar */}
+                    {currentView === 'dashboard' && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t p-4 z-[1000] overflow-x-auto">
+                            <div className="flex gap-4 min-w-max">
+                                {vehicles.map(v => (
+                                    <div key={v.id} className="w-64 bg-white rounded-lg shadow-sm border p-3 text-sm">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-slate-800">{v.name}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${v.currentLoad > v.capacity ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {v.status === 'moving' ? 'Hareket' : 'Duruyor'}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                                            <div
+                                                className={`h-2 rounded-full ${v.currentLoad > v.capacity ? 'bg-red-500' : 'bg-blue-500'}`}
+                                                style={{ width: `${Math.min((v.currentLoad / v.capacity) * 100, 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex justify-between text-xs text-gray-500">
+                                            <span>{v.currentLoad}/{v.capacity} kg</span>
+                                            <span>Hedef: {v.nextStop}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+            </div>
         </div>
-    </div>
-)
+    )
 }
