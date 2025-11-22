@@ -501,7 +501,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <button type="button" className="btn btn-primary w-full bg-purple-600 hover:bg-purple-700" onClick={handleAddUser}>
-                                    Kullanıcıyı Kaydet
+                                    {newUser.id ? 'Kullanıcıyı Güncelle' : 'Kullanıcıyı Kaydet'}
                                 </button>
                             </div>
                         </div>
@@ -611,10 +611,25 @@ export default function Dashboard() {
     }, []);
 
     const handleAddUser = async () => {
-        if (newUser.username && newUser.password && newUser.name && newUser.permissions.length > 0) {
+        if (newUser.username && newUser.name && newUser.permissions.length > 0) {
             try {
-                const addedUser = await addUser(newUser);
-                setUsers([...users, addedUser]);
+                if (newUser.id) {
+                    // Update existing user
+                    const updatedUser = await updateUser(newUser);
+                    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+                    alert('Kullanıcı güncellendi!');
+                } else {
+                    // Add new user
+                    if (!newUser.password) {
+                        alert('Yeni kullanıcı için şifre gereklidir!');
+                        return;
+                    }
+                    const addedUser = await addUser(newUser);
+                    setUsers([addedUser, ...users]);
+                    alert('Kullanıcı eklendi!');
+                }
+
+                // Reset form
                 setNewUser({
                     username: '',
                     password: '',
@@ -622,14 +637,15 @@ export default function Dashboard() {
                     role: ROLES.WAREHOUSE_MANAGER,
                     permissions: ['dashboard', 'new_shipment', 'pool']
                 });
-                alert('Kullanıcı eklendi!');
             } catch (error) {
-                alert('Kullanıcı eklenirken hata oluştu!');
+                console.error('Operation failed:', error);
+                alert('İşlem başarısız: ' + error.message);
             }
         } else {
-            alert('Lütfen tüm alanları doldurun ve en az bir yetki seçin!');
+            alert('Lütfen gerekli alanları doldurun (Kullanıcı Adı, Ad Soyad, Yetkiler).');
         }
-    };
+    }
+
 
     // --- Main Render ---
 
