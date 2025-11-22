@@ -57,10 +57,27 @@ export default function DriverPage() {
                     // For now, let's assume driver1 -> vehicle1 mapping or similar.
                     // Or just show all assigned shipments for now to test sync.
 
-                    const myAssigned = allShipments.filter(s => s.status === 'assigned');
-                    // TODO: Filter by specific driver/vehicle
+                    // Filter shipments assigned to this vehicle
+                    // If logged in as vehicle, currentUser.id is vehicleId
+                    // If logged in as user (old way), we might need mapping, but for now assume vehicle login
+
+                    const vehicleId = currentUser.vehicleId || currentUser.id;
+
+                    const myAssigned = allShipments.filter(s =>
+                        s.status === 'assigned' && s.assigned_driver === vehicleId
+                    );
 
                     setMyShipments(myAssigned.map((s, i) => ({ ...s, order: i + 1 })));
+
+                    // Also fetch my vehicle details
+                    try {
+                        const vRes = await fetch('/api/vehicles');
+                        if (vRes.ok) {
+                            const vehicles = await vRes.json();
+                            const myV = vehicles.find(v => v.id === vehicleId);
+                            if (myV) setMyVehicle(myV);
+                        }
+                    } catch (e) { console.error(e) }
                 }
             } catch (error) {
                 console.error('Failed to fetch shipments:', error);
