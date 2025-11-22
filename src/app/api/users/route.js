@@ -1,27 +1,36 @@
 import { NextResponse } from 'next/server';
-import { getDB, initializeDB } from '@/lib/db';
-import { initialUsers } from '@/lib/data';
-
-// Initialize DB with default users
-initializeDB({ users: initialUsers });
+import { supabase } from '@/lib/supabase';
 
 export async function GET() {
-    const db = getDB();
-    return NextResponse.json(db.users);
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Supabase error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
 }
 
 export async function POST(request) {
     try {
         const newUser = await request.json();
-        const db = getDB();
 
-        // Add ID if not present
-        if (!newUser.id) {
-            newUser.id = Date.now();
+        const { data, error } = await supabase
+            .from('users')
+            .insert([newUser])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase error:', error);
+            return NextResponse.json({ error: error.message }, { status: 400 });
         }
 
-        db.users.push(newUser);
-        return NextResponse.json(newUser, { status: 201 });
+        return NextResponse.json(data, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
@@ -30,15 +39,20 @@ export async function POST(request) {
 export async function PUT(request) {
     try {
         const updatedUser = await request.json();
-        const db = getDB();
 
-        const index = db.users.findIndex(u => u.id === updatedUser.id);
-        if (index !== -1) {
-            db.users[index] = updatedUser;
-            return NextResponse.json(updatedUser);
+        const { data, error } = await supabase
+            .from('users')
+            .update(updatedUser)
+            .eq('id', updatedUser.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase error:', error);
+            return NextResponse.json({ error: error.message }, { status: 404 });
         }
 
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return NextResponse.json(data);
     } catch (error) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
@@ -48,9 +62,17 @@ export async function DELETE(request) {
     try {
         const { searchParams } = new URL(request.url);
         const id = parseInt(searchParams.get('id'));
-        const db = getDB();
 
-        db.users = db.users.filter(u => u.id !== id);
+        const { error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Supabase error:', error);
+            return NextResponse.json({ error: error.message }, { status: 400 });
+        }
+
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

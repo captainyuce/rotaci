@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getDB } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
     try {
         const { username, password } = await request.json();
-        const db = getDB();
 
-        const user = db.users.find(u => u.username === username && u.password === password);
+        const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .eq('password', password)
+            .single();
 
-        if (user) {
-            return NextResponse.json({ success: true, user });
+        if (error || !data) {
+            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
-        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        return NextResponse.json({ success: true, user: data });
     } catch (error) {
         return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
