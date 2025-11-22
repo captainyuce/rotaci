@@ -6,7 +6,8 @@ import Map from '@/components/Map/MapComponent'
 import { initialVehicles, initialPendingOrders } from '@/lib/data'
 import { useRouter } from 'next/navigation'
 import { optimizeRoute } from '@/lib/routeOptimizer'
-import { Sparkles, Edit3, Navigation, Clock, Package, MapPin } from 'lucide-react'
+import { startLocationTracking, stopLocationTracking } from '@/lib/locationTracking'
+import { Sparkles, Edit3, Navigation, Clock, Package, MapPin, Radio } from 'lucide-react'
 
 export default function DriverPage() {
     const router = useRouter()
@@ -16,6 +17,9 @@ export default function DriverPage() {
     const [optimizedRoute, setOptimizedRoute] = useState(null)
     const [isOptimizing, setIsOptimizing] = useState(false)
     const [draggedItem, setDraggedItem] = useState(null)
+    const [isTracking, setIsTracking] = useState(false)
+    const [watchId, setWatchId] = useState(null)
+    const [currentLocation, setCurrentLocation] = useState(null)
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -80,6 +84,42 @@ export default function DriverPage() {
         setDraggedItem(null)
     }
 
+    const toggleLocationTracking = () => {
+        if (isTracking) {
+            // Stop tracking
+            if (watchId) {
+                stopLocationTracking(watchId)
+                setWatchId(null)
+            }
+            setIsTracking(false)
+        } else {
+            // Start tracking
+            try {
+                const id = startLocationTracking(
+                    currentUser?.id || 'driver1',
+                    ({ location }) => {
+                        setCurrentLocation(location)
+                        // Update vehicle location
+                        setMyVehicle(prev => ({ ...prev, location }))
+                    }
+                )
+                setWatchId(id)
+                setIsTracking(true)
+            } catch (error) {
+                alert('Konum izni verilmedi veya desteklenmiyor!')
+            }
+        }
+    }
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (watchId) {
+                stopLocationTracking(watchId)
+            }
+        }
+    }, [watchId])
+
     return (
         <div className="flex flex-col h-screen bg-slate-50">
             {/* Header */}
@@ -105,22 +145,42 @@ export default function DriverPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="space-y-2 mb-4">
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={handleOptimizeRoute}
+                                disabled={isOptimizing || myShipments.length === 0}
+                                className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            >
+                                <Sparkles size={18} />
+                                {isOptimizing ? 'Hesaplanıyor...' : 'Akıllı Rota'}
+                            </button>
+                            <button
+                                onClick={handleManualRoute}
+                                className="flex items-center justify-center gap-2 bg-slate-600 text-white px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors font-medium"
+                            >
+                                <Edit3 size={18} />
+                                Manuel Rota
+                            </button>
+                        </div>
+
+                        {/* Location Tracking Toggle */}
                         <button
-                            onClick={handleOptimizeRoute}
-                            disabled={isOptimizing || myShipments.length === 0}
-                            className="flex items-center justify-center gap-2 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            onClick={toggleLocationTracking}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors font-medium ${isTracking
+                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                }`}
                         >
-                            <Sparkles size={18} />
-                            {isOptimizing ? 'Hesaplanıyor...' : 'Akıllı Rota'}
+                            <Radio size={18} className={isTracking ? 'animate-pulse' : ''} />
+                            {isTracking ? '📍 Konum Paylaşılıyor' : '📍 Konum Paylaşımını Başlat'}
                         </button>
-                        <button
-                            onClick={handleManualRoute}
-                            className="flex items-center justify-center gap-2 bg-slate-600 text-white px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors font-medium"
-                        >
-                            <Edit3 size={18} />
-                            Manuel Rota
-                        </button>
+
+                        {isTracking && currentLocation && (
+                            <div className="text-xs text-green-600 text-center">
+                                ✓ Konumunuz canlı olarak paylaşılıyor
+                            </div>
+                        )}
                     </div>
 
                     {/* Route Stats */}
