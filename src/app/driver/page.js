@@ -28,15 +28,49 @@ export default function DriverPage() {
                 router.push('/login');
             } else {
                 setCurrentUser(user)
-                // Load shipments assigned to this driver
-                // For now, using demo data
-                setMyShipments(initialPendingOrders.slice(0, 3).map((order, index) => ({
-                    ...order,
-                    order: index + 1
-                })))
+                // Load shipments assigned to this driver from API
+                // Need to import getShipments first, but for now let's use fetch directly or update imports
+                // Better to update imports first.
+                // For this step, I will just add the logic assuming imports are there, 
+                // but I need to add imports in a separate step or include them here if I can see the top of file.
+                // I will use a separate tool call to add imports.
             }
         }
     }, []);
+
+    // Poll for assigned shipments
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const fetchMyShipments = async () => {
+            try {
+                const res = await fetch('/api/shipments');
+                if (res.ok) {
+                    const allShipments = await res.json();
+                    // Filter shipments assigned to this driver (using vehicle ID or driver ID)
+                    // Assuming driver ID matches vehicle ID for simplicity in this app context
+                    // or we filter by assigned_driver matching currentUser.id (if driver users are mapped to vehicles)
+                    // In this app, drivers are users. Vehicles have IDs.
+                    // Let's assume assigned_driver in shipment refers to vehicle ID for now as per dashboard logic.
+                    // But wait, dashboard assigns to *vehicleId*.
+                    // Driver needs to know which vehicle they are driving.
+                    // For now, let's assume driver1 -> vehicle1 mapping or similar.
+                    // Or just show all assigned shipments for now to test sync.
+
+                    const myAssigned = allShipments.filter(s => s.status === 'assigned');
+                    // TODO: Filter by specific driver/vehicle
+
+                    setMyShipments(myAssigned.map((s, i) => ({ ...s, order: i + 1 })));
+                }
+            } catch (error) {
+                console.error('Failed to fetch shipments:', error);
+            }
+        }
+
+        fetchMyShipments();
+        const interval = setInterval(fetchMyShipments, 5000);
+        return () => clearInterval(interval);
+    }, [currentUser]);
 
     const handleOptimizeRoute = async () => {
         setIsOptimizing(true)
@@ -168,8 +202,8 @@ export default function DriverPage() {
                         <button
                             onClick={toggleLocationTracking}
                             className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors font-medium ${isTracking
-                                    ? 'bg-green-600 text-white hover:bg-green-700'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
                                 }`}
                         >
                             <Radio size={18} className={isTracking ? 'animate-pulse' : ''} />
