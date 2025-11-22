@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Map from '@/components/Map/MapComponent'
 import { initialVehicles, initialPendingOrders, currentUser as defaultUser, initialUsers, ROLES, ROLE_LABELS, MENU_ITEMS, SPECIAL_PERMISSIONS } from '@/lib/data'
 import { getUsers, addUser } from '@/lib/api'
+import { getAllDriverLocations } from '@/lib/locationTracking'
 import { getRoute } from '@/lib/routing'
 import { Menu, Truck, Package, Check, X, Clock, AlertTriangle, User, Users, ClipboardList, Settings } from 'lucide-react'
 import Sidebar from '@/components/Layout/Sidebar'
@@ -14,6 +15,36 @@ export default function Dashboard() {
     // App State
     const [vehicles, setVehicles] = useState(initialVehicles)
     const [pendingOrders, setPendingOrders] = useState(initialPendingOrders)
+
+    // Poll driver locations every 5 seconds
+    useEffect(() => {
+        const pollLocations = async () => {
+            try {
+                const locations = await getAllDriverLocations()
+                // Update vehicle locations based on driver locations
+                setVehicles(prev => prev.map(vehicle => {
+                    const driverLocation = locations[vehicle.id]
+                    if (driverLocation) {
+                        return {
+                            ...vehicle,
+                            location: driverLocation.location
+                        }
+                    }
+                    return vehicle
+                }))
+            } catch (error) {
+                console.error('Failed to fetch driver locations:', error)
+            }
+        }
+
+        // Initial fetch
+        pollLocations()
+
+        // Poll every 5 seconds
+        const interval = setInterval(pollLocations, 5000)
+
+        return () => clearInterval(interval)
+    }, [])
     const [approvalQueue, setApprovalQueue] = useState([]) // New: For 09:00-18:00 shipments
     const [nextDayOrders, setNextDayOrders] = useState([]) // New: Rejected/Next Day shipments
 
