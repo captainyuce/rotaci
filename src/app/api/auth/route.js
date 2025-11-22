@@ -1,23 +1,46 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request) {
     try {
-        const { username, password } = await request.json();
+        const { username, password } = await request.json()
 
-        const { data, error } = await supabase
+        // 1. Check Users Table
+        const { data: user, error } = await supabase
             .from('users')
             .select('*')
             .eq('username', username)
-            .eq('password', password)
-            .single();
+            .eq('password', password) // Note: In production, use hashed passwords!
+            .single()
 
-        if (error || !data) {
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        if (user) {
+            return NextResponse.json({ success: true, user })
         }
 
-        return NextResponse.json({ success: true, user: data });
+        // 2. Check Vehicles (for Driver Login via Plate)
+        // If username matches a plate, log them in as a driver
+        const { data: vehicle, error: vehicleError } = await supabase
+            .from('vehicles')
+            .select('*')
+            .eq('plate', username)
+            .single()
+
+        if (vehicle) {
+            return NextResponse.json({
+                success: true,
+                user: {
+                    id: vehicle.id,
+                    username: vehicle.plate,
+                    name: vehicle.name,
+                    role: 'driver',
+                    vehicleId: vehicle.id
+                }
+            })
+        }
+
+        return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
+
     } catch (error) {
-        return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
     }
 }

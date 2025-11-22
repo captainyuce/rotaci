@@ -1,71 +1,48 @@
-// Location tracking API functions
-
-export async function updateDriverLocation(driverId, location, heading = 0, speed = 0) {
-    const res = await fetch('/api/location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ driverId, location, heading, speed })
-    });
-    if (!res.ok) throw new Error('Failed to update location');
-    return res.json();
-}
-
-export async function getAllDriverLocations() {
-    const res = await fetch('/api/location');
-    if (!res.ok) throw new Error('Failed to fetch locations');
-    return res.json();
-}
-
-/**
- * Start tracking driver location using Geolocation API
- * @param {string} driverId - Driver ID
- * @param {Function} onLocationUpdate - Callback when location updates
- * @returns {number} - Watch ID for stopping tracking
- */
-export function startLocationTracking(driverId, onLocationUpdate) {
+export const startLocationTracking = (vehicleId, onUpdate) => {
     if (!navigator.geolocation) {
-        throw new Error('Geolocation is not supported by this browser');
+        console.error('Geolocation is not supported by this browser.')
+        return null
     }
 
-    const options = {
+    const updateLocation = async (position) => {
+        const { latitude, longitude } = position.coords
+        const location = { lat: latitude, lng: longitude }
+
+        // Call the callback for local UI update
+        if (onUpdate) onUpdate(location)
+
+        try {
+            // Update vehicle location in Supabase
+            await fetch('/api/vehicles', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: vehicleId,
+                    location: location,
+                    status: 'active' // Assume active when tracking is on
+                })
+            })
+        } catch (error) {
+            console.error('Failed to update location:', error)
+        }
+    }
+
+    const errorCallback = (error) => {
+        console.error('Geolocation error:', error)
+    }
+
+    // Request high accuracy for better tracking
+    const watchId = navigator.geolocation.watchPosition(updateLocation, errorCallback, {
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 10000,
         maximumAge: 0
-    };
+    })
 
-    const watchId = navigator.geolocation.watchPosition(
-        async (position) => {
-            const location = [
-                position.coords.latitude,
-                position.coords.longitude
-            ];
-            const heading = position.coords.heading || 0;
-            const speed = position.coords.speed || 0;
-
-            try {
-                await updateDriverLocation(driverId, location, heading, speed);
-                if (onLocationUpdate) {
-                    onLocationUpdate({ location, heading, speed });
-                }
-            } catch (error) {
-                console.error('Failed to update location:', error);
-            }
-        },
-        (error) => {
-            console.error('Geolocation error:', error);
-        },
-        options
-    );
-
-    return watchId;
+    return watchId
 }
 
-/**
- * Stop tracking driver location
- * @param {number} watchId - Watch ID from startLocationTracking
- */
-export function stopLocationTracking(watchId) {
-    if (navigator.geolocation && watchId) {
-        navigator.geolocation.clearWatch(watchId);
+export const stopLocationTracking = (watchId) => {
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId)
     }
 }

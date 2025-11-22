@@ -1,19 +1,17 @@
 import './globals.css'
-import 'leaflet/dist/leaflet.css'
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'Akalbatu Rota Optimizasyon',
-    description: 'Depo ve sevkiyat yönetim sistemi',
+    title: 'Akalbatu Route Optimization',
+    description: 'Lojistik ve Rota Optimizasyon Sistemi',
 }
 
 export default function RootLayout({ children }) {
     return (
         <html lang="tr">
-            <head>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-            </head>
-            <body>{children}</body>
+            <body className={inter.className}>{children}</body>
         </html>
     )
 }

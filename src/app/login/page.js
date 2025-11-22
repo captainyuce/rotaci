@@ -2,19 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck } from 'lucide-react'
-import { login } from '@/lib/api'
-import { ROLES } from '@/lib/data'
+import { Truck, User, Lock, LogIn } from 'lucide-react'
 
 export default function LoginPage() {
     const router = useRouter()
+    const [loginMode, setLoginMode] = useState('user') // 'user' or 'vehicle'
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [error, setError] = useState('')
-    const [loading, setLoading] = useState(false)
-
-    const [loginMode, setLoginMode] = useState('user') // 'user' or 'vehicle'
     const [vehicles, setVehicles] = useState([])
+    const [selectedVehicle, setSelectedVehicle] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
 
     useEffect(() => {
         // Load vehicles for dropdown
@@ -22,9 +20,12 @@ export default function LoginPage() {
             try {
                 const res = await fetch('/api/vehicles')
                 if (res.ok) {
-                    setVehicles(await res.json())
+                    const data = await res.json()
+                    setVehicles(data)
                 }
-            } catch (e) { console.error(e) }
+            } catch (e) {
+                console.error('Failed to load vehicles', e)
+            }
         }
         loadVehicles()
     }, [])
@@ -35,131 +36,177 @@ export default function LoginPage() {
         setError('')
 
         try {
+            let body = {}
+
             if (loginMode === 'vehicle') {
-                // Vehicle Login Logic
-                const vehicleId = e.target.vehicleId.value
-                const vehicle = vehicles.find(v => v.id === vehicleId)
+                if (!selectedVehicle) {
+                    setError('Lütfen bir araç seçiniz')
+                    setLoading(false)
+                    return
+                }
+                // For vehicle login, we send the plate as username (which is handled by API)
+                const vehicle = vehicles.find(v => v.id === parseInt(selectedVehicle))
+                if (!vehicle) {
+                    setError('Araç bulunamadı')
+                    setLoading(false)
+                    return
+                }
+                body = { username: vehicle.plate, password: '' } // Password ignored for vehicle
+            } else {
+                body = { username, password }
+            }
 
-                if (vehicle) {
-                    // Create a session for the vehicle
-                    const vehicleUser = {
-                        id: vehicle.id,
-                        username: vehicle.plate,
-                        name: vehicle.name,
-                        role: ROLES.DRIVER,
-                        vehicleId: vehicle.id // Important for driver page
-                    }
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
 
-                    localStorage.setItem('currentUser', JSON.stringify(vehicleUser))
+            const data = await res.json()
+
+            if (data.success) {
+                // Save session
+                localStorage.setItem('currentUser', JSON.stringify(data.user))
+
+                // Redirect based on role
+                if (data.user.role === 'driver') {
                     router.push('/driver')
                 } else {
-                    setError('Araç bulunamadı!')
+                    router.push('/dashboard')
                 }
             } else {
-                // Standard User Login
-                const result = await login(username, password)
-                if (result.success) {
-                    localStorage.setItem('currentUser', JSON.stringify(result.user))
-
-                    if (result.user.role === ROLES.DRIVER) {
-                        router.push('/driver')
-                    } else {
-                        router.push('/dashboard')
-                    }
-                } else {
-                    setError('Kullanıcı adı veya şifre hatalı!')
-                }
+                setError(data.error || 'Giriş başarısız')
             }
         } catch (err) {
-            setError('Giriş yapılırken bir hata oluştu!')
+            setError('Bir hata oluştu. Lütfen tekrar deneyin.')
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-            <div className="card w-full max-w-md p-8 shadow-xl bg-white">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-slate-800 mb-2">Akalbatu Lojistik</h1>
-                    <p className="text-slate-500">Rota Optimizasyon Sistemi</p>
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+
+                {/* Header */}
+                <div className="bg-blue-600 p-8 text-center">
+                    <h1 className="text-3xl font-bold text-white mb-2">Akalbatu Lojistik</h1>
+                    <p className="text-blue-100">Rota Optimizasyon Sistemi</p>
                 </div>
 
-                {/* Login Mode Toggle */}
-                <div className="flex p-1 bg-slate-100 rounded-lg mb-6">
+                {/* Tabs */}
+                <div className="flex border-b">
                     <button
-                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${loginMode === 'user' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex-1 py-4 text-sm font-medium transition-colors ${loginMode === 'user'
+                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         onClick={() => setLoginMode('user')}
                     >
-                        Yönetici Girişi
+                        <div className="flex items-center justify-center gap-2">
+                            <User size={18} /> Yönetici Girişi
+                        </div>
                     </button>
                     <button
-                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${loginMode === 'vehicle' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex-1 py-4 text-sm font-medium transition-colors ${loginMode === 'vehicle'
+                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
                         onClick={() => setLoginMode('vehicle')}
                     >
-                        Araç Girişi
+                        <div className="flex items-center justify-center gap-2">
+                            <Truck size={18} /> Araç Girişi
+                        </div>
                     </button>
                 </div>
 
-                {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm text-center border border-red-100">
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleLogin} className="space-y-4">
-                    {loginMode === 'user' ? (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Kullanıcı Adı</label>
-                                <input
-                                    type="text"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="input w-full"
-                                    placeholder="Kullanıcı adınızı giriniz"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Şifre</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="input w-full"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Araç Seçiniz</label>
-                            <select name="vehicleId" className="input w-full" required>
-                                <option value="">Plaka Seçiniz...</option>
-                                {vehicles.map(v => (
-                                    <option key={v.id} value={v.id}>{v.plate} - {v.name}</option>
-                                ))}
-                            </select>
+                {/* Form */}
+                <div className="p-8">
+                    {error && (
+                        <div className="mb-6 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg text-center">
+                            {error}
                         </div>
                     )}
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn btn-primary w-full py-3 font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Giriş Yapılıyor...
-                            </span>
+                    <form onSubmit={handleLogin} className="space-y-6">
+
+                        {loginMode === 'user' ? (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <User size={18} className="text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                            placeholder="Kullanıcı adınız"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Lock size={18} className="text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                            placeholder="••••••••"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </>
                         ) : (
-                            'Giriş Yap'
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Araç Seçiniz</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Truck size={18} className="text-gray-400" />
+                                    </div>
+                                    <select
+                                        value={selectedVehicle}
+                                        onChange={(e) => setSelectedVehicle(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
+                                        required
+                                    >
+                                        <option value="">Plaka Seçiniz...</option>
+                                        {vehicles.map((v) => (
+                                            <option key={v.id} value={v.id}>
+                                                {v.plate} - {v.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                         )}
-                    </button>
-                </form>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95"
+                        >
+                            {loading ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Giriş Yapılıyor...
+                                </>
+                            ) : (
+                                <>
+                                    <LogIn size={18} /> Giriş Yap
+                                </>
+                            )}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     )
