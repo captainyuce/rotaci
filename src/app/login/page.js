@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Truck } from 'lucide-react'
 import { login } from '@/lib/api'
+import { ROLES } from '@/lib/data'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -23,7 +24,13 @@ export default function LoginPage() {
             if (result.success) {
                 // Store user in localStorage for session management
                 localStorage.setItem('currentUser', JSON.stringify(result.user))
-                router.push('/dashboard')
+
+                // Role-based routing
+                if (result.user.role === ROLES.DRIVER) {
+                    router.push('/driver')
+                } else {
+                    router.push('/dashboard')
+                }
             } else {
                 setError('Kullanıcı adı veya şifre hatalı!')
             }
