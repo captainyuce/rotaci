@@ -27,3 +27,26 @@ body {
     height: 100%;
     z-index: 0;
 }
+
+/* Force all input text to be black/dark for visibility */
+input,
+textarea,
+select {
+    color: #1e293b !important;
+    /* slate-900 */
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8 !important;
+    /* slate-400 */
+}
+
+/* Ensure autofill text is also visible */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: #1e293b !important;
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+}
