@@ -24,8 +24,8 @@ export default function AddressesPage() {
         address: '',
         phone: '',
         notes: '',
-        latitude: 41.0082,
-        longitude: 28.9784,
+        lat: 41.0082,
+        lng: 28.9784,
         category: 'customer'
     })
 
@@ -35,62 +35,101 @@ export default function AddressesPage() {
 
     const fetchAddresses = async () => {
         setLoading(true)
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('addresses')
             .select('*')
             .order('created_at', { ascending: false })
 
-        if (data) setAddresses(data)
+        if (error) {
+            console.error('Error fetching addresses:', error)
+        } else if (data) {
+            setAddresses(data)
+        }
         setLoading(false)
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        if (editingAddress) {
-            await supabase
-                .from('addresses')
-                .update(formData)
-                .eq('id', editingAddress.id)
-        } else {
-            await supabase
-                .from('addresses')
-                .insert([formData])
-        }
+        try {
+            const dataToSave = {
+                name: formData.name,
+                address: formData.address,
+                phone: formData.phone,
+                notes: formData.notes,
+                lat: formData.lat,
+                lng: formData.lng,
+                category: formData.category
+            }
 
-        setIsModalOpen(false)
-        setEditingAddress(null)
-        setFormData({
-            name: '',
-            address: '',
-            phone: '',
-            notes: '',
-            latitude: 41.0082,
-            longitude: 28.9784,
-            category: activeCategory
-        })
-        fetchAddresses()
+            let error;
+
+            if (editingAddress) {
+                const { error: updateError } = await supabase
+                    .from('addresses')
+                    .update(dataToSave)
+                    .eq('id', editingAddress.id)
+                error = updateError
+            } else {
+                const { error: insertError } = await supabase
+                    .from('addresses')
+                    .insert([dataToSave])
+                error = insertError
+            }
+
+            if (error) throw error
+
+            setIsModalOpen(false)
+            setEditingAddress(null)
+            setFormData({
+                name: '',
+                address: '',
+                phone: '',
+                notes: '',
+                lat: 41.0082,
+                lng: 28.9784,
+                category: activeCategory
+            })
+            fetchAddresses()
+            alert('Adres başarıyla kaydedildi!')
+        } catch (error) {
+            console.error('Error saving address:', error)
+            alert('Adres kaydedilirken bir hata oluştu: ' + error.message)
+        }
     }
 
     const handleDelete = async (id) => {
         if (confirm('Bu adresi silmek istediğinize emin misiniz?')) {
-            await supabase.from('addresses').delete().eq('id', id)
-            fetchAddresses()
+            const { error } = await supabase.from('addresses').delete().eq('id', id)
+            if (error) {
+                console.error('Error deleting address:', error)
+                alert('Silme işlemi başarısız oldu.')
+            } else {
+                fetchAddresses()
+            }
         }
     }
 
     const handleOpenModal = (address = null) => {
         if (address) {
             setEditingAddress(address)
-            setFormData(address)
+            setFormData({
+                name: address.name,
+                address: address.address,
+                phone: address.phone || '',
+                notes: address.notes || '',
+                lat: address.lat || 41.0082,
+                lng: address.lng || 28.9784,
+                category: address.category || activeCategory
+            })
         } else {
             setFormData({
                 name: '',
                 address: '',
                 phone: '',
                 notes: '',
-                latitude: 41.0082,
-                longitude: 28.9784,
+                lat: 41.0082,
+                lng: 28.9784,
                 category: activeCategory
             })
         }
@@ -100,8 +139,8 @@ export default function AddressesPage() {
     const handleLocationSelect = (lat, lng) => {
         setFormData({
             ...formData,
-            latitude: lat,
-            longitude: lng
+            lat: lat,
+            lng: lng
         })
     }
 
@@ -165,7 +204,7 @@ export default function AddressesPage() {
                                         <p className="text-xs text-slate-500 mt-2 italic">{addr.notes}</p>
                                     )}
                                     <p className="text-xs text-slate-500 mt-2">
-                                        📍 {addr.latitude?.toFixed(4)}, {addr.longitude?.toFixed(4)}
+                                        📍 {addr.lat?.toFixed(4)}, {addr.lng?.toFixed(4)}
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
@@ -243,12 +282,12 @@ export default function AddressesPage() {
                                     </label>
                                     <div className="h-64 rounded-lg overflow-hidden border border-slate-200">
                                         <MapPicker
-                                            center={[formData.latitude, formData.longitude]}
+                                            center={[formData.lat, formData.lng]}
                                             onLocationSelect={handleLocationSelect}
                                         />
                                     </div>
                                     <p className="text-xs text-slate-500 mt-1">
-                                        Seçili Konum: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                                        Seçili Konum: {formData.lat.toFixed(6)}, {formData.lng.toFixed(6)}
                                     </p>
                                 </div>
                                 <div className="col-span-2">
