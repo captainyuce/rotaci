@@ -1,188 +1,195 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Truck, MapPin, Navigation, CheckCircle, XCircle, LogOut } from 'lucide-react'
-import { startLocationTracking, stopLocationTracking } from '@/lib/locationTracking'
+import { supabase } from '@/lib/supabaseClient'
+import { useAuth } from '@/components/AuthProvider'
+import { MapPin, CheckCircle, XCircle, Navigation, Package } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import ChatButton from '@/components/ChatButton'
+
+const NavigationMap = dynamic(() => import('@/components/NavigationMap'), { ssr: false })
 
 export default function DriverPage() {
-    const router = useRouter()
-    const [user, setUser] = useState(null)
-    const [shipments, setShipments] = useState([])
-    const [isTracking, setIsTracking] = useState(false)
-    const [watchId, setWatchId] = useState(null)
-    const [currentLocation, setCurrentLocation] = useState(null)
+    const { user } = useAuth()
+    const [jobs, setJobs] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [selectedJob, setSelectedJob] = useState(null)
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('currentUser')
-        if (!storedUser) {
-            router.push('/login')
-            return
-        }
-        const parsedUser = JSON.parse(storedUser)
-        if (parsedUser.role !== 'driver') {
-            router.push('/dashboard')
-            return
-        }
-        setUser(parsedUser)
-        fetchShipments(parsedUser.vehicleId)
-    }, [router])
+        if (user?.id) {
+            fetchJobs()
 
-    const fetchShipments = async (vehicleId) => {
-        try {
-            const res = await fetch('/api/shipments')
-            if (res.ok) {
-                const allShipments = await res.json()
-                // Filter for this vehicle and not delivered yet (or delivered today)
-                const myShipments = allShipments.filter(s =>
-                    s.assigned_driver === vehicleId &&
-                    (s.status === 'assigned' || s.status === 'pending')
-                )
-                setShipments(myShipments)
-            }
-        } catch (error) {
-            console.error(error)
-        }
-    }
-
-    const toggleTracking = () => {
-        if (isTracking) {
-            stopLocationTracking(watchId)
-            setWatchId(null)
-            setIsTracking(false)
-            // Update status to idle
-            if (user?.vehicleId) {
-                fetch('/api/vehicles', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: user.vehicleId, status: 'idle' })
+            const channel = supabase
+                .channel('driver_jobs')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'shipments',
+                    filter: `assigned_vehicle_id=eq.${user.id}`
+                }, (payload) => {
+                    fetchJobs()
                 })
+                .subscribe()
+
+            return () => {
+                supabase.removeChannel(channel)
             }
-        } else {
-            const id = startLocationTracking(user.vehicleId, (loc) => {
-                setCurrentLocation(loc)
-            })
-            setWatchId(id)
-            setIsTracking(true)
+        }
+    }, [user])
+
+    const fetchJobs = async () => {
+        setLoading(true)
+        const { data } = await supabase
+            .from('shipments')
+            .select('*')
+            .eq('assigned_vehicle_id', user.id)
+            .neq('status', 'delivered') // Optionally hide delivered jobs
+            .order('created_at', { ascending: true })
+
+        if (data) setJobs(data)
+        setLoading(false)
+    }
+
+    const updateStatus = async (id, status) => {
+        await supabase
+            .from('shipments')
+            .update({ status })
+            .eq('id', id)
+
+        // If delivered, update vehicle load (simple logic)
+        // In a real app, we'd fetch the shipment weight and subtract it
+        if (status === 'delivered') {
+            // Logic to decrease load would go here
         }
     }
 
-    const updateShipmentStatus = async (id, status) => {
-        try {
-            const res = await fetch('/api/shipments', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, status })
-            })
-            if (res.ok) {
-                if (user?.vehicleId) fetchShipments(user.vehicleId)
-            }
-        } catch (error) {
-            console.error(error)
-        }
+    const showNavigation = (job) => {
+        setSelectedJob(job)
     }
 
-    const handleLogout = () => {
-        if (isTracking) toggleTracking()
-        localStorage.removeItem('currentUser')
-        router.push('/login')
-    }
-
-    const openNavigation = (lat, lng) => {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank')
-    }
-
-    if (!user) return null
 
     return (
-        <div className="min-h-screen bg-slate-100 pb-20">
-            {/* Header */}
-            <div className="bg-blue-600 text-white p-4 shadow-lg sticky top-0 z-10">
-                <div className="flex justify-between items-center mb-2">
-                    <h1 className="font-bold text-lg flex items-center gap-2">
-                        <Truck /> {user.username}
-                    </h1>
-                    <button onClick={handleLogout} className="p-2 hover:bg-blue-700 rounded-full">
-                        <LogOut size={20} />
-                    </button>
-                </div>
-                <div className="flex justify-between items-center">
-                    <div className="text-sm opacity-90">{user.name}</div>
-                    <button
-                        onClick={toggleTracking}
-                        className={`px-4 py-1 rounded-full text-sm font-bold transition-all
-                            ${isTracking ? 'bg-green-500 text-white animate-pulse' : 'bg-slate-800 text-slate-300'}
-                        `}
-                    >
-                        {isTracking ? 'Konum Paylaşılıyor' : 'Takip Kapalı'}
-                    </button>
-                </div>
-            </div>
+        <>
+            <div className="space-y-4">
+                <h2 className="font-bold text-slate-700 mb-2">Atanan İşler ({jobs.length})</h2>
 
-            {/* Content */}
-            <div className="p-4 space-y-4">
-                {shipments.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500">
-                        <CheckCircle size={48} className="mx-auto mb-2 opacity-20" />
-                        <p>Şu an atanmış aktif görev yok.</p>
+                {jobs.length === 0 && !loading && (
+                    <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
+                        <Package size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>Şu an size atanan bir iş bulunmuyor.</p>
                     </div>
-                ) : (
-                    shipments.map((s) => (
-                        <div key={s.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-                            <div className="p-4 border-b border-slate-100">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-slate-800">{s.customer}</h3>
-                                        <div className="flex items-center gap-1 text-slate-500 text-sm mt-1">
-                                            <MapPin size={14} />
-                                            <span>Konuma Git</span>
-                                        </div>
-                                    </div>
-                                    <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">
-                                        {s.delivery_time}
-                                    </span>
-                                </div>
+                )}
+
+                {jobs.map((job) => (
+                    <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-start">
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-800">{job.customer_name}</h3>
+                                <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
+                            </div>
+                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                                {job.weight} kg
+                            </span>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            <div className="flex items-start gap-3 text-slate-600">
+                                <MapPin className="shrink-0 mt-1 text-blue-500" size={20} />
+                                <p className="text-sm">{job.delivery_address}</p>
                             </div>
 
-                            <div className="p-4 bg-slate-50 space-y-2 text-sm text-slate-600">
-                                <div className="flex justify-between">
-                                    <span>Yük:</span>
-                                    <span className="font-medium">{s.load} kg</span>
+                            {job.notes && (
+                                <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-800 border border-yellow-100">
+                                    <span className="font-bold">Not:</span> {job.notes}
                                 </div>
-                                {s.notes && (
-                                    <div className="bg-yellow-50 p-2 rounded border border-yellow-100 text-yellow-800 text-xs">
-                                        Not: {s.notes}
-                                    </div>
+                            )}
+
+                            <div className="grid grid-cols-3 gap-2 pt-2">
+                                <ChatButton
+                                    shipmentId={job.id}
+                                    shipmentName={job.customer_name}
+                                />
+                                <button
+                                    onClick={() => showNavigation(job)}
+                                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
+                                >
+                                    <Navigation size={16} />
+                                    Yol Tarifi
+                                </button>
+
+                                {job.status === 'assigned' ? (
+                                    <button
+                                        onClick={() => updateStatus(job.id, 'delivered')}
+                                        className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
+                                    >
+                                        <CheckCircle size={16} />
+                                        Teslim Et
+                                    </button>
+                                ) : (
+                                    <button
+                                        disabled
+                                        className="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 py-3 rounded-lg font-medium text-sm"
+                                    >
+                                        {job.status === 'delivered' ? 'Tamamlandı' : 'İşlemde'}
+                                    </button>
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-3 divide-x border-t border-slate-200">
+                            {job.status === 'assigned' && (
                                 <button
-                                    onClick={() => openNavigation(s.location_lat, s.location_lng)}
-                                    className="p-3 flex flex-col items-center justify-center gap-1 hover:bg-slate-50 text-blue-600"
+                                    onClick={() => updateStatus(job.id, 'failed')}
+                                    className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 py-2 rounded-lg text-sm transition-colors"
                                 >
-                                    <Navigation size={20} />
-                                    <span className="text-xs font-bold">Yol Tarifi</span>
+                                    <XCircle size={16} />
+                                    Teslim Edilemedi
                                 </button>
-                                <button
-                                    onClick={() => updateShipmentStatus(s.id, 'failed')}
-                                    className="p-3 flex flex-col items-center justify-center gap-1 hover:bg-red-50 text-red-600"
-                                >
-                                    <XCircle size={20} />
-                                    <span className="text-xs font-bold">Teslim Edilemedi</span>
-                                </button>
-                                <button
-                                    onClick={() => updateShipmentStatus(s.id, 'delivered')}
-                                    className="p-3 flex flex-col items-center justify-center gap-1 hover:bg-green-50 text-green-600"
-                                >
-                                    <CheckCircle size={20} />
-                                    <span className="text-xs font-bold">Teslim Edildi</span>
-                                </button>
-                            </div>
+                            )}
                         </div>
-                    ))
-                )}
+                    </div>
+                ))}
             </div>
-        </div>
+
+            {/* Navigation Modal */}
+            {selectedJob && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl">
+                        {/* Header */}
+                        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-900">{selectedJob.customer_name}</h3>
+                                <p className="text-sm text-slate-600">{selectedJob.delivery_address}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedJob(null)}
+                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                <XCircle size={24} className="text-slate-600" />
+                            </button>
+                        </div>
+
+                        {/* Map */}
+                        <div className="flex-1 relative">
+                            <NavigationMap destination={selectedJob} />
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-slate-200 flex gap-3">
+                            <button
+                                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedJob.delivery_lat},${selectedJob.delivery_lng}`, '_blank')}
+                                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg font-medium transition-colors"
+                            >
+                                Google Maps'te Aç
+                            </button>
+                            <button
+                                onClick={() => setSelectedJob(null)}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+                            >
+                                Kapat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     )
 }

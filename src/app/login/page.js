@@ -1,212 +1,156 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Truck, User, Lock, LogIn } from 'lucide-react'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function LoginPage() {
     const router = useRouter()
-    const [loginMode, setLoginMode] = useState('user') // 'user' or 'vehicle'
+    const [loginMode, setLoginMode] = useState('manager') // 'manager' | 'driver'
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
-    const [vehicles, setVehicles] = useState([])
-    const [selectedVehicle, setSelectedVehicle] = useState('')
-    const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-    useEffect(() => {
-        // Load vehicles for dropdown
-        async function loadVehicles() {
-            try {
-                const res = await fetch('/api/vehicles')
-                if (res.ok) {
-                    const data = await res.json()
-                    setVehicles(data)
-                }
-            } catch (e) {
-                console.error('Failed to load vehicles', e)
-            }
-        }
-        loadVehicles()
-    }, [])
-
-    const handleLogin = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        setLoading(true)
         setError('')
 
-        try {
-            let body = {}
+        if (loginMode === 'manager') {
+            // Manager login
+            const { data: users } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
+                .eq('role', 'manager')
 
-            if (loginMode === 'vehicle') {
-                if (!selectedVehicle) {
-                    setError('Lütfen bir araç seçiniz')
-                    setLoading(false)
-                    return
-                }
-                // For vehicle login, we send the plate as username (which is handled by API)
-                const vehicle = vehicles.find(v => v.id === parseInt(selectedVehicle))
-                if (!vehicle) {
-                    setError('Araç bulunamadı')
-                    setLoading(false)
-                    return
-                }
-                body = { username: vehicle.plate, password: '' } // Password ignored for vehicle
+            if (users && users.length > 0) {
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(users[0]))
+                localStorage.setItem('role', 'manager')
+                localStorage.setItem('permissions', JSON.stringify(users[0].permissions || []))
+                window.location.href = '/dashboard'
             } else {
-                body = { username, password }
+                setError('Kullanıcı adı veya şifre hatalı')
             }
+        } else {
+            // Driver login - check vehicle password
+            const { data: vehicles } = await supabase
+                .from('vehicles')
+                .select('*')
+                .eq('plate', username)
 
-            const res = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
+            if (vehicles && vehicles.length > 0) {
+                const vehicle = vehicles[0]
 
-            const data = await res.json()
-
-            if (data.success) {
-                // Save session
-                localStorage.setItem('currentUser', JSON.stringify(data.user))
-
-                // Redirect based on role
-                if (data.user.role === 'driver') {
-                    router.push('/driver')
+                // Check if password matches
+                if (vehicle.driver_password && vehicle.driver_password === password) {
+                    // Store driver data in localStorage
+                    localStorage.setItem('user', JSON.stringify({
+                        id: vehicle.id,
+                        username: vehicle.plate,
+                        full_name: vehicle.driver_name || vehicle.plate,
+                        vehicle_id: vehicle.id
+                    }))
+                    localStorage.setItem('role', 'driver')
+                    window.location.href = '/driver'
+                } else if (!vehicle.driver_password) {
+                    // No password set, allow login (backward compatibility)
+                    localStorage.setItem('user', JSON.stringify({
+                        id: vehicle.id,
+                        username: vehicle.plate,
+                        full_name: vehicle.driver_name || vehicle.plate,
+                        vehicle_id: vehicle.id
+                    }))
+                    localStorage.setItem('role', 'driver')
+                    window.location.href = '/driver'
                 } else {
-                    router.push('/dashboard')
+                    setError('Şifre hatalı')
                 }
             } else {
-                setError(data.error || 'Giriş başarısız')
+                setError('Plaka bulunamadı')
             }
-        } catch (err) {
-            setError('Bir hata oluştu. Lütfen tekrar deneyin.')
-        } finally {
-            setLoading(false)
         }
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-
-                {/* Header */}
-                <div className="bg-blue-600 p-8 text-center">
-                    <h1 className="text-3xl font-bold text-white mb-2">Akalbatu Lojistik</h1>
-                    <p className="text-blue-100">Rota Optimizasyon Sistemi</p>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 p-4">
+            <div className="w-full max-w-md">
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Akalbatu Lojistik</h1>
+                    <p className="text-slate-600">Rota Optimizasyon Sistemi</p>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b">
-                    <button
-                        className={`flex-1 py-4 text-sm font-medium transition-colors ${loginMode === 'user'
-                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                        onClick={() => setLoginMode('user')}
-                    >
-                        <div className="flex items-center justify-center gap-2">
-                            <User size={18} /> Yönetici Girişi
-                        </div>
-                    </button>
-                    <button
-                        className={`flex-1 py-4 text-sm font-medium transition-colors ${loginMode === 'vehicle'
-                                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                        onClick={() => setLoginMode('vehicle')}
-                    >
-                        <div className="flex items-center justify-center gap-2">
-                            <Truck size={18} /> Araç Girişi
-                        </div>
-                    </button>
-                </div>
+                <div className="bg-white rounded-2xl shadow-xl p-8">
+                    {/* Tab Switcher */}
+                    <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-lg">
+                        <button
+                            onClick={() => setLoginMode('manager')}
+                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${loginMode === 'manager'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'text-slate-700 hover:text-slate-900'
+                                }`}
+                        >
+                            Yönetici
+                        </button>
+                        <button
+                            onClick={() => setLoginMode('driver')}
+                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${loginMode === 'driver'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'text-slate-700 hover:text-slate-900'
+                                }`}
+                        >
+                            Sürücü
+                        </button>
+                    </div>
 
-                {/* Form */}
-                <div className="p-8">
                     {error && (
-                        <div className="mb-6 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg text-center">
+                        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
                             {error}
                         </div>
                     )}
 
-                    <form onSubmit={handleLogin} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                {loginMode === 'manager' ? 'Kullanıcı Adı' : 'Plaka'}
+                            </label>
+                            <input
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder={loginMode === 'manager' ? 'admin' : '34 ABC 123'}
+                                required
+                            />
+                        </div>
 
-                        {loginMode === 'user' ? (
-                            <>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <User size={18} className="text-gray-400" />
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                            placeholder="Kullanıcı adınız"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Lock size={18} className="text-gray-400" />
-                                        </div>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                            placeholder="••••••••"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Araç Seçiniz</label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Truck size={18} className="text-gray-400" />
-                                    </div>
-                                    <select
-                                        value={selectedVehicle}
-                                        onChange={(e) => setSelectedVehicle(e.target.value)}
-                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
-                                        required
-                                    >
-                                        <option value="">Plaka Seçiniz...</option>
-                                        {vehicles.map((v) => (
-                                            <option key={v.id} value={v.id}>
-                                                {v.plate} - {v.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        )}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                Şifre
+                            </label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="••••••"
+                                required
+                            />
+                        </div>
 
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
                         >
-                            {loading ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Giriş Yapılıyor...
-                                </>
-                            ) : (
-                                <>
-                                    <LogIn size={18} /> Giriş Yap
-                                </>
-                            )}
+                            Giriş Yap
                         </button>
                     </form>
                 </div>
+
+                <p className="text-center text-sm text-slate-500 mt-6">
+                    © 2024 Akalbatu Lojistik
+                </p>
             </div>
         </div>
     )

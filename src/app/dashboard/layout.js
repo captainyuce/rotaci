@@ -1,104 +1,135 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useAuth } from '@/components/AuthProvider'
+import { useRouter } from 'next/navigation'
+import MapComponent from '@/components/Map'
+import { Menu, X, Package, Truck, Users, LogOut, LayoutDashboard, MapPin, ClipboardList, FileText, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { LayoutDashboard, Truck, Package, Users, LogOut, Menu, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { PERMISSIONS, hasAnyPermission } from '@/lib/permissions'
+import { DashboardProvider } from '@/contexts/DashboardContext'
 
 export default function DashboardLayout({ children }) {
+    const { user, role, permissions, hasPermission, loading, signOut } = useAuth()
     const router = useRouter()
     const pathname = usePathname()
-    const [sidebarOpen, setSidebarOpen] = useState(true)
-    const [user, setUser] = useState(null)
+    const [menuOpen, setMenuOpen] = useState(false)
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('currentUser')
-        if (!storedUser) {
-            router.push('/login')
-        } else {
-            setUser(JSON.parse(storedUser))
+        if (!loading) {
+            if (!user) {
+                router.push('/login')
+            } else if (role !== 'manager') {
+                router.push('/driver')
+            }
         }
-    }, [router])
+    }, [user, role, loading, router])
 
-    const handleLogout = () => {
-        localStorage.removeItem('currentUser')
-        router.push('/login')
-    }
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Yükleniyor...</div>
+    if (!user || role !== 'manager') return null
 
-    const navItems = [
-        { name: 'Genel Bakış', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Sevkiyatlar', href: '/dashboard/shipments', icon: Package },
-        { name: 'Araçlar', href: '/dashboard/vehicles', icon: Truck },
-        { name: 'Kullanıcılar', href: '/dashboard/users', icon: Users },
+    const allMenuItems = [
+        { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW },
+        {
+            icon: Package,
+            label: 'Sevkiyatlar',
+            href: '/dashboard/shipments',
+            permissions: [PERMISSIONS.CREATE_SHIPMENTS, PERMISSIONS.EDIT_SHIPMENTS, PERMISSIONS.DELETE_SHIPMENTS],
+            checkAny: true
+        },
+        { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar', permission: PERMISSIONS.VIEW },
+        { icon: ClipboardList, label: 'Atamalar', href: '/dashboard/assignments', permission: PERMISSIONS.ASSIGN_VEHICLES },
+        { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles', permission: PERMISSIONS.MANAGE_VEHICLES },
+        { icon: MapPin, label: 'Adresler', href: '/dashboard/addresses', permission: PERMISSIONS.MANAGE_ADDRESSES },
+        { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users', permission: PERMISSIONS.MANAGE_USERS },
+        { icon: FileText, label: 'İşlem Geçmişi', href: '/dashboard/logs', permission: PERMISSIONS.VIEW_LOGS },
     ]
 
-    if (!user) return null
+    // Debug: Log user permissions
+    console.log('User permissions:', permissions)
+    console.log('User role:', role)
+
+    // Filter menu items based on user permissions
+    const menuItems = allMenuItems.filter(item => {
+        if (item.checkAny && item.permissions) {
+            // Check if user has ANY of the required permissions
+            const hasAny = item.permissions.some(perm => hasPermission(perm))
+            console.log(`Checking ${item.label} (checkAny):`, item.permissions, '=> hasAny:', hasAny)
+            return hasAny
+        }
+        // Check if user has the single required permission
+        const hasPerm = hasPermission(item.permission)
+        console.log(`Checking ${item.label}:`, item.permission, '=> hasPerm:', hasPerm)
+        return hasPerm
+    })
+
+    console.log('Filtered menu items:', menuItems.map(i => i.label))
 
     return (
-        <div className="flex h-screen bg-slate-100">
-            {/* Sidebar */}
-            <aside
-                className={`bg-slate-900 text-white transition-all duration-300 ease-in-out flex flex-col
-                    ${sidebarOpen ? 'w-64' : 'w-20'}
-                `}
-            >
-                <div className="p-4 flex items-center justify-between border-b border-slate-800">
-                    {sidebarOpen && <span className="font-bold text-xl truncate">Akalbatu</span>}
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-slate-800 rounded-lg">
-                        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
+        <DashboardProvider>
+            <div className="relative h-screen w-screen overflow-hidden">
+                {/* Full Screen Map Background */}
+                <div className="absolute inset-0 z-0">
+                    <MapComponent />
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`flex items-center gap-3 p-3 rounded-lg transition-colors
-                                    ${isActive ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
-                                `}
-                            >
-                                <item.icon size={20} />
-                                {sidebarOpen && <span>{item.name}</span>}
-                            </Link>
-                        )
-                    })}
-                </nav>
+                {/* Hamburger Menu Button */}
+                <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="fixed top-4 left-4 z-50 bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200"
+                >
+                    {menuOpen ? <X size={24} className="text-slate-700" /> : <Menu size={24} className="text-slate-700" />}
+                </button>
 
-                <div className="p-4 border-t border-slate-800">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 p-3 w-full rounded-lg text-red-400 hover:bg-red-900/20 transition-colors"
-                    >
-                        <LogOut size={20} />
-                        {sidebarOpen && <span>Çıkış Yap</span>}
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-hidden flex flex-col">
-                <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-slate-800">
-                        {navItems.find(i => i.href === pathname)?.name || 'Dashboard'}
-                    </h2>
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <div className="text-sm font-bold text-slate-900">{user.name}</div>
-                            <div className="text-xs text-slate-500 capitalize">{user.role}</div>
+                {/* Sliding Menu */}
+                {menuOpen && (
+                    <div className="fixed left-4 top-20 w-64 md:w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 z-40 max-h-[calc(100vh-104px)] flex flex-col">
+                        <div className="p-4 md:p-6 border-b border-slate-200">
+                            <h2 className="text-lg md:text-xl font-bold text-slate-900">Rota Optimizasyon</h2>
+                            <p className="text-xs md:text-sm text-slate-500">Yönetim Paneli</p>
+                            <p className="text-xs md:text-sm text-blue-600 font-medium mt-1">{user?.full_name || user?.username}</p>
                         </div>
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                            {user.name.charAt(0)}
+
+                        <nav className="p-3 md:p-4 space-y-2 flex-1 overflow-y-auto">
+                            {menuItems.map((item) => {
+                                const Icon = item.icon
+                                const isActive = pathname === item.href
+
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setMenuOpen(false)}
+                                        className={`flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all ${isActive
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'text-slate-700 hover:bg-slate-100'
+                                            }`}
+                                    >
+                                        <Icon size={20} />
+                                        <span className="font-medium text-sm md:text-base">{item.label}</span>
+                                    </Link>
+                                )
+                            })}
+                        </nav>
+
+                        <div className="p-3 md:p-4 border-t border-slate-200">
+                            <button
+                                onClick={signOut}
+                                className="w-full flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <LogOut size={20} />
+                                <span className="font-medium text-sm md:text-base">Çıkış Yap</span>
+                            </button>
                         </div>
                     </div>
-                </header>
+                )}
 
-                <div className="flex-1 overflow-auto p-6">
+                {/* Main Content Area */}
+                <div className="relative z-10 h-full pointer-events-none">
                     {children}
                 </div>
-            </main>
-        </div>
+            </div>
+        </DashboardProvider>
     )
 }
