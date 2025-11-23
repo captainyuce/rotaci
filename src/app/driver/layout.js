@@ -28,16 +28,33 @@ export default function DriverLayout({ children }) {
     }, [user, role, loading, router])
 
     const checkNotificationStatus = async () => {
-        if (!isPushNotificationSupported()) {
+        console.log('=== NOTIFICATION DEBUG ===')
+        console.log('serviceWorker supported:', 'serviceWorker' in navigator)
+        console.log('PushManager supported:', 'PushManager' in window)
+        console.log('Notification supported:', 'Notification' in window)
+        console.log('Current permission:', Notification?.permission)
+        console.log('User Agent:', navigator.userAgent)
+
+        // Force show prompt if Notification API exists (even without PushManager)
+        if (!('Notification' in window)) {
+            console.error('Notification API not supported')
             return
         }
 
         const permission = Notification.permission
+        console.log('Permission status:', permission)
+
         if (permission === 'granted') {
             setNotificationsEnabled(true)
         } else if (permission === 'default') {
             // Show prompt after a short delay
-            setTimeout(() => setShowNotificationPrompt(true), 2000)
+            console.log('Showing notification prompt in 2 seconds...')
+            setTimeout(() => {
+                console.log('Displaying notification prompt now')
+                setShowNotificationPrompt(true)
+            }, 2000)
+        } else {
+            console.log('Permission denied')
         }
     }
 
