@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
-import { MapPin, CheckCircle, XCircle, Navigation, Package } from 'lucide-react'
+import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
 
@@ -14,6 +14,8 @@ export default function DriverPage() {
     const [jobs, setJobs] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedJob, setSelectedJob] = useState(null)
+    const [refreshing, setRefreshing] = useState(false)
+    const [lastUpdate, setLastUpdate] = useState(new Date())
 
     useEffect(() => {
         if (user?.id) {
@@ -27,9 +29,13 @@ export default function DriverPage() {
                     table: 'shipments',
                     filter: `assigned_vehicle_id=eq.${user.id}`
                 }, (payload) => {
+                    console.log('Real-time update received:', payload)
                     fetchJobs()
+                    setLastUpdate(new Date())
                 })
-                .subscribe()
+                .subscribe((status) => {
+                    console.log('Subscription status:', status)
+                })
 
             return () => {
                 supabase.removeChannel(channel)
@@ -48,6 +54,13 @@ export default function DriverPage() {
 
         if (data) setJobs(data)
         setLoading(false)
+    }
+
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        await fetchJobs()
+        setLastUpdate(new Date())
+        setRefreshing(false)
     }
 
     const updateStatus = async (id, status) => {
@@ -70,9 +83,24 @@ export default function DriverPage() {
 
     return (
         <>
-            <div className="space-y-4">
-                <h2 className="font-bold text-slate-700 mb-2">Atanan İşler ({jobs.length})</h2>
+            {/* Refresh Button */}
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-slate-700">Atanan İşler ({jobs.length})</h2>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                        Son: {lastUpdate.toLocaleTimeString('tr-TR')}
+                    </span>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
 
+            <div className="space-y-4">
                 {jobs.length === 0 && !loading && (
                     <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
                         <Package size={48} className="mx-auto mb-4 opacity-50" />
