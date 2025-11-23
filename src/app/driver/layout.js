@@ -84,6 +84,16 @@ export default function DriverLayout({ children }) {
         return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>
     }
 
+    // Debug info for display
+    const debugInfo = {
+        serviceWorker: 'serviceWorker' in navigator,
+        pushManager: 'PushManager' in window,
+        notification: 'Notification' in window,
+        permission: typeof Notification !== 'undefined' ? Notification.permission : 'N/A',
+        isChrome: navigator.userAgent.includes('Chrome'),
+        isIOS: /iPhone|iPad|iPod/.test(navigator.userAgent)
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
             {/* Mobile Header */}
@@ -115,6 +125,33 @@ export default function DriverLayout({ children }) {
                     )}
                 </div>
             )}
+
+            {/* Debug Panel - Visible on Screen */}
+            <div className="fixed bottom-4 left-4 right-4 z-50 bg-yellow-100 border-2 border-yellow-400 rounded-lg p-3 text-xs">
+                <div className="font-bold mb-2">🔧 Debug Bilgisi:</div>
+                <div className="space-y-1">
+                    <div>Service Worker: {debugInfo.serviceWorker ? '✅' : '❌'}</div>
+                    <div>Push Manager: {debugInfo.pushManager ? '✅' : '❌'}</div>
+                    <div>Notification API: {debugInfo.notification ? '✅' : '❌'}</div>
+                    <div>İzin Durumu: {debugInfo.permission}</div>
+                    <div>Chrome: {debugInfo.isChrome ? '✅' : '❌'}</div>
+                    <div>iOS: {debugInfo.isIOS ? '✅' : '❌'}</div>
+                </div>
+                <button
+                    onClick={async () => {
+                        try {
+                            const perm = await Notification.requestPermission()
+                            alert(`Bildirim izni: ${perm}`)
+                            window.location.reload()
+                        } catch (e) {
+                            alert(`Hata: ${e.message}`)
+                        }
+                    }}
+                    className="mt-2 w-full bg-blue-600 text-white py-2 rounded font-bold"
+                >
+                    📢 Bildirim İzni İste
+                </button>
+            </div>
 
             {/* Notification Permission Prompt */}
             {showNotificationPrompt && (
