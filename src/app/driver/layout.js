@@ -140,10 +140,11 @@ export default function DriverLayout({ children }) {
                 <button
                     onClick={async () => {
                         try {
-                            const perm = await Notification.requestPermission()
-                            alert(`Bildirim izni: ${perm}`)
-                            window.location.reload()
+                            console.log('Manual notification request started...')
+                            await enableNotifications()
+                            alert('Bildirim izni verildi ve kaydedildi!')
                         } catch (e) {
+                            console.error('Notification error:', e)
                             alert(`Hata: ${e.message}`)
                         }
                     }}
