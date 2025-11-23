@@ -92,6 +92,13 @@ export default function DashboardLayout({ children }) {
                         </div>
 
                         <nav className="p-3 md:p-4 space-y-2 flex-1 overflow-y-auto">
+                            {menuItems.length === 0 && (
+                                <div className="p-4 text-center text-slate-500 text-sm">
+                                    Menü öğesi bulunamadı. Yetkilerinizi kontrol edin.
+                                    <br />
+                                    (Rol: {role}, İzinler: {permissions?.length || 0})
+                                </div>
+                            )}
                             {menuItems.map((item) => {
                                 const Icon = item.icon
                                 const isActive = pathname === item.href
@@ -103,7 +110,7 @@ export default function DashboardLayout({ children }) {
                                         onClick={() => setMenuOpen(false)}
                                         className={`flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all ${isActive
                                             ? 'bg-blue-600 text-white shadow-md'
-                                            : 'text-slate-700 hover:bg-slate-100'
+                                            : 'text-slate-900 hover:bg-slate-100'
                                             }`}
                                     >
                                         <Icon size={20} />
