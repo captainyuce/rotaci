@@ -77,13 +77,13 @@ export default function CalendarPage() {
                     Sevkiyat Takvimi
                 </h1>
                 <div className="flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
-                    <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 rounded-md">
+                    <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
                         <ChevronLeft size={20} />
                     </button>
-                    <span className="font-bold text-lg w-32 text-center">
+                    <span className="font-bold text-lg w-32 text-center text-slate-900">
                         {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                     </span>
-                    <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 rounded-md">
+                    <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
                         <ChevronRight size={20} />
                     </button>
                 </div>
@@ -93,7 +93,7 @@ export default function CalendarPage() {
                 {/* Day Headers */}
                 <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
                     {dayNames.map(day => (
-                        <div key={day} className="p-3 text-center font-semibold text-slate-600 text-sm">
+                        <div key={day} className="p-3 text-center font-bold text-slate-700 text-sm">
                             {day}
                         </div>
                     ))}
@@ -109,7 +109,7 @@ export default function CalendarPage() {
                             <div
                                 key={index}
                                 className={`min-h-[120px] p-2 border-b border-r border-slate-100 relative group transition-colors
-                                    ${!date ? 'bg-slate-50/50' : 'hover:bg-blue-50/30 cursor-pointer'}
+                                    ${!date ? 'bg-slate-50/50' : 'hover:bg-blue-50/30 cursor-pointer bg-white'}
                                     ${isToday ? 'bg-blue-50/50' : ''}
                                 `}
                                 onClick={() => date && setSelectedDay({ date, shipments: dayShipments })}
@@ -145,12 +145,15 @@ export default function CalendarPage() {
             {/* Day Details Modal */}
             {selectedDay && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pointer-events-auto">
-                    <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl max-h-[80vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl max-h-[80vh] overflow-y-auto relative">
                         <div className="flex items-center justify-between mb-4 border-b pb-3">
-                            <h3 className="font-bold text-lg">
+                            <h3 className="font-bold text-lg text-slate-900">
                                 {selectedDay.date.getDate()} {monthNames[selectedDay.date.getMonth()]} Sevkiyatları
                             </h3>
-                            <button onClick={() => setSelectedDay(null)} className="p-1 hover:bg-slate-100 rounded">
+                            <button
+                                onClick={() => setSelectedDay(null)}
+                                className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+                            >
                                 <XIcon />
                             </button>
                         </div>
