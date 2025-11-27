@@ -388,8 +388,8 @@ export default function ShipmentsPage() {
                                                         ...formData,
                                                         customer_name: selectedAddress.name,
                                                         delivery_address: selectedAddress.address,
-                                                        delivery_lat: selectedAddress.latitude || 41.0082,
-                                                        delivery_lng: selectedAddress.longitude || 28.9784,
+                                                        delivery_lat: selectedAddress.lat || 41.0082,
+                                                        delivery_lng: selectedAddress.lng || 28.9784,
                                                     })
                                                 }
                                             }}
