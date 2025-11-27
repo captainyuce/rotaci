@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
-import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw } from 'lucide-react'
+import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
 
@@ -16,6 +16,7 @@ export default function DriverPage() {
     const [selectedJob, setSelectedJob] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
     const [lastUpdate, setLastUpdate] = useState(new Date())
+    const [activeTab, setActiveTab] = useState('new') // 'new' or 'acknowledged'
 
     useEffect(() => {
         if (user?.id) {
@@ -49,7 +50,7 @@ export default function DriverPage() {
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', user.id)
-            .neq('status', 'delivered') // Optionally hide delivered jobs
+            .neq('status', 'delivered')
             .order('created_at', { ascending: true })
 
         if (data) setJobs(data)
@@ -63,14 +64,21 @@ export default function DriverPage() {
         setRefreshing(false)
     }
 
+    const acknowledgeJob = async (id) => {
+        await supabase
+            .from('shipments')
+            .update({ acknowledged_at: new Date().toISOString() })
+            .eq('id', id)
+
+        fetchJobs()
+    }
+
     const updateStatus = async (id, status) => {
         await supabase
             .from('shipments')
             .update({ status })
             .eq('id', id)
 
-        // If delivered, update vehicle load (simple logic)
-        // In a real app, we'd fetch the shipment weight and subtract it
         if (status === 'delivered') {
             // Logic to decrease load would go here
         }
@@ -80,12 +88,94 @@ export default function DriverPage() {
         setSelectedJob(job)
     }
 
+    const newJobs = jobs.filter(j => !j.acknowledged_at)
+    const acknowledgedJobs = jobs.filter(j => j.acknowledged_at)
+
+    const renderJobCard = (job, showAcknowledgeButton = false) => (
+        <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-start">
+                <div>
+                    <h3 className="font-bold text-lg text-slate-800">{job.customer_name}</h3>
+                    <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
+                </div>
+                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                    {job.weight} kg
+                </span>
+            </div>
+
+            <div className="p-4 space-y-4">
+                <div className="flex items-start gap-3 text-slate-600">
+                    <MapPin className="shrink-0 mt-1 text-blue-500" size={20} />
+                    <p className="text-sm">{job.delivery_address}</p>
+                </div>
+
+                {job.notes && (
+                    <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-800 border border-yellow-100">
+                        <span className="font-bold">Not:</span> {job.notes}
+                    </div>
+                )}
+
+                {showAcknowledgeButton ? (
+                    <button
+                        onClick={() => acknowledgeJob(job.id)}
+                        className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold transition-colors"
+                    >
+                        <CheckCircle size={20} />
+                        Kabul Ettim
+                    </button>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-3 gap-2 pt-2">
+                            <ChatButton
+                                shipmentId={job.id}
+                                shipmentName={job.customer_name}
+                            />
+                            <button
+                                onClick={() => showNavigation(job)}
+                                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
+                            >
+                                <Navigation size={16} />
+                                Yol Tarifi
+                            </button>
+
+                            {job.status === 'assigned' ? (
+                                <button
+                                    onClick={() => updateStatus(job.id, 'delivered')}
+                                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
+                                >
+                                    <CheckCircle size={16} />
+                                    Teslim Et
+                                </button>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 py-3 rounded-lg font-medium text-sm"
+                                >
+                                    {job.status === 'delivered' ? 'Tamamlandı' : 'İşlemde'}
+                                </button>
+                            )}
+                        </div>
+
+                        {job.status === 'assigned' && (
+                            <button
+                                onClick={() => updateStatus(job.id, 'failed')}
+                                className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 py-2 rounded-lg text-sm transition-colors"
+                            >
+                                <XCircle size={16} />
+                                Teslim Edilemedi
+                            </button>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
+    )
 
     return (
         <>
             {/* Refresh Button */}
             <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-slate-700">Atanan İşler ({jobs.length})</h2>
+                <h2 className="font-bold text-slate-700">İşlerim</h2>
                 <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-500">
                         Son: {lastUpdate.toLocaleTimeString('tr-TR')}
@@ -100,81 +190,60 @@ export default function DriverPage() {
                 </div>
             </div>
 
-            <div className="space-y-4">
-                {jobs.length === 0 && !loading && (
-                    <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
-                        <Package size={48} className="mx-auto mb-4 opacity-50" />
-                        <p>Şu an size atanan bir iş bulunmuyor.</p>
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4">
+                <button
+                    onClick={() => setActiveTab('new')}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors relative ${activeTab === 'new'
+                            ? 'bg-orange-600 text-white shadow-md'
+                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                >
+                    <div className="flex items-center justify-center gap-2">
+                        <Bell size={18} />
+                        Yeni Atananlar
+                        {newJobs.length > 0 && (
+                            <span className="bg-white text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                                {newJobs.length}
+                            </span>
+                        )}
                     </div>
+                </button>
+                <button
+                    onClick={() => setActiveTab('acknowledged')}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'acknowledged'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                >
+                    Atanan İşler ({acknowledgedJobs.length})
+                </button>
+            </div>
+
+            <div className="space-y-4">
+                {activeTab === 'new' && (
+                    <>
+                        {newJobs.length === 0 && !loading && (
+                            <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
+                                <Bell size={48} className="mx-auto mb-4 opacity-50" />
+                                <p>Yeni atanan iş bulunmuyor.</p>
+                            </div>
+                        )}
+                        {newJobs.map((job) => renderJobCard(job, true))}
+                    </>
                 )}
 
-                {jobs.map((job) => (
-                    <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-start">
-                            <div>
-                                <h3 className="font-bold text-lg text-slate-800">{job.customer_name}</h3>
-                                <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
+                {activeTab === 'acknowledged' && (
+                    <>
+                        {acknowledgedJobs.length === 0 && !loading && (
+                            <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
+                                <Package size={48} className="mx-auto mb-4 opacity-50" />
+                                <p>Kabul edilmiş iş bulunmuyor.</p>
                             </div>
-                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
-                                {job.weight} kg
-                            </span>
-                        </div>
-
-                        <div className="p-4 space-y-4">
-                            <div className="flex items-start gap-3 text-slate-600">
-                                <MapPin className="shrink-0 mt-1 text-blue-500" size={20} />
-                                <p className="text-sm">{job.delivery_address}</p>
-                            </div>
-
-                            {job.notes && (
-                                <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-800 border border-yellow-100">
-                                    <span className="font-bold">Not:</span> {job.notes}
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-3 gap-2 pt-2">
-                                <ChatButton
-                                    shipmentId={job.id}
-                                    shipmentName={job.customer_name}
-                                />
-                                <button
-                                    onClick={() => showNavigation(job)}
-                                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
-                                >
-                                    <Navigation size={16} />
-                                    Yol Tarifi
-                                </button>
-
-                                {job.status === 'assigned' ? (
-                                    <button
-                                        onClick={() => updateStatus(job.id, 'delivered')}
-                                        className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
-                                    >
-                                        <CheckCircle size={16} />
-                                        Teslim Et
-                                    </button>
-                                ) : (
-                                    <button
-                                        disabled
-                                        className="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 py-3 rounded-lg font-medium text-sm"
-                                    >
-                                        {job.status === 'delivered' ? 'Tamamlandı' : 'İşlemde'}
-                                    </button>
-                                )}
-                            </div>
-
-                            {job.status === 'assigned' && (
-                                <button
-                                    onClick={() => updateStatus(job.id, 'failed')}
-                                    className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 py-2 rounded-lg text-sm transition-colors"
-                                >
-                                    <XCircle size={16} />
-                                    Teslim Edilemedi
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                        )}
+                        {acknowledgedJobs.map((job) => renderJobCard(job, false))}
+                    </>
+                )}
             </div>
 
             {/* Navigation Modal */}
