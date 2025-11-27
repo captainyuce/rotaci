@@ -136,6 +136,11 @@ export default function DashboardLayout({ children }) {
                 <div className="relative z-10 h-full pointer-events-none">
                     {children}
                 </div>
+
+                {/* Branding Logo - Bottom Right */}
+                <div className="fixed bottom-6 right-6 z-50 pointer-events-none opacity-90">
+                    <img src="/logo.png" alt="Akalbatu Logo" className="h-12 w-auto drop-shadow-lg" />
+                </div>
             </div>
         </DashboardProvider>
     )

@@ -1,5 +1,10 @@
 -- Add vehicle_type column to vehicles table
-ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_type TEXT DEFAULT 'van';
+-- Run this in Supabase SQL Editor
 
--- Update existing records if any (optional, defaults to 'van' anyway for new ones but good for existing)
-UPDATE vehicles SET vehicle_type = 'van' WHERE vehicle_type IS NULL;
+ALTER TABLE vehicles 
+ADD COLUMN IF NOT EXISTS vehicle_type TEXT DEFAULT 'van';
+
+-- Verify the column was added
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'vehicles' AND column_name = 'vehicle_type';

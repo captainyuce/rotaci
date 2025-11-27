@@ -103,15 +103,20 @@ export default function DriverLayout({ children }) {
                         <Truck size={24} />
                         <h1 className="font-bold text-lg">Sürücü Paneli</h1>
                     </div>
-                    <button onClick={signOut} className="text-blue-100 hover:text-white">
-                        <LogOut size={20} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white/90 rounded px-2 py-1">
+                            <img src="/logo.png" alt="Logo" className="h-6 w-auto" />
+                        </div>
+                        <button onClick={signOut} className="text-blue-100 hover:text-white">
+                            <LogOut size={20} />
+                        </button>
+                    </div>
                 </div>
             </header>
 
             {/* Notification Status Indicator */}
             {isPushNotificationSupported() && (
-                <div className="fixed top-4 right-4 z-50">
+                <div className="fixed top-24 right-4 z-30">
                     {notificationsEnabled ? (
                         <div className="bg-green-500 text-white text-xs px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
                             <Bell size={14} />
