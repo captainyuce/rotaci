@@ -82,6 +82,7 @@ export default function DriverPage() {
 
         // Log the acknowledgment
         if (data && data[0]) {
+            console.log('Attempting to log acknowledgment...')
             const { logShipmentAction } = await import('@/lib/auditLog')
 
             // Get driver name
@@ -92,6 +93,7 @@ export default function DriverPage() {
                 .single()
 
             const driverName = driverData?.driver_name || 'Sürücü'
+            console.log('Driver name:', driverName)
 
             await logShipmentAction(
                 'acknowledged',
@@ -100,6 +102,7 @@ export default function DriverPage() {
                 user.id,
                 driverName
             )
+            console.log('Log created successfully')
         }
 
         fetchJobs()
@@ -113,6 +116,7 @@ export default function DriverPage() {
             .select()
 
         if (!error && data && data[0]) {
+            console.log('Attempting to log status change:', status)
             // Log the status change
             const { logShipmentAction } = await import('@/lib/auditLog')
 
@@ -124,6 +128,7 @@ export default function DriverPage() {
                 .single()
 
             const driverName = driverData?.driver_name || 'Sürücü'
+            console.log('Driver name:', driverName, 'Action:', status)
 
             await logShipmentAction(
                 status,
@@ -132,6 +137,7 @@ export default function DriverPage() {
                 user.id,
                 driverName
             )
+            console.log('Status log created successfully')
         }
 
         if (status === 'delivered') {
