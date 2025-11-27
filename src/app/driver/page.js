@@ -81,7 +81,7 @@ export default function DriverPage() {
         console.log('Job acknowledged successfully:', data)
 
         // Log the acknowledgment
-        if (data && data[0]) {
+        try {
             console.log('Attempting to log acknowledgment...')
             const { logShipmentAction } = await import('@/lib/auditLog')
 
@@ -93,16 +93,27 @@ export default function DriverPage() {
                 .single()
 
             const driverName = driverData?.driver_name || 'Sürücü'
-            console.log('Driver name:', driverName)
+            console.log('Driver name:', driverName, 'Shipment ID:', id)
+
+            // Fetch full shipment data
+            const { data: fullShipment } = await supabase
+                .from('shipments')
+                .select('*')
+                .eq('id', id)
+                .single()
+
+            console.log('Full shipment data:', fullShipment)
 
             await logShipmentAction(
                 'acknowledged',
                 id,
-                data[0],
+                fullShipment,
                 user.id,
                 driverName
             )
             console.log('Log created successfully')
+        } catch (err) {
+            console.error('Error logging acknowledgment:', err)
         }
 
         fetchJobs()
@@ -115,29 +126,41 @@ export default function DriverPage() {
             .eq('id', id)
             .select()
 
-        if (!error && data && data[0]) {
-            console.log('Attempting to log status change:', status)
-            // Log the status change
-            const { logShipmentAction } = await import('@/lib/auditLog')
+        if (!error) {
+            try {
+                console.log('Attempting to log status change:', status)
+                const { logShipmentAction } = await import('@/lib/auditLog')
 
-            // Get driver name
-            const { data: driverData } = await supabase
-                .from('vehicles')
-                .select('driver_name')
-                .eq('id', user.id)
-                .single()
+                // Get driver name
+                const { data: driverData } = await supabase
+                    .from('vehicles')
+                    .select('driver_name')
+                    .eq('id', user.id)
+                    .single()
 
-            const driverName = driverData?.driver_name || 'Sürücü'
-            console.log('Driver name:', driverName, 'Action:', status)
+                const driverName = driverData?.driver_name || 'Sürücü'
+                console.log('Driver name:', driverName, 'Action:', status, 'Shipment ID:', id)
 
-            await logShipmentAction(
-                status,
-                id,
-                data[0],
-                user.id,
-                driverName
-            )
-            console.log('Status log created successfully')
+                // Fetch full shipment data
+                const { data: fullShipment } = await supabase
+                    .from('shipments')
+                    .select('*')
+                    .eq('id', id)
+                    .single()
+
+                console.log('Full shipment data:', fullShipment)
+
+                await logShipmentAction(
+                    status,
+                    id,
+                    fullShipment,
+                    user.id,
+                    driverName
+                )
+                console.log('Status log created successfully')
+            } catch (err) {
+                console.error('Error logging status change:', err)
+            }
         }
 
         if (status === 'delivered') {
