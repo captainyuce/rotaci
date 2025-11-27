@@ -39,7 +39,10 @@ export function getActionLabel(action) {
     const labels = {
         created: 'Eklendi',
         updated: 'Düzenlendi',
-        deleted: 'Silindi'
+        deleted: 'Silindi',
+        acknowledged: 'Kabul Edildi',
+        delivered: 'Teslim Edildi',
+        failed: 'Teslim Edilemedi'
     }
     return labels[action] || action
 }
@@ -51,7 +54,10 @@ export function getActionColor(action) {
     const colors = {
         created: 'bg-green-50 text-green-800 border border-green-200',
         updated: 'bg-blue-50 text-blue-800 border border-blue-200',
-        deleted: 'bg-red-50 text-red-800 border border-red-200'
+        deleted: 'bg-red-50 text-red-800 border border-red-200',
+        acknowledged: 'bg-orange-50 text-orange-800 border border-orange-200',
+        delivered: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+        failed: 'bg-rose-50 text-rose-800 border border-rose-200'
     }
     return colors[action] || 'bg-slate-50 text-slate-800 border border-slate-200'
 }

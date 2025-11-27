@@ -79,14 +79,45 @@ export default function DriverPage() {
         }
 
         console.log('Job acknowledged successfully:', data)
+
+        // Log the acknowledgment
+        if (data && data[0]) {
+            const { logShipmentAction } = await import('@/lib/auditLog')
+            await logShipmentAction(
+                id,
+                'acknowledged',
+                user.id,
+                `Sürücü sevkiyatı kabul etti`,
+                data[0]
+            )
+        }
+
         fetchJobs()
     }
 
     const updateStatus = async (id, status) => {
-        await supabase
+        const { data, error } = await supabase
             .from('shipments')
             .update({ status })
             .eq('id', id)
+            .select()
+
+        if (!error && data && data[0]) {
+            // Log the status change
+            const { logShipmentAction } = await import('@/lib/auditLog')
+            const actionMessages = {
+                'delivered': 'Sürücü sevkiyatı teslim etti',
+                'failed': 'Sürücü sevkiyatı teslim edemedi olarak işaretledi'
+            }
+
+            await logShipmentAction(
+                id,
+                status,
+                user.id,
+                actionMessages[status] || `Sürücü durumu ${status} olarak güncelledi`,
+                data[0]
+            )
+        }
 
         if (status === 'delivered') {
             // Logic to decrease load would go here
@@ -210,8 +241,8 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('new')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors relative ${activeTab === 'new'
-                            ? 'bg-orange-600 text-white shadow-md'
-                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-orange-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
                     <div className="flex items-center justify-center gap-2">
@@ -227,8 +258,8 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('acknowledged')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'acknowledged'
-                            ? 'bg-blue-600 text-white shadow-md'
-                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
                     Aktif ({acknowledgedJobs.length})
@@ -236,8 +267,8 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('completed')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'completed'
-                            ? 'bg-green-600 text-white shadow-md'
-                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-green-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
                     Tamamlanan ({completedJobs.length})
