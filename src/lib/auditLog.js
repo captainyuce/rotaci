@@ -46,6 +46,7 @@ export function getActionLabel(action) {
         created: 'Eklendi',
         updated: 'Düzenlendi',
         deleted: 'Silindi',
+        assigned: 'Atandı',
         acknowledged: 'Kabul Edildi',
         delivered: 'Teslim Edildi',
         failed: 'Teslim Edilemedi'
@@ -61,6 +62,7 @@ export function getActionColor(action) {
         created: 'bg-green-50 text-green-800 border border-green-200',
         updated: 'bg-blue-50 text-blue-800 border border-blue-200',
         deleted: 'bg-red-50 text-red-800 border border-red-200',
+        assigned: 'bg-purple-50 text-purple-800 border border-purple-200',
         acknowledged: 'bg-orange-50 text-orange-800 border border-orange-200',
         delivered: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
         failed: 'bg-rose-50 text-rose-800 border border-rose-200'

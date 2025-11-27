@@ -7,6 +7,7 @@ import { PERMISSIONS } from '@/lib/permissions'
 import { Truck, Package, CheckCircle, Zap, Clock, MapPin } from 'lucide-react'
 import { formatDistance, formatDuration } from '@/lib/routeOptimizer'
 import { useDashboard } from '@/contexts/DashboardContext'
+import { logShipmentAction } from '@/lib/auditLog'
 
 export default function AssignmentsPage() {
     const { hasPermission } = useAuth()
@@ -70,10 +71,10 @@ export default function AssignmentsPage() {
     const handleAssign = async (shipmentId, vehicleId) => {
         const status = vehicleId ? 'assigned' : 'pending'
 
-        // Get shipment details for notification
+        // Get shipment details for notification and logging
         const { data: shipment } = await supabase
             .from('shipments')
-            .select('customer_name, delivery_address')
+            .select('*')
             .eq('id', shipmentId)
             .single()
 
@@ -81,6 +82,30 @@ export default function AssignmentsPage() {
             .from('shipments')
             .update({ assigned_vehicle_id: vehicleId || null, status })
             .eq('id', shipmentId)
+
+        // Log the assignment
+        if (vehicleId && shipment) {
+            const { data: vehicle } = await supabase
+                .from('vehicles')
+                .select('plate, driver_name')
+                .eq('id', vehicleId)
+                .single()
+
+            const { data: userData } = await supabase.auth.getUser()
+            const { data: userProfile } = await supabase
+                .from('users')
+                .select('full_name')
+                .eq('id', userData.user.id)
+                .single()
+
+            await logShipmentAction(
+                'assigned',
+                shipmentId,
+                { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
+                userData.user.id,
+                userProfile?.full_name || 'Yönetici'
+            )
+        }
 
         // Send push notification if assigning to a vehicle
         if (vehicleId && shipment) {
