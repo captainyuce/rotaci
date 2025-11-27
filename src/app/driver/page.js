@@ -65,11 +65,21 @@ export default function DriverPage() {
     }
 
     const acknowledgeJob = async (id) => {
-        await supabase
+        console.log('Acknowledging job:', id)
+
+        const { data, error } = await supabase
             .from('shipments')
             .update({ acknowledged_at: new Date().toISOString() })
             .eq('id', id)
+            .select()
 
+        if (error) {
+            console.error('Error acknowledging job:', error)
+            alert('Hata: ' + error.message + '\n\nLütfen Supabase SQL Editor\'de şu komutu çalıştırın:\nALTER TABLE shipments ADD COLUMN acknowledged_at TIMESTAMPTZ;')
+            return
+        }
+
+        console.log('Job acknowledged successfully:', data)
         fetchJobs()
     }
 
@@ -195,8 +205,8 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('new')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors relative ${activeTab === 'new'
-                            ? 'bg-orange-600 text-white shadow-md'
-                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-orange-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
                     <div className="flex items-center justify-center gap-2">
@@ -212,8 +222,8 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('acknowledged')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'acknowledged'
-                            ? 'bg-blue-600 text-white shadow-md'
-                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
                     Atanan İşler ({acknowledgedJobs.length})
