@@ -383,7 +383,9 @@ export default function ShipmentsPage() {
                                             disabled={!selectedCategory}
                                             onChange={(e) => {
                                                 const selectedAddress = addresses.find(a => a.id === e.target.value)
+                                                console.log('Selected Address:', selectedAddress)
                                                 if (selectedAddress) {
+                                                    console.log('Setting coordinates:', selectedAddress.lat, selectedAddress.lng)
                                                     setFormData({
                                                         ...formData,
                                                         customer_name: selectedAddress.name,
