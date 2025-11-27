@@ -83,12 +83,22 @@ export default function DriverPage() {
         // Log the acknowledgment
         if (data && data[0]) {
             const { logShipmentAction } = await import('@/lib/auditLog')
+
+            // Get driver name
+            const { data: driverData } = await supabase
+                .from('vehicles')
+                .select('driver_name')
+                .eq('id', user.id)
+                .single()
+
+            const driverName = driverData?.driver_name || 'Sürücü'
+
             await logShipmentAction(
-                id,
                 'acknowledged',
+                id,
+                data[0],
                 user.id,
-                `Sürücü sevkiyatı kabul etti`,
-                data[0]
+                driverName
             )
         }
 
@@ -105,17 +115,22 @@ export default function DriverPage() {
         if (!error && data && data[0]) {
             // Log the status change
             const { logShipmentAction } = await import('@/lib/auditLog')
-            const actionMessages = {
-                'delivered': 'Sürücü sevkiyatı teslim etti',
-                'failed': 'Sürücü sevkiyatı teslim edemedi olarak işaretledi'
-            }
+
+            // Get driver name
+            const { data: driverData } = await supabase
+                .from('vehicles')
+                .select('driver_name')
+                .eq('id', user.id)
+                .single()
+
+            const driverName = driverData?.driver_name || 'Sürücü'
 
             await logShipmentAction(
-                id,
                 status,
+                id,
+                data[0],
                 user.id,
-                actionMessages[status] || `Sürücü durumu ${status} olarak güncelledi`,
-                data[0]
+                driverName
             )
         }
 
