@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
+import { logShipmentAction } from '@/lib/auditLog'
 
 const NavigationMap = dynamic(() => import('@/components/NavigationMap'), { ssr: false })
 
@@ -83,7 +84,6 @@ export default function DriverPage() {
         // Log the acknowledgment
         try {
             console.log('Attempting to log acknowledgment...')
-            const { logShipmentAction } = await import('@/lib/auditLog')
 
             // Get driver name
             const { data: driverData } = await supabase
@@ -129,7 +129,6 @@ export default function DriverPage() {
         if (!error) {
             try {
                 console.log('Attempting to log status change:', status)
-                const { logShipmentAction } = await import('@/lib/auditLog')
 
                 // Get driver name
                 const { data: driverData } = await supabase
