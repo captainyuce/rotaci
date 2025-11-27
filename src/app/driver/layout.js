@@ -131,33 +131,7 @@ export default function DriverLayout({ children }) {
                 </div>
             )}
 
-            {/* Debug Panel - Visible on Screen */}
-            <div className="fixed bottom-4 left-4 right-4 z-50 bg-yellow-100 border-2 border-yellow-400 rounded-lg p-3 text-xs">
-                <div className="font-bold mb-2">🔧 Debug Bilgisi:</div>
-                <div className="space-y-1">
-                    <div>Service Worker: {debugInfo.serviceWorker ? '✅' : '❌'}</div>
-                    <div>Push Manager: {debugInfo.pushManager ? '✅' : '❌'}</div>
-                    <div>Notification API: {debugInfo.notification ? '✅' : '❌'}</div>
-                    <div>İzin Durumu: {debugInfo.permission}</div>
-                    <div>Chrome: {debugInfo.isChrome ? '✅' : '❌'}</div>
-                    <div>iOS: {debugInfo.isIOS ? '✅' : '❌'}</div>
-                </div>
-                <button
-                    onClick={async () => {
-                        try {
-                            console.log('Manual notification request started...')
-                            await enableNotifications()
-                            alert('Bildirim izni verildi ve kaydedildi!')
-                        } catch (e) {
-                            console.error('Notification error:', e)
-                            alert(`Hata: ${e.message}`)
-                        }
-                    }}
-                    className="mt-2 w-full bg-blue-600 text-white py-2 rounded font-bold"
-                >
-                    📢 Bildirim İzni İste
-                </button>
-            </div>
+
 
             {/* Notification Permission Prompt */}
             {showNotificationPrompt && (
