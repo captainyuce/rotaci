@@ -104,6 +104,14 @@ export default function DriverPage() {
 
             console.log('Full shipment data:', fullShipment)
 
+            console.log('Calling logShipmentAction with params:', {
+                action: 'acknowledged',
+                shipmentId: id,
+                shipmentData: fullShipment,
+                userId: user.id,
+                userName: driverName
+            })
+
             await logShipmentAction(
                 'acknowledged',
                 id,

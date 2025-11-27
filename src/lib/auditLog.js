@@ -10,6 +10,8 @@ import { supabase } from './supabaseClient'
  * @param {object} changes - Optional: Object containing before/after values for updates
  */
 export async function logShipmentAction(action, shipmentId, shipmentData, userId, userName, changes = null) {
+    console.log('logShipmentAction called with:', { action, shipmentId, shipmentData, userId, userName, changes })
+
     try {
         const logEntry = {
             shipment_id: shipmentId,
@@ -20,12 +22,16 @@ export async function logShipmentAction(action, shipmentId, shipmentData, userId
             changes: changes
         }
 
+        console.log('Inserting log entry:', logEntry)
+
         const { error } = await supabase
             .from('shipment_logs')
             .insert([logEntry])
 
         if (error) {
             console.error('Error logging shipment action:', error)
+        } else {
+            console.log('Log entry inserted successfully')
         }
     } catch (err) {
         console.error('Exception in logShipmentAction:', err)
