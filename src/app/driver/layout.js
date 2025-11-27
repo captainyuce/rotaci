@@ -114,62 +114,22 @@ export default function DriverLayout({ children }) {
                 </div>
             </header>
 
-            {/* Notification Status Indicator */}
-            {isPushNotificationSupported() && (
-                <div className="fixed top-24 right-4 z-30">
-                    {notificationsEnabled ? (
-                        <div className="bg-green-500 text-white text-xs px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
-                            <Bell size={14} />
-                            Bildirimler Aktif
-                        </div>
-                    ) : (
-                        <div className="bg-gray-400 text-white text-xs px-3 py-2 rounded-full shadow-lg flex items-center gap-2">
-                            <BellOff size={14} />
-                            Bildirimler Kapalı
-                        </div>
-                    )}
-                </div>
-            )}
-
-
-
-            {/* Notification Permission Prompt */}
-            {showNotificationPrompt && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl p-6 max-w-md shadow-2xl">
-                        <div className="text-center mb-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Bell size={32} className="text-blue-600" />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Bildirimleri Etkinleştir</h3>
-                            <p className="text-slate-600 text-sm">
-                                Yeni sevkiyatlar atandığında anında bildirim almak ister misiniz?
-                                Ekranınız kapalıyken bile bildirim alabilirsiniz.
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowNotificationPrompt(false)}
-                                className="flex-1 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors"
-                            >
-                                Şimdi Değil
-                            </button>
-                            <button
-                                onClick={enableNotifications}
-                                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                            >
-                                Etkinleştir
-                            </button>
-                        </div>
+            {/* Status Indicators Stack */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+                {/* Notification Indicator */}
+                {isPushNotificationSupported() && (
+                    <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors ${notificationsEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                            }`}
+                        title={notificationsEnabled ? 'Bildirimler Aktif' : 'Bildirimler Kapalı'}
+                    >
+                        {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
                     </div>
-                </div>
-            )}
+                )}
 
-            <main className="max-w-2xl mx-auto">
-                {children}
-            </main>
-
-            <LocationTracker />
+                {/* GPS Tracker */}
+                <LocationTracker />
+            </div>
         </div>
     )
 }
