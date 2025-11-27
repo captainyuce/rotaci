@@ -50,8 +50,7 @@ export default function DriverPage() {
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', user.id)
-            .neq('status', 'delivered')
-            .order('created_at', { ascending: true })
+            .order('created_at', { ascending: false })
 
         if (data) setJobs(data)
         setLoading(false)
@@ -98,10 +97,11 @@ export default function DriverPage() {
         setSelectedJob(job)
     }
 
-    const newJobs = jobs.filter(j => !j.acknowledged_at)
-    const acknowledgedJobs = jobs.filter(j => j.acknowledged_at)
+    const newJobs = jobs.filter(j => !j.acknowledged_at && j.status !== 'delivered')
+    const acknowledgedJobs = jobs.filter(j => j.acknowledged_at && j.status !== 'delivered')
+    const completedJobs = jobs.filter(j => j.status === 'delivered')
 
-    const renderJobCard = (job, showAcknowledgeButton = false) => (
+    const renderJobCard = (job, showAcknowledgeButton = false, isCompleted = false) => (
         <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
             <div className="p-4 border-b border-slate-100 flex justify-between items-start">
                 <div>
@@ -133,6 +133,11 @@ export default function DriverPage() {
                         <CheckCircle size={20} />
                         Kabul Ettim
                     </button>
+                ) : isCompleted ? (
+                    <div className="w-full flex items-center justify-center gap-2 bg-green-100 text-green-700 py-3 rounded-lg font-bold border-2 border-green-300">
+                        <CheckCircle size={20} />
+                        Teslim Edildi
+                    </div>
                 ) : (
                     <>
                         <div className="grid grid-cols-3 gap-2 pt-2">
@@ -205,13 +210,13 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('new')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors relative ${activeTab === 'new'
-                        ? 'bg-orange-600 text-white shadow-md'
-                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                            ? 'bg-orange-600 text-white shadow-md'
+                            : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
                     <div className="flex items-center justify-center gap-2">
                         <Bell size={18} />
-                        Yeni Atananlar
+                        Yeni
                         {newJobs.length > 0 && (
                             <span className="bg-white text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">
                                 {newJobs.length}
@@ -222,11 +227,20 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('acknowledged')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'acknowledged'
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
-                    Atanan İşler ({acknowledgedJobs.length})
+                    Aktif ({acknowledgedJobs.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('completed')}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'completed'
+                            ? 'bg-green-600 text-white shadow-md'
+                            : 'bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                >
+                    Tamamlanan ({completedJobs.length})
                 </button>
             </div>
 
@@ -239,7 +253,7 @@ export default function DriverPage() {
                                 <p>Yeni atanan iş bulunmuyor.</p>
                             </div>
                         )}
-                        {newJobs.map((job) => renderJobCard(job, true))}
+                        {newJobs.map((job) => renderJobCard(job, true, false))}
                     </>
                 )}
 
@@ -248,10 +262,22 @@ export default function DriverPage() {
                         {acknowledgedJobs.length === 0 && !loading && (
                             <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
                                 <Package size={48} className="mx-auto mb-4 opacity-50" />
-                                <p>Kabul edilmiş iş bulunmuyor.</p>
+                                <p>Aktif iş bulunmuyor.</p>
                             </div>
                         )}
-                        {acknowledgedJobs.map((job) => renderJobCard(job, false))}
+                        {acknowledgedJobs.map((job) => renderJobCard(job, false, false))}
+                    </>
+                )}
+
+                {activeTab === 'completed' && (
+                    <>
+                        {completedJobs.length === 0 && !loading && (
+                            <div className="bg-white p-8 rounded-xl text-center text-slate-400 shadow-sm">
+                                <CheckCircle size={48} className="mx-auto mb-4 opacity-50" />
+                                <p>Tamamlanmış iş bulunmuyor.</p>
+                            </div>
+                        )}
+                        {completedJobs.map((job) => renderJobCard(job, false, true))}
                     </>
                 )}
             </div>
