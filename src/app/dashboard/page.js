@@ -70,14 +70,14 @@ export default function DashboardPage() {
                                 key={vehicle.id}
                                 onClick={() => handleVehicleClick(vehicle)}
                                 className={`bg-white rounded-lg md:rounded-xl shadow-lg border p-3 md:p-4 min-w-[240px] md:min-w-[280px] hover:shadow-xl transition-all cursor-pointer ${selectedVehicle?.id === vehicle.id
-                                        ? 'border-blue-500 ring-2 ring-blue-200'
+                                        ? 'border-primary ring-2 ring-blue-200'
                                         : 'border-slate-200'
                                     }`}
                             >
                                 <div className="flex items-start justify-between mb-2 md:mb-3">
                                     <div className="flex items-center gap-2 md:gap-3">
-                                        <div className="p-1.5 md:p-2 bg-blue-50 rounded-lg">
-                                            <Truck size={18} className="text-blue-600 md:w-5 md:h-5" />
+                                        <div className="p-1.5 md:p-2 bg-zinc-50 rounded-lg">
+                                            <Truck size={18} className="text-primary md:w-5 md:h-5" />
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-slate-900 text-sm md:text-base">{vehicle.plate}</h3>
@@ -96,13 +96,13 @@ export default function DashboardPage() {
                                             <Package size={12} className="md:w-3.5 md:h-3.5" />
                                             Teslimat
                                         </span>
-                                        <span className="font-bold text-blue-600">
+                                        <span className="font-bold text-primary">
                                             {vehicle.stats?.delivered}/{vehicle.stats?.total}
                                         </span>
                                     </div>
                                     <div className="w-full bg-slate-100 rounded-full h-1.5 md:h-2 overflow-hidden">
                                         <div
-                                            className="bg-blue-600 h-1.5 md:h-2 rounded-full transition-all duration-500"
+                                            className="bg-primary h-1.5 md:h-2 rounded-full transition-all duration-500"
                                             style={{ width: `${vehicle.stats?.total ? (vehicle.stats.delivered / vehicle.stats.total) * 100 : 0}%` }}
                                         ></div>
                                     </div>

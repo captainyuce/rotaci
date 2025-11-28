@@ -88,7 +88,7 @@ export default function DashboardLayout({ children }) {
                         <div className="p-4 md:p-6 border-b border-slate-200">
                             <h2 className="text-lg md:text-xl font-bold text-slate-900">Rota Optimizasyon</h2>
                             <p className="text-xs md:text-sm text-slate-500">Yönetim Paneli</p>
-                            <p className="text-xs md:text-sm text-blue-600 font-medium mt-1">{user?.full_name || user?.username}</p>
+                            <p className="text-xs md:text-sm text-primary font-medium mt-1">{user?.full_name || user?.username}</p>
                         </div>
 
                         <nav className="p-3 md:p-4 space-y-2 flex-1 overflow-y-auto">
@@ -109,7 +109,7 @@ export default function DashboardLayout({ children }) {
                                         href={item.href}
                                         onClick={() => setMenuOpen(false)}
                                         className={`flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all ${isActive
-                                            ? 'bg-blue-600 text-white shadow-md'
+                                            ? 'bg-primary text-white shadow-md'
                                             : 'text-slate-900 hover:bg-slate-100'
                                             }`}
                                     >

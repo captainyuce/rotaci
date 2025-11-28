@@ -157,7 +157,7 @@ export default function AddressesPage() {
                         </div>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
+                            className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
                         >
                             <Plus size={16} />
                             Yeni Adres
@@ -210,7 +210,7 @@ export default function AddressesPage() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleOpenModal(addr)}
-                                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        className="p-2 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
                                     >
                                         <Edit size={16} />
                                     </button>
@@ -231,7 +231,7 @@ export default function AddressesPage() {
                             <p>Bu kategoride henüz adres yok</p>
                             <button
                                 onClick={() => handleOpenModal()}
-                                className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                className="mt-4 text-primary hover:text-zinc-700 text-sm font-medium"
                             >
                                 İlk adresi ekle
                             </button>
@@ -332,7 +332,7 @@ export default function AddressesPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-zinc-700 text-sm font-medium"
                                 >
                                     Kaydet
                                 </button>

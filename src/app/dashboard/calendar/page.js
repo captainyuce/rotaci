@@ -73,7 +73,7 @@ export default function CalendarPage() {
         <div className="p-4 md:p-8 h-full overflow-y-auto pointer-events-auto">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <CalendarIcon className="text-blue-600" />
+                    <CalendarIcon className="text-primary" />
                     Sevkiyat Takvimi
                 </h1>
                 <div className="flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
@@ -109,22 +109,22 @@ export default function CalendarPage() {
                             <div
                                 key={index}
                                 className={`min-h-[120px] p-2 border-b border-r border-slate-100 relative group transition-colors
-                                    ${!date ? 'bg-slate-50/50' : 'hover:bg-blue-50/30 cursor-pointer bg-white'}
-                                    ${isToday ? 'bg-blue-50/50' : ''}
+                                    ${!date ? 'bg-slate-50/50' : 'hover:bg-zinc-50/30 cursor-pointer bg-white'}
+                                    ${isToday ? 'bg-zinc-50/50' : ''}
                                 `}
                                 onClick={() => date && setSelectedDay({ date, shipments: dayShipments })}
                             >
                                 {date && (
                                     <>
                                         <span className={`text-sm font-medium inline-flex items-center justify-center w-7 h-7 rounded-full mb-1
-                                            ${isToday ? 'bg-blue-600 text-white' : 'text-slate-700'}
+                                            ${isToday ? 'bg-primary text-white' : 'text-slate-700'}
                                         `}>
                                             {date.getDate()}
                                         </span>
 
                                         <div className="space-y-1 mt-1">
                                             {dayShipments.slice(0, 3).map(s => (
-                                                <div key={s.id} className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded truncate border border-blue-200">
+                                                <div key={s.id} className="text-xs px-1.5 py-0.5 bg-zinc-100 text-zinc-700 rounded truncate border border-zinc-200">
                                                     {s.customer_name}
                                                 </div>
                                             ))}
@@ -172,7 +172,7 @@ export default function CalendarPage() {
                                         </div>
                                         <p className="text-sm text-slate-600 truncate">{s.delivery_address}</p>
                                         <div className="mt-2 flex gap-2 text-xs">
-                                            <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                                            <span className="bg-zinc-50 text-zinc-700 px-2 py-0.5 rounded border border-blue-100">
                                                 {s.weight} kg
                                             </span>
                                             {s.status === 'pending' && (

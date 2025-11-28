@@ -283,8 +283,8 @@ export default function AssignmentsPage() {
 
             {/* Bulk Assignment Bar */}
             {selectedShipments.length > 0 && (
-                <div className="p-3 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-900">
+                <div className="p-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
+                    <span className="text-sm font-medium text-zinc-900">
                         {selectedShipments.length} sevkiyat seçildi
                     </span>
                     <div className="flex gap-2">
@@ -292,7 +292,7 @@ export default function AssignmentsPage() {
                             <button
                                 key={vehicle.id}
                                 onClick={() => handleBulkAssign(vehicle.id)}
-                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+                                className="px-3 py-1.5 bg-primary hover:bg-zinc-700 text-white rounded-lg text-xs font-medium transition-colors"
                             >
                                 {vehicle.plate}'e Ata
                             </button>
@@ -318,7 +318,7 @@ export default function AssignmentsPage() {
                         {pendingShipments.map(shipment => (
                             <div
                                 key={shipment.id}
-                                className={`bg-white border rounded-lg p-3 hover:shadow-md transition-shadow ${selectedShipments.includes(shipment.id) ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
+                                className={`bg-white border rounded-lg p-3 hover:shadow-md transition-shadow ${selectedShipments.includes(shipment.id) ? 'border-primary bg-zinc-50' : 'border-slate-200'
                                     }`}
                             >
                                 <div className="flex items-start justify-between">
@@ -379,7 +379,7 @@ export default function AssignmentsPage() {
                                 {/* Vehicle Header */}
                                 <div className="bg-slate-100 p-3 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <Truck size={16} className="text-blue-600" />
+                                        <Truck size={16} className="text-primary" />
                                         <span className="font-bold text-slate-900">{vehicle.plate}</span>
                                         <span className="text-xs text-slate-600">({vehicleShipments.length} sevkiyat)</span>
                                     </div>
@@ -393,16 +393,16 @@ export default function AssignmentsPage() {
 
                                 {/* Optimization Summary */}
                                 {optimizedRoute && (
-                                    <div className="bg-blue-50 border-b border-blue-100 p-2 flex items-center gap-4 text-xs">
-                                        <span className="flex items-center gap-1 text-blue-900">
+                                    <div className="bg-zinc-50 border-b border-blue-100 p-2 flex items-center gap-4 text-xs">
+                                        <span className="flex items-center gap-1 text-zinc-900">
                                             <MapPin size={12} />
                                             <strong>{formatDistance(optimizedRoute.totalDistance)}</strong>
                                         </span>
-                                        <span className="flex items-center gap-1 text-blue-900">
+                                        <span className="flex items-center gap-1 text-zinc-900">
                                             <Clock size={12} />
                                             <strong>{formatDuration(optimizedRoute.totalDuration)}</strong>
                                         </span>
-                                        <span className="text-blue-700">✨ Optimize edilmiş rota</span>
+                                        <span className="text-zinc-700">✨ Optimize edilmiş rota</span>
                                     </div>
                                 )}
 
@@ -416,7 +416,7 @@ export default function AssignmentsPage() {
                                                 <div className="flex items-start gap-3">
                                                     {/* Route Order Badge */}
                                                     <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${optimizedRoute
-                                                        ? 'bg-blue-600 text-white'
+                                                        ? 'bg-primary text-white'
                                                         : 'bg-slate-300 text-slate-600'
                                                         }`}>
                                                         {routeOrder}
@@ -433,7 +433,7 @@ export default function AssignmentsPage() {
                                                                 <span className="text-slate-600">🕐 {shipment.delivery_time}</span>
                                                             )}
                                                             {shipment.eta && (
-                                                                <span className="text-blue-700 font-medium">
+                                                                <span className="text-zinc-700 font-medium">
                                                                     ETA: {new Date(shipment.eta).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                                                                 </span>
                                                             )}

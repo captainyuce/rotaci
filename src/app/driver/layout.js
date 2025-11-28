@@ -97,7 +97,7 @@ export default function DriverLayout({ children }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
             {/* Mobile Header */}
-            <header className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 rounded-xl mb-4">
+            <header className="bg-primary text-white p-4 shadow-md sticky top-0 z-40 rounded-xl mb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Truck size={24} />
@@ -119,8 +119,8 @@ export default function DriverLayout({ children }) {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 max-w-md shadow-2xl">
                         <div className="text-center mb-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Bell size={32} className="text-blue-600" />
+                            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Bell size={32} className="text-primary" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 mb-2">Bildirimleri Etkinleştir</h3>
                             <p className="text-slate-600 text-sm">
@@ -137,7 +137,7 @@ export default function DriverLayout({ children }) {
                             </button>
                             <button
                                 onClick={enableNotifications}
-                                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                                className="flex-1 px-4 py-3 bg-primary hover:bg-zinc-700 text-white rounded-lg font-medium transition-colors"
                             >
                                 Etkinleştir
                             </button>

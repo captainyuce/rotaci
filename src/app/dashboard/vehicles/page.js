@@ -120,7 +120,7 @@ export default function VehiclesPage() {
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
+                    className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
                 >
                     <Plus size={16} />
                     Yeni
@@ -140,7 +140,7 @@ export default function VehiclesPage() {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handleOpenModal(vehicle)}
-                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
                                 title="Düzenle"
                             >
                                 <Edit size={16} />
@@ -253,7 +253,7 @@ export default function VehiclesPage() {
                             </div>
                             <button
                                 type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
+                                className="w-full bg-primary hover:bg-zinc-700 text-white py-2 rounded-lg font-medium transition-colors"
                             >
                                 {editingVehicle ? 'Güncelle' : 'Ekle'}
                             </button>

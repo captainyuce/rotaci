@@ -190,7 +190,7 @@ export default function DriverPage() {
                     <h3 className="font-bold text-lg text-slate-800">{job.customer_name}</h3>
                     <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
                 </div>
-                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                <span className="bg-zinc-100 text-zinc-700 text-xs font-bold px-2 py-1 rounded-full">
                     {job.weight} kg
                 </span>
             </div>
@@ -229,7 +229,7 @@ export default function DriverPage() {
                             />
                             <button
                                 onClick={() => showNavigation(job)}
-                                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
+                                className="flex items-center justify-center gap-2 bg-primary hover:bg-zinc-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
                             >
                                 <Navigation size={16} />
                                 Yol Tarifi
@@ -280,7 +280,7 @@ export default function DriverPage() {
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                        className="p-2 bg-primary hover:bg-zinc-700 text-white rounded-lg transition-colors disabled:opacity-50"
                     >
                         <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                     </button>
@@ -309,7 +309,7 @@ export default function DriverPage() {
                 <button
                     onClick={() => setActiveTab('acknowledged')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'acknowledged'
-                        ? 'bg-blue-600 text-white shadow-md'
+                        ? 'bg-primary text-white shadow-md'
                         : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
@@ -397,7 +397,7 @@ export default function DriverPage() {
                             </button>
                             <button
                                 onClick={() => setSelectedJob(null)}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors"
+                                className="flex-1 bg-primary hover:bg-zinc-700 text-white py-3 rounded-lg font-medium transition-colors"
                             >
                                 Kapat
                             </button>

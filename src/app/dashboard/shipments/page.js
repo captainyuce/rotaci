@@ -202,7 +202,7 @@ export default function ShipmentsPage() {
             <td className="p-3 text-slate-700">{shipment.weight} kg</td>
             <td className="p-3">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    shipment.status === 'assigned' ? 'bg-blue-100 text-blue-700' :
+                    shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
                         'bg-amber-100 text-amber-700'
                     }`}>
                     {shipment.status === 'delivered' ? 'Teslim Edildi' :
@@ -218,7 +218,7 @@ export default function ShipmentsPage() {
                     />
                     <button
                         onClick={() => handleOpenModal(shipment)}
-                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
                     >
                         <Edit size={16} />
                     </button>
@@ -245,7 +245,7 @@ export default function ShipmentsPage() {
                     {hasPermission(PERMISSIONS.CREATE_SHIPMENTS) && (
                         <button
                             onClick={() => handleOpenModal()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
+                            className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
                         >
                             <Plus size={16} />
                             Yeni
@@ -257,8 +257,8 @@ export default function ShipmentsPage() {
                     {/* Today's Shipments */}
                     {todayShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-blue-50 px-4 py-2 border-b border-blue-100 z-10">
-                                <h3 className="font-bold text-blue-900 text-sm">Bugün ({todayShipments.length})</h3>
+                            <div className="sticky top-0 bg-zinc-50 px-4 py-2 border-b border-blue-100 z-10">
+                                <h3 className="font-bold text-zinc-900 text-sm">Bugün ({todayShipments.length})</h3>
                             </div>
                             <table className="w-full">
                                 <thead className="bg-slate-50">
@@ -360,13 +360,13 @@ export default function ShipmentsPage() {
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Address Selector */}
-                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                                <p className="text-xs font-medium text-blue-900 mb-2">📍 Kayıtlı Adres Seç (Opsiyonel)</p>
+                            <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200">
+                                <p className="text-xs font-medium text-zinc-900 mb-2">📍 Kayıtlı Adres Seç (Opsiyonel)</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <label className="block text-xs font-medium text-blue-800 mb-1">1. Kategori</label>
                                         <select
-                                            className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white text-slate-900"
+                                            className="w-full p-2 border border-zinc-200 rounded-lg text-sm bg-white text-slate-900"
                                             value={selectedCategory}
                                             onChange={(e) => setSelectedCategory(e.target.value)}
                                         >
@@ -379,7 +379,7 @@ export default function ShipmentsPage() {
                                     <div>
                                         <label className="block text-xs font-medium text-blue-800 mb-1">2. Adres</label>
                                         <select
-                                            className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white text-slate-900"
+                                            className="w-full p-2 border border-zinc-200 rounded-lg text-sm bg-white text-slate-900"
                                             disabled={!selectedCategory}
                                             onChange={(e) => {
                                                 const selectedAddress = addresses.find(a => a.id === e.target.value)
@@ -513,7 +513,7 @@ export default function ShipmentsPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-zinc-700 text-sm font-medium"
                                 >
                                     Kaydet
                                 </button>

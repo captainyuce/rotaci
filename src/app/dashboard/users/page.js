@@ -93,7 +93,7 @@ export default function UsersPage() {
                         setFormData({ username: '', password: '', full_name: '', role: 'admin', permissions: [] })
                         setShowModal(true)
                     }}
-                    className="btn btn-primary flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    className="btn btn-primary flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-zinc-700"
                 >
                     <Plus size={20} /> Yeni Kullanıcı
                 </button>
@@ -119,7 +119,7 @@ export default function UsersPage() {
                                     <td className="p-4 text-slate-600">{user.username}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold capitalize
-                                            ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}
+                                            ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-zinc-100 text-zinc-700'}
                                         `}>
                                             {user.role}
                                         </span>
@@ -149,7 +149,7 @@ export default function UsersPage() {
                                                 setEditId(user.id)
                                                 setShowModal(true)
                                             }}
-                                            className="text-blue-600 hover:text-blue-800 p-1"
+                                            className="text-primary hover:text-zinc-800 p-1"
                                         >
                                             <Edit size={18} />
                                         </button>
@@ -204,7 +204,7 @@ export default function UsersPage() {
                                                 type="checkbox"
                                                 checked={(formData.permissions || []).includes(perm)}
                                                 onChange={() => togglePermission(perm)}
-                                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                                                className="w-4 h-4 text-primary rounded focus:ring-2 focus:ring-primary"
                                             />
                                             <span className="text-sm text-slate-700">{label}</span>
                                         </label>
@@ -215,7 +215,7 @@ export default function UsersPage() {
                                 </p>
                             </div>
 
-                            <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
+                            <button type="submit" className="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-zinc-700">
                                 Kaydet
                             </button>
                         </form>

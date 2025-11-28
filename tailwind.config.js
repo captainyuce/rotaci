@@ -9,8 +9,8 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                primary: '#2563eb',
-                secondary: '#64748b',
+                primary: '#52525b', // zinc-600 - balanced gray
+                secondary: '#71717a', // zinc-500
             },
         },
     },

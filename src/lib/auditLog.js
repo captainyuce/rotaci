@@ -60,7 +60,7 @@ export function getActionLabel(action) {
 export function getActionColor(action) {
     const colors = {
         created: 'bg-green-50 text-green-800 border border-green-200',
-        updated: 'bg-blue-50 text-blue-800 border border-blue-200',
+        updated: 'bg-zinc-50 text-zinc-800 border border-zinc-200',
         deleted: 'bg-red-50 text-red-800 border border-red-200',
         assigned: 'bg-purple-50 text-purple-800 border border-purple-200',
         acknowledged: 'bg-orange-50 text-orange-800 border border-orange-200',

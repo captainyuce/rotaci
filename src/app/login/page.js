@@ -74,11 +74,11 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-50 to-slate-100 p-4">
             <div className="w-full max-w-md">
                 <div className="text-center mb-8 flex flex-col items-center">
-                    <div className="w-48 h-auto mb-4">
-                        <img src="/rotaci-logo.png" alt="Rotacı Logo" className="w-full h-auto object-contain" />
+                    <div className="w-64 h-auto mb-4">
+                        <img src="/akalbatu-logo-new.png" alt="Akalbatu Logo" className="w-full h-auto object-contain" />
                     </div>
                     <p className="text-slate-600">Rota Optimizasyon Sistemi</p>
                 </div>
@@ -89,7 +89,7 @@ export default function LoginPage() {
                         <button
                             onClick={() => setLoginMode('manager')}
                             className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${loginMode === 'manager'
-                                ? 'bg-blue-600 text-white shadow-md'
+                                ? 'bg-primary text-white shadow-md'
                                 : 'text-slate-700 hover:text-slate-900'
                                 }`}
                         >
@@ -98,7 +98,7 @@ export default function LoginPage() {
                         <button
                             onClick={() => setLoginMode('driver')}
                             className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${loginMode === 'driver'
-                                ? 'bg-blue-600 text-white shadow-md'
+                                ? 'bg-primary text-white shadow-md'
                                 : 'text-slate-700 hover:text-slate-900'
                                 }`}
                         >
@@ -121,7 +121,7 @@ export default function LoginPage() {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
                                 placeholder={loginMode === 'manager' ? 'admin' : '34 ABC 123'}
                                 required
                             />
@@ -135,7 +135,7 @@ export default function LoginPage() {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 placeholder:text-slate-400"
+                                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
                                 placeholder="••••••"
                                 required
                             />
@@ -143,7 +143,7 @@ export default function LoginPage() {
 
                         <button
                             type="submit"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+                            className="w-full bg-primary hover:bg-zinc-700 text-white font-medium py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
                         >
                             Giriş Yap
                         </button>
