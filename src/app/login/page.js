@@ -76,8 +76,10 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 p-4">
             <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Akalbatu Lojistik</h1>
+                <div className="text-center mb-8 flex flex-col items-center">
+                    <div className="w-48 h-auto mb-4">
+                        <img src="/rotaci-logo.png" alt="Rotacı Logo" className="w-full h-auto object-contain" />
+                    </div>
                     <p className="text-slate-600">Rota Optimizasyon Sistemi</p>
                 </div>
 
@@ -149,7 +151,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="text-center text-sm text-slate-500 mt-6">
-                    © 2024 Akalbatu Lojistik
+                    Created by Yuce
                 </p>
             </div>
         </div>
