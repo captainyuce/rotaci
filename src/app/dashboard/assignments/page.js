@@ -93,19 +93,14 @@ export default function AssignmentsPage() {
                     .eq('id', vehicleId)
                     .single()
 
-                const { data: userData } = await supabase.auth.getUser()
-                const { data: userProfile } = await supabase
-                    .from('users')
-                    .select('full_name')
-                    .eq('id', userData.user.id)
-                    .single()
-
+                // Use user from AuthProvider instead of supabase.auth.getUser()
+                // because we are using custom auth
                 await logShipmentAction(
                     'assigned',
                     shipmentId,
                     { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
-                    userData.user.id,
-                    userProfile?.full_name || 'Yönetici'
+                    user?.id,
+                    user?.full_name || 'Yönetici'
                 )
                 console.log('Assignment logged successfully')
             } catch (err) {
@@ -156,13 +151,6 @@ export default function AssignmentsPage() {
         if (shipments && shipments.length > 0) {
             // Log bulk assignment
             try {
-                const { data: userData } = await supabase.auth.getUser()
-                const { data: userProfile } = await supabase
-                    .from('users')
-                    .select('full_name')
-                    .eq('id', userData.user.id)
-                    .single()
-
                 const { data: vehicle } = await supabase
                     .from('vehicles')
                     .select('plate, driver_name')
@@ -176,8 +164,8 @@ export default function AssignmentsPage() {
                         'assigned',
                         shipment.id,
                         { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
-                        userData.user.id,
-                        userProfile?.full_name || 'Yönetici'
+                        user?.id,
+                        user?.full_name || 'Yönetici'
                     )
                 }
             } catch (err) {
