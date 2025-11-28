@@ -85,26 +85,32 @@ export default function AssignmentsPage() {
 
         // Log the assignment
         if (vehicleId && shipment) {
-            const { data: vehicle } = await supabase
-                .from('vehicles')
-                .select('plate, driver_name')
-                .eq('id', vehicleId)
-                .single()
+            console.log('Attempting to log assignment for shipment:', shipmentId)
+            try {
+                const { data: vehicle } = await supabase
+                    .from('vehicles')
+                    .select('plate, driver_name')
+                    .eq('id', vehicleId)
+                    .single()
 
-            const { data: userData } = await supabase.auth.getUser()
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('full_name')
-                .eq('id', userData.user.id)
-                .single()
+                const { data: userData } = await supabase.auth.getUser()
+                const { data: userProfile } = await supabase
+                    .from('users')
+                    .select('full_name')
+                    .eq('id', userData.user.id)
+                    .single()
 
-            await logShipmentAction(
-                'assigned',
-                shipmentId,
-                { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
-                userData.user.id,
-                userProfile?.full_name || 'Yönetici'
-            )
+                await logShipmentAction(
+                    'assigned',
+                    shipmentId,
+                    { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
+                    userData.user.id,
+                    userProfile?.full_name || 'Yönetici'
+                )
+                console.log('Assignment logged successfully')
+            } catch (err) {
+                console.error('Error logging assignment:', err)
+            }
         }
 
         // Send push notification if assigning to a vehicle
@@ -148,6 +154,36 @@ export default function AssignmentsPage() {
 
         // Send push notification for bulk assignment
         if (shipments && shipments.length > 0) {
+            // Log bulk assignment
+            try {
+                const { data: userData } = await supabase.auth.getUser()
+                const { data: userProfile } = await supabase
+                    .from('users')
+                    .select('full_name')
+                    .eq('id', userData.user.id)
+                    .single()
+
+                const { data: vehicle } = await supabase
+                    .from('vehicles')
+                    .select('plate, driver_name')
+                    .eq('id', vehicleId)
+                    .single()
+
+                // Log each assignment
+                for (const shipment of shipments) {
+                    console.log('Logging bulk assignment for shipment:', shipment.id)
+                    await logShipmentAction(
+                        'assigned',
+                        shipment.id,
+                        { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
+                        userData.user.id,
+                        userProfile?.full_name || 'Yönetici'
+                    )
+                }
+            } catch (err) {
+                console.error('Error logging bulk assignment:', err)
+            }
+
             try {
                 const shipmentList = shipments.map(s => s.customer_name).join(', ')
                 await fetch('/api/send-notification', {

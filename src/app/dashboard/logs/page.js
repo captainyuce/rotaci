@@ -96,6 +96,10 @@ export default function LogsPage() {
                             <option value="created">Eklenenler</option>
                             <option value="updated">Düzenlenenler</option>
                             <option value="deleted">Silinenler</option>
+                            <option value="assigned">Atananlar</option>
+                            <option value="acknowledged">Kabul Edilenler</option>
+                            <option value="delivered">Teslim Edilenler</option>
+                            <option value="failed">Teslim Edilemeyenler</option>
                         </select>
                     </div>
                 </div>
@@ -125,14 +129,7 @@ export default function LogsPage() {
                             <div key={log.id} className="p-4 hover:bg-slate-50 transition-colors">
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex items-center gap-2">
-                                        <span
-                                            className="px-2 py-1 rounded-full text-xs font-medium border"
-                                            style={{
-                                                backgroundColor: log.action === 'created' ? '#f0fdf4' : log.action === 'updated' ? '#eff6ff' : log.action === 'deleted' ? '#fef2f2' : '#f8fafc',
-                                                color: log.action === 'created' ? '#15803d' : log.action === 'updated' ? '#1d4ed8' : log.action === 'deleted' ? '#b91c1c' : '#334155',
-                                                borderColor: log.action === 'created' ? '#bbf7d0' : log.action === 'updated' ? '#bfdbfe' : log.action === 'deleted' ? '#fecaca' : '#e2e8f0'
-                                            }}
-                                        >
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getActionColor(log.action)}`}>
                                             {getActionLabel(log.action)}
                                         </span>
                                         <div className="flex items-center gap-1 text-xs text-slate-600">
