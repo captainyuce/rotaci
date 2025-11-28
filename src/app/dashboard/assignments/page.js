@@ -10,7 +10,7 @@ import { useDashboard } from '@/contexts/DashboardContext'
 import { logShipmentAction } from '@/lib/auditLog'
 
 export default function AssignmentsPage() {
-    const { hasPermission } = useAuth()
+    const { hasPermission, user } = useAuth()
     const { optimizedRoutes, setOptimizedRoutes } = useDashboard()
     const [shipments, setShipments] = useState([])
     const [vehicles, setVehicles] = useState([])
