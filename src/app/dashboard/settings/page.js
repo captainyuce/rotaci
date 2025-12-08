@@ -13,7 +13,8 @@ export default function SettingsPage() {
     const [baseAddress, setBaseAddress] = useState({
         address: '',
         lat: '',
-        lng: ''
+        lng: '',
+        returnToDepot: true // Default to true
     })
 
     useEffect(() => {
@@ -31,7 +32,8 @@ export default function SettingsPage() {
         if (data && data.value) {
             try {
                 const parsed = JSON.parse(data.value)
-                setBaseAddress(parsed)
+                // Merge with default to ensure returnToDepot exists if not in DB
+                setBaseAddress({ returnToDepot: true, ...parsed })
             } catch (e) {
                 console.error('Error parsing settings:', e)
             }
@@ -133,6 +135,28 @@ export default function SettingsPage() {
                             <div className="text-xs text-slate-500 flex items-center gap-1">
                                 <MapPin size={12} />
                                 Bu koordinatlar rota optimizasyonu için başlangıç noktası olarak kullanılacaktır.
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={baseAddress.returnToDepot}
+                                            onChange={e => setBaseAddress({ ...baseAddress, returnToDepot: e.target.checked })}
+                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-primary checked:bg-primary hover:border-primary"
+                                        />
+                                        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Rotayı Depoda Bitir</span>
+                                        <span className="text-xs text-slate-500">Araç tüm teslimatları tamamladıktan sonra depoya dönüş rotası oluşturulur.</span>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>

@@ -61,13 +61,26 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Shipments not found' }, { status: 404 })
         }
 
+        let endLocation = null
+        if (settings?.value) {
+            try {
+                const parsed = JSON.parse(settings.value)
+                if (parsed.returnToDepot && parsed.lat && parsed.lng) {
+                    endLocation = { lat: parsed.lat, lng: parsed.lng }
+                }
+            } catch (e) {
+                console.error('Error parsing settings for end location:', e)
+            }
+        }
+
         // Optimize route
         const result = await optimizeRoute(
             startLocation,
             shipments,
             {
                 departureTime,
-                bridgePreference: vehicle.bridge_preference || 'any'
+                bridgePreference: vehicle.bridge_preference || 'any',
+                endLocation
             }
         )
 

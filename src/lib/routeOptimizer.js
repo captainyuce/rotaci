@@ -111,6 +111,11 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
             ...validShipments.map(s => [s.delivery_lng, s.delivery_lat])
         ]
 
+        // Add end location if provided (return to depot)
+        if (options.endLocation) {
+            coordinates.push([options.endLocation.lng, options.endLocation.lat])
+        }
+
         // Add bridge waypoint if needed and preference is set
         const bridgeWaypoint = getBridgeWaypoint(options.bridgePreference)
         console.log('Bridge preference:', options.bridgePreference, 'Waypoint:', bridgeWaypoint)
@@ -118,11 +123,11 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
         let bridgeWaypointsAdded = 0
         if (bridgeWaypoint) {
             // Check if any shipment crosses Bosphorus
+            // Also check if return trip crosses Bosphorus
             const crossesBridge = validShipments.some(s => {
                 const crosses = crossesBosphorus(vehicleLocation, { lat: s.delivery_lat, lng: s.delivery_lng })
-                console.log(`Checking ${s.customer_name}: crosses Bosphorus?`, crosses)
                 return crosses
-            })
+            }) || (options.endLocation && crossesBosphorus(validShipments[validShipments.length - 1], options.endLocation))
 
             console.log('Any shipment crosses Bosphorus?', crossesBridge)
 
