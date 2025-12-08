@@ -226,57 +226,72 @@ export default function ShipmentsPage() {
 
     const { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments } = groupShipmentsByDate()
 
-    const renderShipmentRow = (shipment) => (
-        <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group text-sm">
-            <td className="p-3">
-                <div className="font-medium text-slate-900">{shipment.customer_name}</div>
-                <div className="text-xs text-slate-500">{shipment.delivery_time}</div>
-            </td>
-            <td className="p-3 max-w-xs truncate text-slate-600">{shipment.delivery_address}</td>
-            <td className="p-3 text-slate-700">{shipment.weight} kg</td>
-            <td className="p-3">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
-                        shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                            'bg-amber-100 text-amber-700'
-                    }`}>
-                    {shipment.status === 'delivered' ? 'Teslim Edildi' :
-                        shipment.status === 'assigned' ? 'Yolda' :
-                            shipment.status === 'failed' ? 'Teslim Edilemedi' :
-                                'Bekliyor'}
-                </span>
-            </td>
-            <td className="p-3 text-right">
-                <div className="flex items-center justify-end gap-2">
-                    {shipment.status === 'failed' && (
-                        <button
-                            onClick={() => handleReassign(shipment.id)}
-                            className="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-zinc-700 transition-colors mr-2"
-                            title="Tekrar Atamaya Gönder"
-                        >
-                            Tekrar Ata
-                        </button>
+    const renderShipmentRow = (shipment) => {
+        const assignedVehicle = vehicles.find(v => v.id === shipment.assigned_vehicle_id)
+
+        return (
+            <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group text-sm">
+                <td className="p-3">
+                    <div className="font-medium text-slate-900">{shipment.customer_name}</div>
+                    <div className="text-xs text-slate-500">{shipment.delivery_time}</div>
+                </td>
+                <td className="p-3 max-w-xs truncate text-slate-600">{shipment.delivery_address}</td>
+                <td className="p-3 text-slate-700">{shipment.weight} kg</td>
+                <td className="p-3">
+                    {assignedVehicle ? (
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                            <Truck size={14} className="text-primary" />
+                            <span className="font-medium text-xs">{assignedVehicle.plate}</span>
+                        </div>
+                    ) : (
+                        <span className="text-slate-400 text-xs">-</span>
                     )}
-                    <ChatButton
-                        shipmentId={shipment.id}
-                        shipmentName={shipment.customer_name}
-                    />
-                    <button
-                        onClick={() => handleOpenModal(shipment)}
-                        className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
-                    >
-                        <Edit size={16} />
-                    </button>
-                    <button
-                        onClick={() => handleDelete(shipment.id)}
-                        className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                        <Trash2 size={16} />
-                    </button>
-                </div>
-            </td>
-        </tr>
-    )
+                </td>
+                <td className="p-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                        shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
+                            shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                'bg-amber-100 text-amber-700'
+                        }`}>
+                        {shipment.status === 'delivered' ? 'Teslim Edildi' :
+                            shipment.status === 'assigned' ? 'Yolda' :
+                                shipment.status === 'failed' ? 'Teslim Edilemedi' :
+                                    'Bekliyor'}
+                    </span>
+                </td>
+                <td className="p-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                        {shipment.status === 'failed' && (
+                            <button
+                                onClick={() => handleReassign(shipment.id)}
+                                className="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-zinc-700 transition-colors mr-2"
+                                title="Tekrar Atamaya Gönder"
+                            >
+                                Tekrar Ata
+                            </button>
+                        )}
+                        <ChatButton
+                            shipmentId={shipment.id}
+                            shipmentName={shipment.customer_name}
+                        />
+                        <button
+                            onClick={() => handleOpenModal(shipment)}
+                            className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
+                        >
+                            <Edit size={16} />
+                        </button>
+                        <button
+                            onClick={() => handleDelete(shipment.id)}
+                            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        )
+    }
+
 
     return (
         <>
@@ -313,6 +328,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -335,6 +351,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -358,6 +375,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -381,6 +399,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -404,6 +423,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>

@@ -51,11 +51,32 @@ export default function DashboardPage() {
         setLoading(false)
     }
 
-    const handleVehicleClick = (vehicle) => {
+    const [vehicleShipments, setVehicleShipments] = useState([])
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+    const handleVehicleClick = async (vehicle) => {
         if (selectedVehicle?.id === vehicle.id) {
-            setSelectedVehicle(null) // Deselect if clicking the same vehicle
+            // If clicking the same vehicle, just toggle the modal if it's closed, or do nothing (or deselect)
+            // But user wants to see shipments, so let's open modal
+            setIsModalOpen(true)
+            await fetchVehicleShipments(vehicle.id)
         } else {
             setSelectedVehicle(vehicle)
+            setIsModalOpen(true)
+            await fetchVehicleShipments(vehicle.id)
+        }
+    }
+
+    const fetchVehicleShipments = async (vehicleId) => {
+        const { data } = await supabase
+            .from('shipments')
+            .select('*')
+            .eq('assigned_vehicle_id', vehicleId)
+            .neq('status', 'delivered') // Show active shipments
+            .order('delivery_order', { ascending: true })
+
+        if (data) {
+            setVehicleShipments(data)
         }
     }
 
@@ -70,8 +91,8 @@ export default function DashboardPage() {
                                 key={vehicle.id}
                                 onClick={() => handleVehicleClick(vehicle)}
                                 className={`bg-white rounded-lg md:rounded-xl shadow-lg border p-3 md:p-4 min-w-[240px] md:min-w-[280px] hover:shadow-xl transition-all cursor-pointer ${selectedVehicle?.id === vehicle.id
-                                        ? 'border-primary ring-2 ring-blue-200'
-                                        : 'border-slate-200'
+                                    ? 'border-primary ring-2 ring-blue-200'
+                                    : 'border-slate-200'
                                     }`}
                             >
                                 <div className="flex items-start justify-between mb-2 md:mb-3">
@@ -124,6 +145,54 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Vehicle Shipments Modal */}
+            {isModalOpen && selectedVehicle && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setIsModalOpen(false)}>
+                    <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4 border-b pb-4">
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-900">{selectedVehicle.plate}</h3>
+                                <p className="text-sm text-slate-500">{selectedVehicle.driver_name} - Yük: {selectedVehicle.current_load} kg</p>
+                            </div>
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <span className="text-2xl leading-none">&times;</span>
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {vehicleShipments.length === 0 ? (
+                                <p className="text-center text-slate-500 py-8">Bu araçta aktif sevkiyat bulunmuyor.</p>
+                            ) : (
+                                vehicleShipments.map((shipment, index) => (
+                                    <div key={shipment.id} className="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-blue-200 transition-colors">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                                <span className="bg-blue-100 text-blue-700 text-xs px-1.5 py-0.5 rounded-full">{index + 1}</span>
+                                                {shipment.customer_name}
+                                            </span>
+                                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">
+                                                {shipment.delivery_time}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-600 mb-2 line-clamp-2">{shipment.delivery_address}</p>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-slate-500">{shipment.weight} kg</span>
+                                            <span className={`px-2 py-0.5 rounded-full font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                    shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                                        'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                {shipment.status === 'delivered' ? 'Teslim Edildi' :
+                                                    shipment.status === 'failed' ? 'Başarısız' : 'Teslimatta'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }
