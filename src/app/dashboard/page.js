@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Truck, Package, Navigation } from 'lucide-react'
+import { Truck, Package, Navigation, X } from 'lucide-react'
 import { useDashboard } from '@/contexts/DashboardContext'
 
 export default function DashboardPage() {
@@ -68,14 +68,22 @@ export default function DashboardPage() {
     }
 
     const fetchVehicleShipments = async (vehicleId) => {
-        const { data } = await supabase
+        console.log('Fetching shipments for vehicle:', vehicleId)
+        const { data, error } = await supabase
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', vehicleId)
             .neq('status', 'delivered') // Show active shipments
-            .order('delivery_order', { ascending: true })
+            // .order('delivery_order', { ascending: true }) // Column doesn't exist yet
+            .order('delivery_time', { ascending: true })
+
+        if (error) {
+            console.error('Error fetching vehicle shipments:', error)
+            return
+        }
 
         if (data) {
+            console.log('Fetched shipments:', data)
             setVehicleShipments(data)
         }
     }
@@ -155,8 +163,8 @@ export default function DashboardPage() {
                                 <h3 className="font-bold text-lg text-slate-900">{selectedVehicle.plate}</h3>
                                 <p className="text-sm text-slate-500">{selectedVehicle.driver_name} - Yük: {selectedVehicle.current_load} kg</p>
                             </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                                <span className="text-2xl leading-none">&times;</span>
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-700">
+                                <X size={24} />
                             </button>
                         </div>
 
@@ -179,8 +187,8 @@ export default function DashboardPage() {
                                         <div className="flex justify-between items-center text-xs">
                                             <span className="text-slate-500">{shipment.weight} kg</span>
                                             <span className={`px-2 py-0.5 rounded-full font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                    shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                                        'bg-amber-100 text-amber-700'
+                                                shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                                                    'bg-amber-100 text-amber-700'
                                                 }`}>
                                                 {shipment.status === 'delivered' ? 'Teslim Edildi' :
                                                     shipment.status === 'failed' ? 'Başarısız' : 'Teslimatta'}
