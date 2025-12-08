@@ -177,20 +177,54 @@ export default function ShipmentsPage() {
         setIsModalOpen(true)
     }
 
+    const handleReassign = async (id) => {
+        if (!confirm('Bu sevkiyatı tekrar atamaya göndermek istediğinize emin misiniz?')) return
+
+        const shipmentToUpdate = shipments.find(s => s.id === id)
+
+        const { error } = await supabase
+            .from('shipments')
+            .update({ status: 'pending', assigned_vehicle_id: null })
+            .eq('id', id)
+
+        if (error) {
+            alert('Hata: ' + error.message)
+            return
+        }
+
+        // Log the action
+        if (shipmentToUpdate) {
+            await logShipmentAction(
+                'updated',
+                id,
+                { ...shipmentToUpdate, status: 'pending', assigned_vehicle_id: null },
+                user?.id,
+                user?.full_name || 'Bilinmeyen Kullanıcı',
+                { before: { status: 'failed' }, after: { status: 'pending' } }
+            )
+        }
+
+        fetchData()
+    }
+
     // Group shipments by date
     const groupShipmentsByDate = () => {
         const today = new Date().toISOString().split('T')[0]
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
 
-        const todayShipments = shipments.filter(s => s.delivery_date === today)
-        const tomorrowShipments = shipments.filter(s => s.delivery_date === tomorrow)
-        const futureShipments = shipments.filter(s => s.delivery_date > tomorrow)
-        const pastShipments = shipments.filter(s => s.delivery_date < today)
+        const failedShipments = shipments.filter(s => s.status === 'failed')
+        // Exclude failed shipments from other lists to avoid duplication
+        const activeShipments = shipments.filter(s => s.status !== 'failed')
 
-        return { todayShipments, tomorrowShipments, futureShipments, pastShipments }
+        const todayShipments = activeShipments.filter(s => s.delivery_date === today)
+        const tomorrowShipments = activeShipments.filter(s => s.delivery_date === tomorrow)
+        const futureShipments = activeShipments.filter(s => s.delivery_date > tomorrow)
+        const pastShipments = activeShipments.filter(s => s.delivery_date < today)
+
+        return { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments }
     }
 
-    const { todayShipments, tomorrowShipments, futureShipments, pastShipments } = groupShipmentsByDate()
+    const { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments } = groupShipmentsByDate()
 
     const renderShipmentRow = (shipment) => (
         <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group text-sm">
@@ -203,15 +237,26 @@ export default function ShipmentsPage() {
             <td className="p-3">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
                     shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
-                        'bg-amber-100 text-amber-700'
+                        shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                            'bg-amber-100 text-amber-700'
                     }`}>
                     {shipment.status === 'delivered' ? 'Teslim Edildi' :
                         shipment.status === 'assigned' ? 'Yolda' :
-                            'Bekliyor'}
+                            shipment.status === 'failed' ? 'Teslim Edilemedi' :
+                                'Bekliyor'}
                 </span>
             </td>
             <td className="p-3 text-right">
                 <div className="flex items-center justify-end gap-2">
+                    {shipment.status === 'failed' && (
+                        <button
+                            onClick={() => handleReassign(shipment.id)}
+                            className="px-2 py-1 bg-primary text-white text-xs rounded hover:bg-zinc-700 transition-colors mr-2"
+                            title="Tekrar Atamaya Gönder"
+                        >
+                            Tekrar Ata
+                        </button>
+                    )}
                     <ChatButton
                         shipmentId={shipment.id}
                         shipmentName={shipment.customer_name}
@@ -254,6 +299,30 @@ export default function ShipmentsPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
+                    {/* Failed Shipments - High Priority */}
+                    {failedShipments.length > 0 && (
+                        <div className="mb-4">
+                            <div className="sticky top-0 bg-red-100 px-4 py-2 border-b border-red-200 z-10">
+                                <h3 className="font-bold text-red-900 text-sm flex items-center gap-2">
+                                    ⚠️ Teslim Edilemeyenler ({failedShipments.length})
+                                </h3>
+                            </div>
+                            <table className="w-full">
+                                <thead className="bg-slate-50">
+                                    <tr className="text-left text-xs text-slate-600">
+                                        <th className="p-3 font-medium">Müşteri</th>
+                                        <th className="p-3 font-medium">Adres</th>
+                                        <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Durum</th>
+                                        <th className="p-3 font-medium"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {failedShipments.map(renderShipmentRow)}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                     {/* Today's Shipments */}
                     {todayShipments.length > 0 && (
                         <div className="mb-4">
