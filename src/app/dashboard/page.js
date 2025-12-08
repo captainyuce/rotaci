@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
             {/* Vehicle Shipments Modal */}
             {isModalOpen && selectedVehicle && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setIsModalOpen(false)}>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4 pointer-events-auto" onClick={() => setIsModalOpen(false)}>
                     <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4 border-b pb-4">
                             <div>
