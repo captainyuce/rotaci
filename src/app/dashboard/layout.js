@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import MapComponent from '@/components/Map'
-import { Menu, X, Package, Truck, Users, LogOut, LayoutDashboard, MapPin, ClipboardList, FileText, Calendar } from 'lucide-react'
+import { Menu, X, Package, Truck, Users, LogOut, LayoutDashboard, MapPin, ClipboardList, FileText, Calendar, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PERMISSIONS, hasAnyPermission } from '@/lib/permissions'
@@ -44,6 +44,7 @@ export default function DashboardLayout({ children }) {
         { icon: MapPin, label: 'Adresler', href: '/dashboard/addresses', permission: PERMISSIONS.MANAGE_ADDRESSES },
         { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users', permission: PERMISSIONS.MANAGE_USERS },
         { icon: FileText, label: 'İşlem Geçmişi', href: '/dashboard/logs', permission: PERMISSIONS.VIEW_LOGS },
+        { icon: Settings, label: 'Ayarlar', href: '/dashboard/settings', permission: PERMISSIONS.MANAGE_ADDRESSES },
     ]
 
     // Debug: Log user permissions

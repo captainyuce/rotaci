@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
-import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell } from 'lucide-react'
+import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell, Map } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
 import { logShipmentAction } from '@/lib/auditLog'
 
 const NavigationMap = dynamic(() => import('@/components/NavigationMap'), { ssr: false })
+const DriverRouteMap = dynamic(() => import('@/components/DriverRouteMap'), { ssr: false })
 
 export default function DriverPage() {
     const { user } = useAuth()
@@ -17,7 +18,7 @@ export default function DriverPage() {
     const [selectedJob, setSelectedJob] = useState(null)
     const [refreshing, setRefreshing] = useState(false)
     const [lastUpdate, setLastUpdate] = useState(new Date())
-    const [activeTab, setActiveTab] = useState('new') // 'new' or 'acknowledged'
+    const [activeTab, setActiveTab] = useState('new') // 'new', 'acknowledged', 'completed', 'map'
 
     useEffect(() => {
         if (user?.id) {
@@ -51,6 +52,8 @@ export default function DriverPage() {
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', user.id)
+            // Sort by delivery_order first, then created_at
+            .order('delivery_order', { ascending: true })
             .order('created_at', { ascending: false })
 
         if (data) setJobs(data)
@@ -75,7 +78,7 @@ export default function DriverPage() {
 
         if (error) {
             console.error('Error acknowledging job:', error)
-            alert('Hata: ' + error.message + '\n\nLütfen Supabase SQL Editor\'de şu komutu çalıştırın:\nALTER TABLE shipments ADD COLUMN acknowledged_at TIMESTAMPTZ;')
+            alert('Hata: ' + error.message)
             return
         }
 
@@ -83,8 +86,6 @@ export default function DriverPage() {
 
         // Log the acknowledgment
         try {
-            console.log('Attempting to log acknowledgment...')
-
             // Get driver name
             const { data: driverData } = await supabase
                 .from('vehicles')
@@ -93,7 +94,6 @@ export default function DriverPage() {
                 .single()
 
             const driverName = driverData?.driver_name || 'Sürücü'
-            console.log('Driver name:', driverName, 'Shipment ID:', id)
 
             // Fetch full shipment data
             const { data: fullShipment } = await supabase
@@ -102,16 +102,6 @@ export default function DriverPage() {
                 .eq('id', id)
                 .single()
 
-            console.log('Full shipment data:', fullShipment)
-
-            console.log('Calling logShipmentAction with params:', {
-                action: 'acknowledged',
-                shipmentId: id,
-                shipmentData: fullShipment,
-                userId: user.id,
-                userName: driverName
-            })
-
             await logShipmentAction(
                 'acknowledged',
                 id,
@@ -119,7 +109,6 @@ export default function DriverPage() {
                 user.id,
                 driverName
             )
-            console.log('Log created successfully')
         } catch (err) {
             console.error('Error logging acknowledgment:', err)
         }
@@ -136,8 +125,6 @@ export default function DriverPage() {
 
         if (!error) {
             try {
-                console.log('Attempting to log status change:', status)
-
                 // Get driver name
                 const { data: driverData } = await supabase
                     .from('vehicles')
@@ -146,7 +133,6 @@ export default function DriverPage() {
                     .single()
 
                 const driverName = driverData?.driver_name || 'Sürücü'
-                console.log('Driver name:', driverName, 'Action:', status, 'Shipment ID:', id)
 
                 // Fetch full shipment data
                 const { data: fullShipment } = await supabase
@@ -155,8 +141,6 @@ export default function DriverPage() {
                     .eq('id', id)
                     .single()
 
-                console.log('Full shipment data:', fullShipment)
-
                 await logShipmentAction(
                     status,
                     id,
@@ -164,7 +148,6 @@ export default function DriverPage() {
                     user.id,
                     driverName
                 )
-                console.log('Status log created successfully')
             } catch (err) {
                 console.error('Error logging status change:', err)
             }
@@ -184,13 +167,20 @@ export default function DriverPage() {
     const completedJobs = jobs.filter(j => j.status === 'delivered')
 
     const renderJobCard = (job, showAcknowledgeButton = false, isCompleted = false) => (
-        <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+        <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200 relative">
+            {/* Order Badge */}
+            {job.delivery_order && (
+                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl z-10">
+                    Sıra: {job.delivery_order}
+                </div>
+            )}
+
             <div className="p-4 border-b border-slate-100 flex justify-between items-start">
-                <div>
+                <div className="pr-8"> {/* Padding for badge */}
                     <h3 className="font-bold text-lg text-slate-800">{job.customer_name}</h3>
                     <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
                 </div>
-                <span className="bg-zinc-100 text-zinc-700 text-xs font-bold px-2 py-1 rounded-full">
+                <span className="bg-zinc-100 text-zinc-700 text-xs font-bold px-2 py-1 rounded-full mt-8">
                     {job.weight} kg
                 </span>
             </div>
@@ -288,19 +278,19 @@ export default function DriverPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
                 <button
                     onClick={() => setActiveTab('new')}
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors relative ${activeTab === 'new'
+                    className={`flex-1 min-w-[80px] py-3 px-2 rounded-lg font-medium transition-colors relative text-sm ${activeTab === 'new'
                         ? 'bg-orange-600 text-white shadow-md'
                         : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
-                    <div className="flex items-center justify-center gap-2">
-                        <Bell size={18} />
+                    <div className="flex items-center justify-center gap-1">
+                        <Bell size={16} />
                         Yeni
                         {newJobs.length > 0 && (
-                            <span className="bg-white text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                            <span className="bg-white text-orange-600 text-xs font-bold px-1.5 py-0.5 rounded-full ml-1">
                                 {newJobs.length}
                             </span>
                         )}
@@ -308,7 +298,7 @@ export default function DriverPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab('acknowledged')}
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'acknowledged'
+                    className={`flex-1 min-w-[80px] py-3 px-2 rounded-lg font-medium transition-colors text-sm ${activeTab === 'acknowledged'
                         ? 'bg-primary text-white shadow-md'
                         : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
@@ -316,17 +306,29 @@ export default function DriverPage() {
                     Aktif ({acknowledgedJobs.length})
                 </button>
                 <button
+                    onClick={() => setActiveTab('map')}
+                    className={`flex-1 min-w-[80px] py-3 px-2 rounded-lg font-medium transition-colors text-sm ${activeTab === 'map'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                >
+                    <div className="flex items-center justify-center gap-1">
+                        <Map size={16} />
+                        Harita
+                    </div>
+                </button>
+                <button
                     onClick={() => setActiveTab('completed')}
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${activeTab === 'completed'
+                    className={`flex-1 min-w-[80px] py-3 px-2 rounded-lg font-medium transition-colors text-sm ${activeTab === 'completed'
                         ? 'bg-green-600 text-white shadow-md'
                         : 'bg-white text-slate-600 hover:bg-slate-50'
                         }`}
                 >
-                    Tamamlanan ({completedJobs.length})
+                    Biten ({completedJobs.length})
                 </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 h-[calc(100vh-220px)] overflow-y-auto pb-20">
                 {activeTab === 'new' && (
                     <>
                         {newJobs.length === 0 && !loading && (
@@ -349,6 +351,12 @@ export default function DriverPage() {
                         )}
                         {acknowledgedJobs.map((job) => renderJobCard(job, false, false))}
                     </>
+                )}
+
+                {activeTab === 'map' && (
+                    <div className="h-full bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+                        <DriverRouteMap shipments={acknowledgedJobs} />
+                    </div>
                 )}
 
                 {activeTab === 'completed' && (

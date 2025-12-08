@@ -21,8 +21,34 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 })
         }
 
-        if (!vehicle.current_lat || !vehicle.current_lng) {
-            return NextResponse.json({ error: 'Vehicle location not available' }, { status: 400 })
+        // Get base address from settings
+        const { data: settings } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('key', 'base_address')
+            .single()
+
+        let startLocation = null
+
+        // Try vehicle location first
+        if (vehicle.current_lat && vehicle.current_lng) {
+            startLocation = { lat: vehicle.current_lat, lng: vehicle.current_lng }
+        }
+        // Fallback to base address
+        else if (settings?.value) {
+            try {
+                const parsed = JSON.parse(settings.value)
+                if (parsed.lat && parsed.lng) {
+                    startLocation = { lat: parsed.lat, lng: parsed.lng }
+                }
+            } catch (e) {
+                console.error('Error parsing base address:', e)
+            }
+        }
+
+        if (!startLocation) {
+            // Final fallback to Istanbul center if nothing else
+            startLocation = { lat: 41.0082, lng: 28.9784 }
         }
 
         // Get shipments
@@ -37,13 +63,27 @@ export async function POST(request) {
 
         // Optimize route
         const result = await optimizeRoute(
-            { lat: vehicle.current_lat, lng: vehicle.current_lng },
+            startLocation,
             shipments,
             {
                 departureTime,
                 bridgePreference: vehicle.bridge_preference || 'any'
             }
         )
+
+        // Save optimization results to database
+        if (result.optimizedShipments && result.optimizedShipments.length > 0) {
+            // Update each shipment with its new order and ETA
+            await Promise.all(result.optimizedShipments.map(s =>
+                supabase
+                    .from('shipments')
+                    .update({
+                        delivery_order: s.routeOrder,
+                        // We could also save ETA if we had a column for it
+                    })
+                    .eq('id', s.id)
+            ))
+        }
 
         return NextResponse.json(result)
     } catch (error) {
