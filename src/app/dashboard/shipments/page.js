@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Plus, X, Truck, Edit, Trash2 } from 'lucide-react'
+import { Plus, X, Truck, Edit, Trash2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
@@ -29,6 +29,7 @@ export default function ShipmentsPage() {
         notes: '',
         delivery_lat: 41.0082,
         delivery_lng: 28.9784,
+        type: 'delivery' // 'delivery' or 'pickup'
     })
 
     useEffect(() => {
@@ -130,6 +131,7 @@ export default function ShipmentsPage() {
             notes: '',
             delivery_lat: 41.0082,
             delivery_lng: 28.9784,
+            type: 'delivery'
         })
         fetchData()
     }
@@ -171,6 +173,7 @@ export default function ShipmentsPage() {
                 notes: '',
                 delivery_lat: 41.0082,
                 delivery_lng: 28.9784,
+                type: 'delivery'
             })
         }
         setSelectedCategory('')
@@ -232,8 +235,17 @@ export default function ShipmentsPage() {
         return (
             <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group text-sm">
                 <td className="p-3">
-                    <div className="font-medium text-slate-900">{shipment.customer_name}</div>
-                    <div className="text-xs text-slate-500">{shipment.delivery_time}</div>
+                    <div className="flex items-center gap-2">
+                        {shipment.type === 'pickup' ? (
+                            <ArrowDownCircle size={16} className="text-orange-600" title="Mal Al" />
+                        ) : (
+                            <ArrowUpCircle size={16} className="text-blue-600" title="Mal Bırak" />
+                        )}
+                        <div>
+                            <div className="font-medium text-slate-900">{shipment.customer_name}</div>
+                            <div className="text-xs text-slate-500">{shipment.delivery_time}</div>
+                        </div>
+                    </div>
                 </td>
                 <td className="p-3 max-w-xs truncate text-slate-600">{shipment.delivery_address}</td>
                 <td className="p-3 text-slate-700">{shipment.weight} kg</td>
@@ -299,7 +311,7 @@ export default function ShipmentsPage() {
             <div className="fixed left-4 right-4 md:left-20 md:right-auto top-20 md:top-4 bottom-20 md:bottom-4 md:w-[600px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden pointer-events-auto z-10">
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-900">Sevkiyatlar</h2>
+                        <h2 className="text-lg font-bold text-slate-900">Sevkiyatlar (Güncel)</h2>
                         <p className="text-xs text-slate-500">{shipments.length} sevkiyat</p>
                     </div>
                     {hasPermission(PERMISSIONS.CREATE_SHIPMENTS) && (
@@ -514,6 +526,43 @@ export default function ShipmentsPage() {
                                     <p className="text-xs text-slate-500 mt-1">
                                         Seçili Konum: {formData.delivery_lat.toFixed(6)}, {formData.delivery_lng.toFixed(6)}
                                     </p>
+                                </div>
+
+                                {/* Shipment Type */}
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">İşlem Türü</label>
+                                    <div className="flex gap-4">
+                                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.type === 'delivery'
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                            }`}>
+                                            <input
+                                                type="radio"
+                                                name="type"
+                                                value="delivery"
+                                                checked={formData.type === 'delivery' || !formData.type}
+                                                onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                                className="hidden"
+                                            />
+                                            <ArrowUpCircle size={20} />
+                                            <span className="font-medium">Mal Bırak (Teslimat)</span>
+                                        </label>
+                                        <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.type === 'pickup'
+                                            ? 'bg-orange-50 border-orange-500 text-orange-700'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                            }`}>
+                                            <input
+                                                type="radio"
+                                                name="type"
+                                                value="pickup"
+                                                checked={formData.type === 'pickup'}
+                                                onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                                className="hidden"
+                                            />
+                                            <ArrowDownCircle size={20} />
+                                            <span className="font-medium">Mal Al (Toplama)</span>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* Customer Name */}

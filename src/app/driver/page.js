@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
-import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell, Map } from 'lucide-react'
+import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell, Map, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
 import { logShipmentAction } from '@/lib/auditLog'
@@ -177,6 +177,19 @@ export default function DriverPage() {
 
             <div className="p-4 border-b border-slate-100 flex justify-between items-start">
                 <div className="pr-8"> {/* Padding for badge */}
+                    <div className="flex items-center gap-2 mb-1">
+                        {job.type === 'pickup' ? (
+                            <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                <ArrowDownCircle size={12} />
+                                Mal Al
+                            </span>
+                        ) : (
+                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                <ArrowUpCircle size={12} />
+                                Mal Bırak
+                            </span>
+                        )}
+                    </div>
                     <h3 className="font-bold text-lg text-slate-800">{job.customer_name}</h3>
                     <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
                 </div>

@@ -28,9 +28,19 @@ const shipmentIcon = new L.Icon({
     shadowSize: [41, 41]
 })
 
+const depotIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+})
+
 export default function MapInner() {
     const [vehicles, setVehicles] = useState([])
     const [shipments, setShipments] = useState([])
+    const [depotLocation, setDepotLocation] = useState(null)
     const { selectedVehicle, optimizedRoutes } = useDashboard()
 
     // Default center (Istanbul)
@@ -61,6 +71,24 @@ export default function MapInner() {
 
         const { data: shipmentsData } = await supabase.from('shipments').select('*').neq('status', 'delivered')
         if (shipmentsData) setShipments(shipmentsData)
+
+        // Fetch depot location
+        const { data: settings } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('key', 'base_address')
+            .single()
+
+        if (settings?.value) {
+            try {
+                const parsed = JSON.parse(settings.value)
+                if (parsed.lat && parsed.lng) {
+                    setDepotLocation(parsed)
+                }
+            } catch (e) {
+                console.error('Error parsing depot location:', e)
+            }
+        }
     }
 
     const handleVehicleUpdate = (payload) => {
@@ -131,6 +159,19 @@ export default function MapInner() {
                     />
                 )
             })}
+
+            {/* Depot Marker */}
+            {depotLocation && (
+                <Marker position={[depotLocation.lat, depotLocation.lng]} icon={depotIcon}>
+                    <Popup>
+                        <div className="font-sans">
+                            <h3 className="font-bold">Merkez Depo</h3>
+                            <p className="text-sm">{depotLocation.address}</p>
+                            <div className="text-xs text-slate-500 mt-1">🏠 Ana Üs</div>
+                        </div>
+                    </Popup>
+                </Marker>
+            )}
 
             {/* Vehicles */}
             {vehicles.map(vehicle => {
