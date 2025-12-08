@@ -73,7 +73,7 @@ export default function DashboardPage() {
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', vehicleId)
-            .neq('status', 'delivered') // Show active shipments
+            // .neq('status', 'delivered') // Show all shipments including delivered
             // .order('delivery_order', { ascending: true }) // Column doesn't exist yet
             .order('delivery_time', { ascending: true })
 
