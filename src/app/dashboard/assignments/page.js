@@ -264,9 +264,7 @@ export default function AssignmentsPage() {
                 supabase.from('shipments').update({ route_order: s.route_order }).eq('id', s.id)
             ))
 
-            // Recalculate route geometry for the new manual order
-            // We pass the new sorted shipments to the optimizer
-            optimizeVehicleRoute(vehicleId, updatedShipments, true) // true = keepOrder
+            // Route calculation removed - user must click "Optimize Et" button manually
 
         } catch (error) {
             console.error('Error updating route order:', error)

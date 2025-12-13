@@ -6,6 +6,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
+import { useDashboard } from '@/contexts/DashboardContext'
 
 // Fix for Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl
@@ -56,6 +57,7 @@ function MapBounds({ bounds }) {
 
 export default function DriverRouteMap({ shipments }) {
     const { user } = useAuth()
+    const { optimizedRoutes } = useDashboard()
     const [vehicleLocation, setVehicleLocation] = useState(null)
     const [depotLocation, setDepotLocation] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -183,6 +185,18 @@ export default function DriverRouteMap({ shipments }) {
                     </Marker>
                 )
             })}
+
+            {/* Route Lines - Show optimized route from admin panel */}
+            {user?.id && optimizedRoutes[user.id]?.routes && optimizedRoutes[user.id].routes.map((routeGeometry, index) => (
+                <Polyline
+                    key={`route-${index}`}
+                    positions={routeGeometry}
+                    color="#3b82f6"
+                    weight={4}
+                    opacity={0.7}
+                    dashArray="10, 10"
+                />
+            ))}
         </MapContainer>
     )
 }
