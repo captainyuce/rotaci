@@ -104,52 +104,9 @@ export default function DriverRouteMap({ shipments }) {
         fetchData()
     }, [user])
 
-    // Calculate route when locations and shipments are available
-    useEffect(() => {
-        const calculateRoute = async () => {
-            if (!vehicleLocation || shipments.length === 0) return
-
-            // Filter valid shipments and sort by route_order
-            const activeShipments = shipments
-                .filter(s => s.status !== 'delivered' && s.status !== 'failed' && s.delivery_lat && s.delivery_lng)
-                .sort((a, b) => {
-                    if (a.route_order && b.route_order) return a.route_order - b.route_order
-                    if (a.route_order && !b.route_order) return -1
-                    if (!a.route_order && b.route_order) return 1
-                    return 0
-                })
-
-            if (activeShipments.length === 0) return
-
-            // Construct OSRM URL
-            // Start: Vehicle Location -> Waypoints: Shipments -> End: Depot (if returnToDepot is true)
-            const coordinates = [
-                `${vehicleLocation.lng},${vehicleLocation.lat}`,
-                ...activeShipments.map(s => `${s.delivery_lng},${s.delivery_lat}`)
-            ]
-
-            // Add depot as final destination if returnToDepot is enabled
-            if (depotLocation?.returnToDepot && depotLocation?.lat && depotLocation?.lng) {
-                coordinates.push(`${depotLocation.lng},${depotLocation.lat}`)
-            }
-
-            const url = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson&steps=true&continue_straight=true`
-
-            try {
-                const response = await fetch(url)
-                const data = await response.json()
-
-                if (data.code === 'Ok' && data.routes && data.routes[0]) {
-                    const geometry = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]])
-                    setRouteGeometry(geometry)
-                }
-            } catch (error) {
-                console.error('Error fetching route:', error)
-            }
-        }
-
-        calculateRoute()
-    }, [vehicleLocation, shipments])
+    // Note: Route calculation is disabled - driver sees only the order set by admin
+    // The actual route line is not shown to avoid confusion with automatic optimization
+    // Driver should follow the numbered markers in order
 
     if (loading) return <div className="h-full flex items-center justify-center bg-slate-100">Yükleniyor...</div>
 
@@ -229,8 +186,10 @@ export default function DriverRouteMap({ shipments }) {
                 )
             })}
 
-            {/* Route Line */}
-            {routeGeometry && (
+
+            {/* Route Line - Disabled to prevent confusion with automatic optimization */}
+            {/* Driver should follow the numbered markers in the order shown */}
+            {/* {routeGeometry && (
                 <Polyline
                     positions={routeGeometry}
                     color="#3b82f6"
@@ -238,7 +197,7 @@ export default function DriverRouteMap({ shipments }) {
                     opacity={0.7}
                     dashArray="10, 10"
                 />
-            )}
+            )} */}
         </MapContainer>
     )
 }
