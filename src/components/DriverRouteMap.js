@@ -109,19 +109,29 @@ export default function DriverRouteMap({ shipments }) {
         const calculateRoute = async () => {
             if (!vehicleLocation || shipments.length === 0) return
 
-            // Filter valid shipments and sort by delivery_order
+            // Filter valid shipments and sort by route_order
             const activeShipments = shipments
                 .filter(s => s.status !== 'delivered' && s.status !== 'failed' && s.delivery_lat && s.delivery_lng)
-                .sort((a, b) => (a.delivery_order || 999) - (b.delivery_order || 999))
+                .sort((a, b) => {
+                    if (a.route_order && b.route_order) return a.route_order - b.route_order
+                    if (a.route_order && !b.route_order) return -1
+                    if (!a.route_order && b.route_order) return 1
+                    return 0
+                })
 
             if (activeShipments.length === 0) return
 
             // Construct OSRM URL
-            // Start: Vehicle Location -> Waypoints: Shipments -> End: Last Shipment (or Depot if we want return trip)
+            // Start: Vehicle Location -> Waypoints: Shipments -> End: Depot (if returnToDepot is true)
             const coordinates = [
                 `${vehicleLocation.lng},${vehicleLocation.lat}`,
                 ...activeShipments.map(s => `${s.delivery_lng},${s.delivery_lat}`)
             ]
+
+            // Add depot as final destination if returnToDepot is enabled
+            if (depotLocation?.returnToDepot && depotLocation?.lat && depotLocation?.lng) {
+                coordinates.push(`${depotLocation.lng},${depotLocation.lat}`)
+            }
 
             const url = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson`
 
@@ -196,9 +206,8 @@ export default function DriverRouteMap({ shipments }) {
             {shipments.map((shipment, index) => {
                 if (!shipment.delivery_lat || !shipment.delivery_lng) return null
 
-                // Determine order number: use delivery_order if available, otherwise index + 1
-                // But we should probably use the visual index from the list for consistency
-                const orderNum = shipment.delivery_order || (index + 1)
+                // Use route_order if available, otherwise index + 1
+                const orderNum = shipment.route_order || (index + 1)
 
                 return (
                     <Marker
@@ -210,7 +219,7 @@ export default function DriverRouteMap({ shipments }) {
                             <strong>{orderNum}. {shipment.customer_name}</strong><br />
                             {shipment.delivery_address}<br />
                             <span className={`text-xs font-bold ${shipment.status === 'delivered' ? 'text-green-600' :
-                                    shipment.status === 'failed' ? 'text-red-600' : 'text-orange-600'
+                                shipment.status === 'failed' ? 'text-red-600' : 'text-orange-600'
                                 }`}>
                                 {shipment.status === 'delivered' ? 'Teslim Edildi' :
                                     shipment.status === 'failed' ? 'Başarısız' : 'Bekliyor'}
