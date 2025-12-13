@@ -133,7 +133,7 @@ export default function DriverRouteMap({ shipments }) {
                 coordinates.push(`${depotLocation.lng},${depotLocation.lat}`)
             }
 
-            const url = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson`
+            const url = `https://router.project-osrm.org/route/v1/driving/${coordinates.join(';')}?overview=full&geometries=geojson&steps=true&continue_straight=true`
 
             try {
                 const response = await fetch(url)
