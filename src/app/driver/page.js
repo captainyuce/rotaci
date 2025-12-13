@@ -52,11 +52,25 @@ export default function DriverPage() {
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', user.id)
-            // Sort by route_order first, then created_at
-            .order('route_order', { ascending: true })
+            .order('route_order', { ascending: true, nullsLast: true })
             .order('created_at', { ascending: false })
 
-        if (data) setJobs(data)
+        // Client-side sort to ensure route_order is respected
+        if (data) {
+            const sorted = [...data].sort((a, b) => {
+                // If both have route_order, sort by it
+                if (a.route_order && b.route_order) {
+                    return a.route_order - b.route_order
+                }
+                // If only a has route_order, it comes first
+                if (a.route_order && !b.route_order) return -1
+                // If only b has route_order, it comes first
+                if (!a.route_order && b.route_order) return 1
+                // If neither has route_order, sort by created_at (newest first)
+                return new Date(b.created_at) - new Date(a.created_at)
+            })
+            setJobs(sorted)
+        }
         setLoading(false)
     }
 
