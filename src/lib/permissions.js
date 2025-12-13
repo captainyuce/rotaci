@@ -8,7 +8,8 @@ export const PERMISSIONS = {
     MANAGE_ADDRESSES: 'manage_addresses',
     MANAGE_USERS: 'manage_users',
     MANAGE_VEHICLES: 'manage_vehicles',
-    VIEW_LOGS: 'view_logs'
+    VIEW_LOGS: 'view_logs',
+    MANAGE_SETTINGS: 'manage_settings'
 }
 
 // Predefined roles with their permissions
@@ -27,7 +28,9 @@ export const ROLES = {
             PERMISSIONS.EDIT_SHIPMENTS,
             PERMISSIONS.DELETE_SHIPMENTS,
             PERMISSIONS.MANAGE_ADDRESSES,
-            PERMISSIONS.MANAGE_VEHICLES
+            PERMISSIONS.MANAGE_ADDRESSES,
+            PERMISSIONS.MANAGE_VEHICLES,
+            PERMISSIONS.MANAGE_SETTINGS
         ]
     },
     DISPATCHER: {
@@ -55,7 +58,8 @@ export const PERMISSION_LABELS = {
     [PERMISSIONS.MANAGE_ADDRESSES]: 'Adres Yönetimi',
     [PERMISSIONS.MANAGE_USERS]: 'Kullanıcı Yönetimi',
     [PERMISSIONS.MANAGE_VEHICLES]: 'Araç Yönetimi',
-    [PERMISSIONS.VIEW_LOGS]: 'İşlem Geçmişi Görüntüleme'
+    [PERMISSIONS.VIEW_LOGS]: 'İşlem Geçmişi Görüntüleme',
+    [PERMISSIONS.MANAGE_SETTINGS]: 'Sistem Ayarları'
 }
 
 // Check if user has a specific permission

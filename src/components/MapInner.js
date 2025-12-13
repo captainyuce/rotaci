@@ -28,13 +28,12 @@ const shipmentIcon = new L.Icon({
     shadowSize: [41, 41]
 })
 
-const depotIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+const depotIcon = new L.divIcon({
+    html: '<div style="font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">🏭</div>',
+    className: 'bg-transparent',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
 })
 
 export default function MapInner() {
@@ -80,14 +79,21 @@ export default function MapInner() {
             .single()
 
         if (settings?.value) {
+            console.log('Depot Settings Found:', settings.value)
             try {
                 const parsed = JSON.parse(settings.value)
+                console.log('Depot Parsed:', parsed)
                 if (parsed.lat && parsed.lng) {
                     setDepotLocation(parsed)
+                    console.log('Depot Location Set:', parsed)
+                } else {
+                    console.warn('Depot location missing lat/lng')
                 }
             } catch (e) {
                 console.error('Error parsing depot location:', e)
             }
+        } else {
+            console.log('No depot settings found')
         }
     }
 

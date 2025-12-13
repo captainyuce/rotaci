@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabaseClient'
 import { Save, MapPin, Building2 } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
+import dynamic from 'next/dynamic'
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
 
 export default function SettingsPage() {
     const { hasPermission } = useAuth()
@@ -59,7 +62,7 @@ export default function SettingsPage() {
         setSaving(false)
     }
 
-    if (!hasPermission(PERMISSIONS.MANAGE_ADDRESSES)) { // Using MANAGE_ADDRESSES as a proxy for settings access
+    if (!hasPermission(PERMISSIONS.MANAGE_SETTINGS)) {
         return (
             <div className="h-full flex flex-col bg-white">
                 <div className="p-8 text-center">
@@ -99,6 +102,25 @@ export default function SettingsPage() {
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                                     placeholder="Örn: Merkez Depo, İkitelli OSB..."
                                 />
+                            </div>
+
+                            {/* Map Picker */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Konum Seç (Haritaya tıklayın)
+                                </label>
+                                <div className="h-64 rounded-lg overflow-hidden border border-slate-200 mb-2">
+                                    {baseAddress.lat && baseAddress.lng ? (
+                                        <MapPicker
+                                            center={[baseAddress.lat, baseAddress.lng]}
+                                            onLocationSelect={(lat, lng) => setBaseAddress({ ...baseAddress, lat, lng })}
+                                        />
+                                    ) : (
+                                        <div className="h-full flex items-center justify-center bg-slate-100 text-slate-500">
+                                            Harita yükleniyor...
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
