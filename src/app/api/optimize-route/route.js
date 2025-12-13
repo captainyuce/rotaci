@@ -4,7 +4,7 @@ import { optimizeRoute } from '@/lib/routeOptimizer'
 
 export async function POST(request) {
     try {
-        const { vehicleId, shipmentIds, departureTime } = await request.json()
+        const { vehicleId, shipmentIds, departureTime, keepOrder } = await request.json()
 
         if (!vehicleId || !shipmentIds || shipmentIds.length === 0) {
             return NextResponse.json({ error: 'Vehicle ID and shipment IDs are required' }, { status: 400 })
@@ -73,6 +73,10 @@ export async function POST(request) {
             }
         }
 
+        console.log('Optimization Request - Vehicle:', vehicleId, 'Shipments:', shipmentIds.length)
+        console.log('Start Location:', startLocation)
+        console.log('End Location (Depot):', endLocation)
+
         // Optimize route
         const result = await optimizeRoute(
             startLocation,
@@ -80,7 +84,8 @@ export async function POST(request) {
             {
                 departureTime,
                 bridgePreference: vehicle.bridge_preference || 'any',
-                endLocation
+                endLocation,
+                keepOrder // Pass keepOrder flag
             }
         )
 
@@ -91,7 +96,7 @@ export async function POST(request) {
                 supabase
                     .from('shipments')
                     .update({
-                        delivery_order: s.routeOrder,
+                        route_order: s.routeOrder,
                         // We could also save ETA if we had a column for it
                     })
                     .eq('id', s.id)

@@ -52,8 +52,8 @@ export default function DriverPage() {
             .from('shipments')
             .select('*')
             .eq('assigned_vehicle_id', user.id)
-            // Sort by delivery_order first, then created_at
-            .order('delivery_order', { ascending: true })
+            // Sort by route_order first, then created_at
+            .order('route_order', { ascending: true })
             .order('created_at', { ascending: false })
 
         if (data) setJobs(data)
@@ -169,9 +169,9 @@ export default function DriverPage() {
     const renderJobCard = (job, showAcknowledgeButton = false, isCompleted = false) => (
         <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200 relative">
             {/* Order Badge */}
-            {job.delivery_order && (
+            {job.route_order && (
                 <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl z-10">
-                    Sıra: {job.delivery_order}
+                    Sıra: {job.route_order}
                 </div>
             )}
 

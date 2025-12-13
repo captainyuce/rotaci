@@ -114,7 +114,12 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
         // Add end location if provided (return to depot)
         if (options.endLocation) {
             coordinates.push([options.endLocation.lng, options.endLocation.lat])
+            console.log('Added end location to coordinates:', options.endLocation)
+        } else {
+            console.log('No end location provided')
         }
+
+        console.log('Total coordinates for OSRM:', coordinates.length)
 
         // Add bridge waypoint if needed and preference is set
         const bridgeWaypoint = getBridgeWaypoint(options.bridgePreference)
@@ -157,7 +162,20 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
             }
         }
 
-        const tripResult = await getTripOptimization(coordinates)
+        let tripResult;
+        if (options.keepOrder) {
+            console.log('Keeping original order, using Route service instead of Trip service');
+            tripResult = await getRouteWithWaypoints(coordinates);
+
+            // For Route service, the waypoints are in the same order as input
+            // We need to construct the result structure similar to Trip service
+            tripResult.waypoints = coordinates.map((c, i) => ({
+                waypoint_index: i,
+                location: c
+            }));
+        } else {
+            tripResult = await getTripOptimization(coordinates);
+        }
 
         // Calculate cumulative metrics from legs
         let currentDuration = 0
@@ -287,6 +305,29 @@ async function getTripOptimization(coordinates) {
         geometry: trip.geometry.coordinates.map(coord => [coord[1], coord[0]]),
         waypoints: data.waypoints,
         legs: trip.legs // Return legs for ETA calculation
+    }
+}
+
+/**
+ * Get route visiting waypoints in order using OSRM Route service
+ */
+async function getRouteWithWaypoints(coordinates) {
+    const coordString = coordinates.map(c => `${c[0]},${c[1]}`).join(';')
+    const url = `${OSRM_BASE_URL}/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=true`
+
+    const response = await fetch(url)
+    const data = await response.json()
+
+    if (data.code !== 'Ok') {
+        throw new Error('OSRM route calculation failed')
+    }
+
+    const route = data.routes[0]
+    return {
+        distance: route.distance,
+        duration: route.duration,
+        geometry: route.geometry.coordinates.map(coord => [coord[1], coord[0]]),
+        legs: route.legs
     }
 }
 

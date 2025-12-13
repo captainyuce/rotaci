@@ -145,15 +145,33 @@ export default function MapInner() {
                 const colorIndex = vehicle.plate.charCodeAt(vehicle.plate.length - 1) % colors.length
                 const color = colors[colorIndex]
 
-                return route.routes.map((routeGeometry, index) => (
-                    <Polyline
-                        key={`optimized-route-${vehicle.id}-${index}`}
-                        positions={routeGeometry}
-                        color={color}
-                        weight={4}
-                        opacity={0.8}
-                    />
-                ))
+                return (
+                    <div key={`route-group-${vehicle.id}`}>
+                        {route.routes.map((routeGeometry, index) => (
+                            <Polyline
+                                key={`optimized-route-${vehicle.id}-${index}`}
+                                positions={routeGeometry}
+                                color={color}
+                                weight={4}
+                                opacity={0.8}
+                            />
+                        ))}
+                        {/* Finish Marker at the end of the route */}
+                        {route.routes.length > 0 && route.routes[0].length > 0 && (
+                            <Marker
+                                position={route.routes[0][route.routes[0].length - 1]}
+                                icon={new L.divIcon({
+                                    html: '<div style="font-size: 20px;">🏁</div>',
+                                    className: 'bg-transparent',
+                                    iconSize: [24, 24],
+                                    iconAnchor: [12, 12]
+                                })}
+                            >
+                                <Popup>Rota Bitişi ({vehicle.plate})</Popup>
+                            </Marker>
+                        )}
+                    </div>
+                )
             })}
 
             {/* Fallback: Simple lines if no optimized route */}

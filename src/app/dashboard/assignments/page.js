@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
@@ -19,6 +19,7 @@ export default function AssignmentsPage() {
     const [loading, setLoading] = useState(true)
     const [selectedShipments, setSelectedShipments] = useState([])
     const [optimizing, setOptimizing] = useState({})
+    const prevVehicleShipments = useRef({})
 
     useEffect(() => {
         // Check permission
@@ -262,13 +263,18 @@ export default function AssignmentsPage() {
             await Promise.all(updatedShipments.map(s =>
                 supabase.from('shipments').update({ route_order: s.route_order }).eq('id', s.id)
             ))
+
+            // Recalculate route geometry for the new manual order
+            // We pass the new sorted shipments to the optimizer
+            optimizeVehicleRoute(vehicleId, updatedShipments, true) // true = keepOrder
+
         } catch (error) {
             console.error('Error updating route order:', error)
             fetchData() // Revert on error
         }
     }
 
-    // Automatic optimization when shipments change
+    // Automatic optimization when shipments change (only if composition changes, not order)
     useEffect(() => {
         if (loading || vehicles.length === 0) return
 
@@ -276,16 +282,25 @@ export default function AssignmentsPage() {
             vehicles.forEach(vehicle => {
                 const vehicleShipments = shipments.filter(s => s.assigned_vehicle_id === vehicle.id)
 
-                if (vehicleShipments.length > 0) {
-                    // Only optimize if we have shipments
-                    optimizeVehicleRoute(vehicle.id, vehicleShipments)
-                } else {
-                    // Clear optimization if no shipments
-                    setOptimizedRoutes(prev => {
-                        const newRoutes = { ...prev }
-                        delete newRoutes[vehicle.id]
-                        return newRoutes
-                    })
+                // Create a signature based on sorted IDs to detect if composition changed
+                const currentIds = vehicleShipments.map(s => s.id).sort().join(',')
+                const prevIds = prevVehicleShipments.current[vehicle.id]
+
+                // Only optimize if the set of shipments changed (added/removed)
+                // This prevents re-optimization when user manually reorders (which changes shipments state but not IDs)
+                if (currentIds !== prevIds) {
+                    if (vehicleShipments.length > 0) {
+                        optimizeVehicleRoute(vehicle.id, vehicleShipments)
+                    } else {
+                        // Clear optimization if no shipments
+                        setOptimizedRoutes(prev => {
+                            const newRoutes = { ...prev }
+                            delete newRoutes[vehicle.id]
+                            return newRoutes
+                        })
+                    }
+                    // Update ref
+                    prevVehicleShipments.current[vehicle.id] = currentIds
                 }
             })
         }, 1000) // 1 second debounce
@@ -293,7 +308,7 @@ export default function AssignmentsPage() {
         return () => clearTimeout(timer)
     }, [shipments, vehicles, loading])
 
-    const optimizeVehicleRoute = async (vehicleId, currentShipments) => {
+    const optimizeVehicleRoute = async (vehicleId, currentShipments, keepOrder = false) => {
         // Don't optimize if already optimizing to prevent race conditions
         if (optimizing[vehicleId]) return
 
@@ -306,7 +321,8 @@ export default function AssignmentsPage() {
                 body: JSON.stringify({
                     vehicleId,
                     shipmentIds: currentShipments.map(s => s.id),
-                    departureTime: new Date().toISOString()
+                    departureTime: new Date().toISOString(),
+                    keepOrder // Pass keepOrder flag
                 })
             })
 
