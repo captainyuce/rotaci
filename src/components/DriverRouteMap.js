@@ -58,9 +58,7 @@ export default function DriverRouteMap({ shipments }) {
     const { user } = useAuth()
     const [vehicleLocation, setVehicleLocation] = useState(null)
     const [depotLocation, setDepotLocation] = useState(null)
-    const [routeGeometry, setRouteGeometry] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [showRoute, setShowRoute] = useState(false) // Toggle for route visibility
 
     useEffect(() => {
         const fetchData = async () => {
@@ -105,37 +103,8 @@ export default function DriverRouteMap({ shipments }) {
         fetchData()
     }, [user])
 
-    // Fetch optimized route from admin panel (calculated via API)
-    useEffect(() => {
-        const fetchOptimizedRoute = async () => {
-            if (!user?.id || shipments.length === 0 || !showRoute) return
-
-            try {
-                const response = await fetch('/api/optimize-route', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        vehicleId: user.id,
-                        shipmentIds: shipments
-                            .filter(s => s.status !== 'delivered' && s.status !== 'failed')
-                            .map(s => s.id),
-                        departureTime: new Date().toISOString(),
-                        keepOrder: true // Use the order set by admin, don't optimize
-                    })
-                })
-
-                const data = await response.json()
-
-                if (data.routes && data.routes.length > 0) {
-                    setRouteGeometry(data.routes[0])
-                }
-            } catch (error) {
-                console.error('Error fetching optimized route:', error)
-            }
-        }
-
-        fetchOptimizedRoute()
-    }, [user, shipments, showRoute])
+    // Driver map is read-only - no route calculation
+    // Routes are managed entirely by admin panel
 
     if (loading) return <div className="h-full flex items-center justify-center bg-slate-100">Yükleniyor...</div>
 
@@ -156,89 +125,64 @@ export default function DriverRouteMap({ shipments }) {
             : [41.0082, 28.9784] // Istanbul default
 
     return (
-        <div className="relative h-full w-full">
-            {/* Route Toggle Button */}
-            <button
-                onClick={() => setShowRoute(!showRoute)}
-                className={`absolute top-4 right-4 z-[1000] px-4 py-2 rounded-lg font-medium shadow-lg transition-colors ${showRoute
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-white text-slate-700 hover:bg-slate-100'
-                    }`}
-            >
-                {showRoute ? '🗺️ Rotayı Gizle' : '🗺️ Rotayı Göster'}
-            </button>
+        <MapContainer
+            center={initialCenter}
+            zoom={12}
+            style={{ height: '100%', width: '100%' }}
+        >
+            <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-            <MapContainer
-                center={initialCenter}
-                zoom={12}
-                style={{ height: '100%', width: '100%' }}
-            >
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+            {points.length > 0 && <MapBounds bounds={points} />}
 
-                {points.length > 0 && <MapBounds bounds={points} />}
+            {/* Vehicle Marker */}
+            {vehicleLocation && (
+                <Marker position={[vehicleLocation.lat, vehicleLocation.lng]} icon={vehicleIcon}>
+                    <Popup>
+                        <strong>Aracınız</strong><br />
+                        {vehicleLocation.plate}
+                    </Popup>
+                </Marker>
+            )}
 
-                {/* Vehicle Marker */}
-                {vehicleLocation && (
-                    <Marker position={[vehicleLocation.lat, vehicleLocation.lng]} icon={vehicleIcon}>
+            {/* Depot Marker */}
+            {depotLocation && (
+                <Marker position={[depotLocation.lat, depotLocation.lng]} icon={depotIcon}>
+                    <Popup>
+                        <strong>Merkez Depo</strong><br />
+                        {depotLocation.address}
+                    </Popup>
+                </Marker>
+            )}
+
+            {/* Shipment Markers */}
+            {shipments.map((shipment, index) => {
+                if (!shipment.delivery_lat || !shipment.delivery_lng) return null
+
+                // Use route_order if available, otherwise index + 1
+                const orderNum = shipment.route_order || (index + 1)
+
+                return (
+                    <Marker
+                        key={shipment.id}
+                        position={[shipment.delivery_lat, shipment.delivery_lng]}
+                        icon={createNumberedIcon(orderNum, shipment.status)}
+                    >
                         <Popup>
-                            <strong>Aracınız</strong><br />
-                            {vehicleLocation.plate}
+                            <strong>{orderNum}. {shipment.customer_name}</strong><br />
+                            {shipment.delivery_address}<br />
+                            <span className={`text-xs font-bold ${shipment.status === 'delivered' ? 'text-green-600' :
+                                shipment.status === 'failed' ? 'text-red-600' : 'text-orange-600'
+                                }`}>
+                                {shipment.status === 'delivered' ? 'Teslim Edildi' :
+                                    shipment.status === 'failed' ? 'Başarısız' : 'Bekliyor'}
+                            </span>
                         </Popup>
                     </Marker>
-                )}
-
-                {/* Depot Marker */}
-                {depotLocation && (
-                    <Marker position={[depotLocation.lat, depotLocation.lng]} icon={depotIcon}>
-                        <Popup>
-                            <strong>Merkez Depo</strong><br />
-                            {depotLocation.address}
-                        </Popup>
-                    </Marker>
-                )}
-
-                {/* Shipment Markers */}
-                {shipments.map((shipment, index) => {
-                    if (!shipment.delivery_lat || !shipment.delivery_lng) return null
-
-                    // Use route_order if available, otherwise index + 1
-                    const orderNum = shipment.route_order || (index + 1)
-
-                    return (
-                        <Marker
-                            key={shipment.id}
-                            position={[shipment.delivery_lat, shipment.delivery_lng]}
-                            icon={createNumberedIcon(orderNum, shipment.status)}
-                        >
-                            <Popup>
-                                <strong>{orderNum}. {shipment.customer_name}</strong><br />
-                                {shipment.delivery_address}<br />
-                                <span className={`text-xs font-bold ${shipment.status === 'delivered' ? 'text-green-600' :
-                                    shipment.status === 'failed' ? 'text-red-600' : 'text-orange-600'
-                                    }`}>
-                                    {shipment.status === 'delivered' ? 'Teslim Edildi' :
-                                        shipment.status === 'failed' ? 'Başarısız' : 'Bekliyor'}
-                                </span>
-                            </Popup>
-                        </Marker>
-                    )
-                })}
-
-
-                {/* Route Line - Shows the route calculated by admin panel */}
-                {routeGeometry && (
-                    <Polyline
-                        positions={routeGeometry}
-                        color="#3b82f6"
-                        weight={4}
-                        opacity={0.7}
-                        dashArray="10, 10"
-                    />
-                )}
-            </MapContainer>
-        </div>
+                )
+            })}
+        </MapContainer>
     )
 }

@@ -40,6 +40,7 @@ export default function MapInner() {
     const [vehicles, setVehicles] = useState([])
     const [shipments, setShipments] = useState([])
     const [depotLocation, setDepotLocation] = useState(null)
+    const [showRoutes, setShowRoutes] = useState(false) // Toggle for route visibility
     const { selectedVehicle, optimizedRoutes } = useDashboard()
 
     // Default center (Istanbul)
@@ -128,148 +129,160 @@ export default function MapInner() {
     const optimizedRoute = selectedVehicle ? optimizedRoutes[selectedVehicle.id] : null
 
     return (
-        <MapContainer center={center} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+        <div className="relative h-full w-full">
+            {/* Route Toggle Button */}
+            <button
+                onClick={() => setShowRoutes(!showRoutes)}
+                className={`absolute top-4 right-4 z-[1000] px-4 py-2 rounded-lg font-medium shadow-lg transition-colors ${showRoutes
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+                    }`}
+            >
+                {showRoutes ? '🗺️ Rotayı Gizle' : '🗺️ Rotayı Göster'}
+            </button>
 
-            {/* Optimized Route Lines - Using actual road geometry */}
-            {/* Optimized Route Lines - Show for ALL vehicles */}
-            {vehicles.map(vehicle => {
-                const route = optimizedRoutes[vehicle.id]
-                if (!route || !route.routes || route.routes.length === 0) return null
+            <MapContainer center={center} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-                // Generate a consistent color based on vehicle ID or plate
-                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
-                const colorIndex = vehicle.plate.charCodeAt(vehicle.plate.length - 1) % colors.length
-                const color = colors[colorIndex]
+                {/* Optimized Route Lines - Show for ALL vehicles when showRoutes is true */}
+                {showRoutes && vehicles.map(vehicle => {
+                    const route = optimizedRoutes[vehicle.id]
+                    if (!route || !route.routes || route.routes.length === 0) return null
 
-                return (
-                    <div key={`route-group-${vehicle.id}`}>
-                        {route.routes.map((routeGeometry, index) => (
-                            <Polyline
-                                key={`optimized-route-${vehicle.id}-${index}`}
-                                positions={routeGeometry}
-                                color={color}
-                                weight={4}
-                                opacity={0.8}
-                            />
-                        ))}
-                        {/* Finish Marker at the end of the route */}
-                        {route.routes.length > 0 && route.routes[0].length > 0 && (
-                            <Marker
-                                position={route.routes[0][route.routes[0].length - 1]}
-                                icon={new L.divIcon({
-                                    html: '<div style="font-size: 20px;">🏁</div>',
-                                    className: 'bg-transparent',
-                                    iconSize: [24, 24],
-                                    iconAnchor: [12, 12]
-                                })}
-                            >
-                                <Popup>Rota Bitişi ({vehicle.plate})</Popup>
-                            </Marker>
-                        )}
-                    </div>
-                )
-            })}
+                    // Generate a consistent color based on vehicle ID or plate
+                    const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+                    const colorIndex = vehicle.plate.charCodeAt(vehicle.plate.length - 1) % colors.length
+                    const color = colors[colorIndex]
 
-            {/* Fallback: Simple lines if no optimized route */}
-            {selectedVehicle && !optimizedRoute && selectedVehicle.current_lat && selectedVehicle.current_lng && selectedVehicleShipments.map((shipment, index) => {
-                if (!shipment.delivery_lat || !shipment.delivery_lng) return null
-
-                return (
-                    <Polyline
-                        key={`route-${shipment.id}`}
-                        positions={[
-                            [selectedVehicle.current_lat, selectedVehicle.current_lng],
-                            [shipment.delivery_lat, shipment.delivery_lng]
-                        ]}
-                        color="#3b82f6"
-                        weight={3}
-                        opacity={0.5}
-                        dashArray="10, 10"
-                    />
-                )
-            })}
-
-            {/* Depot Marker */}
-            {depotLocation && (
-                <Marker position={[depotLocation.lat, depotLocation.lng]} icon={depotIcon}>
-                    <Popup>
-                        <div className="font-sans">
-                            <h3 className="font-bold">Merkez Depo</h3>
-                            <p className="text-sm">{depotLocation.address}</p>
-                            <div className="text-xs text-slate-500 mt-1">🏠 Ana Üs</div>
+                    return (
+                        <div key={`route-group-${vehicle.id}`}>
+                            {route.routes.map((routeGeometry, index) => (
+                                <Polyline
+                                    key={`optimized-route-${vehicle.id}-${index}`}
+                                    positions={routeGeometry}
+                                    color={color}
+                                    weight={4}
+                                    opacity={0.8}
+                                />
+                            ))}
+                            {/* Finish Marker at the end of the route */}
+                            {route.routes.length > 0 && route.routes[0].length > 0 && (
+                                <Marker
+                                    position={route.routes[0][route.routes[0].length - 1]}
+                                    icon={new L.divIcon({
+                                        html: '<div style="font-size: 20px;">🏁</div>',
+                                        className: 'bg-transparent',
+                                        iconSize: [24, 24],
+                                        iconAnchor: [12, 12]
+                                    })}
+                                >
+                                    <Popup>Rota Bitişi ({vehicle.plate})</Popup>
+                                </Marker>
+                            )}
                         </div>
-                    </Popup>
-                </Marker>
-            )}
+                    )
+                })}
 
-            {/* Vehicles */}
-            {vehicles.map(vehicle => {
-                // Determine icon based on vehicle type
-                let emoji = '🚐'; // Default (Van/Minivan)
+                {/* Fallback: Simple lines if no optimized route */}
+                {selectedVehicle && !optimizedRoute && selectedVehicle.current_lat && selectedVehicle.current_lng && selectedVehicleShipments.map((shipment, index) => {
+                    if (!shipment.delivery_lat || !shipment.delivery_lng) return null
 
-                if (vehicle.vehicle_type === 'truck') {
-                    emoji = '🚛'; // Truck
-                }
+                    return (
+                        <Polyline
+                            key={`route-${shipment.id}`}
+                            positions={[
+                                [selectedVehicle.current_lat, selectedVehicle.current_lng],
+                                [shipment.delivery_lat, shipment.delivery_lng]
+                            ]}
+                            color="#3b82f6"
+                            weight={3}
+                            opacity={0.5}
+                            dashArray="10, 10"
+                        />
+                    )
+                })}
 
-                const dynamicVehicleIcon = new L.divIcon({
-                    html: `<div style="font-size: 35px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${emoji}</div>`,
-                    className: 'bg-transparent',
-                    iconSize: [40, 40],
-                    iconAnchor: [20, 20],
-                    popupAnchor: [0, -20]
-                });
+                {/* Depot Marker */}
+                {depotLocation && (
+                    <Marker position={[depotLocation.lat, depotLocation.lng]} icon={depotIcon}>
+                        <Popup>
+                            <div className="font-sans">
+                                <h3 className="font-bold">Merkez Depo</h3>
+                                <p className="text-sm">{depotLocation.address}</p>
+                                <div className="text-xs text-slate-500 mt-1">🏠 Ana Üs</div>
+                            </div>
+                        </Popup>
+                    </Marker>
+                )}
 
-                return (
-                    vehicle.current_lat && vehicle.current_lng && (
+                {/* Vehicles */}
+                {vehicles.map(vehicle => {
+                    // Determine icon based on vehicle type
+                    let emoji = '🚐'; // Default (Van/Minivan)
+
+                    if (vehicle.vehicle_type === 'truck') {
+                        emoji = '🚛'; // Truck
+                    }
+
+                    const dynamicVehicleIcon = new L.divIcon({
+                        html: `<div style="font-size: 35px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${emoji}</div>`,
+                        className: 'bg-transparent',
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20],
+                        popupAnchor: [0, -20]
+                    });
+
+                    return (
+                        vehicle.current_lat && vehicle.current_lng && (
+                            <Marker
+                                key={vehicle.id}
+                                position={[vehicle.current_lat, vehicle.current_lng]}
+                                icon={dynamicVehicleIcon}
+                            >
+                                <Popup>
+                                    <div className="font-sans">
+                                        <h3 className="font-bold">{vehicle.plate}</h3>
+                                        <p className="text-sm">{vehicle.driver_name}</p>
+                                        <p className="text-xs text-slate-500">
+                                            {vehicle.vehicle_type === 'truck' ? 'Kamyon' : 'Panelvan/Minivan'}
+                                            {' • '}
+                                            Yük: {vehicle.current_load} / {vehicle.capacity} kg
+                                        </p>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${vehicle.status === 'moving' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                            {vehicle.status === 'moving' ? 'Hareket Halinde' : 'Beklemede'}
+                                        </span>
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        )
+                    )
+                })}
+
+                {/* Shipments */}
+                {shipments.map(shipment => (
+                    shipment.delivery_lat && shipment.delivery_lng && shipment.status !== 'delivered' && (
                         <Marker
-                            key={vehicle.id}
-                            position={[vehicle.current_lat, vehicle.current_lng]}
-                            icon={dynamicVehicleIcon}
+                            key={shipment.id}
+                            position={[shipment.delivery_lat, shipment.delivery_lng]}
+                            icon={shipmentIcon}
                         >
                             <Popup>
                                 <div className="font-sans">
-                                    <h3 className="font-bold">{vehicle.plate}</h3>
-                                    <p className="text-sm">{vehicle.driver_name}</p>
-                                    <p className="text-xs text-slate-500">
-                                        {vehicle.vehicle_type === 'truck' ? 'Kamyon' : 'Panelvan/Minivan'}
-                                        {' • '}
-                                        Yük: {vehicle.current_load} / {vehicle.capacity} kg
+                                    <h3 className="font-bold">{shipment.customer_name}</h3>
+                                    <p className="text-sm">{shipment.delivery_address}</p>
+                                    <p className="text-xs text-slate-500">{shipment.weight} kg</p>
+                                    <p className="text-xs font-medium mt-1">
+                                        Durum: {shipment.status === 'assigned' ? 'Atandı' : 'Bekliyor'}
                                     </p>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${vehicle.status === 'moving' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                                        {vehicle.status === 'moving' ? 'Hareket Halinde' : 'Beklemede'}
-                                    </span>
                                 </div>
                             </Popup>
                         </Marker>
                     )
-                )
-            })}
-
-            {/* Shipments */}
-            {shipments.map(shipment => (
-                shipment.delivery_lat && shipment.delivery_lng && shipment.status !== 'delivered' && (
-                    <Marker
-                        key={shipment.id}
-                        position={[shipment.delivery_lat, shipment.delivery_lng]}
-                        icon={shipmentIcon}
-                    >
-                        <Popup>
-                            <div className="font-sans">
-                                <h3 className="font-bold">{shipment.customer_name}</h3>
-                                <p className="text-sm">{shipment.delivery_address}</p>
-                                <p className="text-xs text-slate-500">{shipment.weight} kg</p>
-                                <p className="text-xs font-medium mt-1">
-                                    Durum: {shipment.status === 'assigned' ? 'Atandı' : 'Bekliyor'}
-                                </p>
-                            </div>
-                        </Popup>
-                    </Marker>
-                )
-            ))}
-        </MapContainer>
+                ))}
+            </MapContainer>
+        </div>
     )
 }
