@@ -104,9 +104,37 @@ export default function DriverRouteMap({ shipments }) {
         fetchData()
     }, [user])
 
-    // Note: Route calculation is disabled - driver sees only the order set by admin
-    // The actual route line is not shown to avoid confusion with automatic optimization
-    // Driver should follow the numbered markers in order
+    // Fetch optimized route from admin panel (calculated via API)
+    useEffect(() => {
+        const fetchOptimizedRoute = async () => {
+            if (!user?.id || shipments.length === 0) return
+
+            try {
+                const response = await fetch('/api/optimize-route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vehicleId: user.id,
+                        shipmentIds: shipments
+                            .filter(s => s.status !== 'delivered' && s.status !== 'failed')
+                            .map(s => s.id),
+                        departureTime: new Date().toISOString(),
+                        keepOrder: true // Use the order set by admin, don't optimize
+                    })
+                })
+
+                const data = await response.json()
+
+                if (data.routes && data.routes.length > 0) {
+                    setRouteGeometry(data.routes[0])
+                }
+            } catch (error) {
+                console.error('Error fetching optimized route:', error)
+            }
+        }
+
+        fetchOptimizedRoute()
+    }, [user, shipments])
 
     if (loading) return <div className="h-full flex items-center justify-center bg-slate-100">Yükleniyor...</div>
 
@@ -187,9 +215,8 @@ export default function DriverRouteMap({ shipments }) {
             })}
 
 
-            {/* Route Line - Disabled to prevent confusion with automatic optimization */}
-            {/* Driver should follow the numbered markers in the order shown */}
-            {/* {routeGeometry && (
+            {/* Route Line - Shows the route calculated by admin panel */}
+            {routeGeometry && (
                 <Polyline
                     positions={routeGeometry}
                     color="#3b82f6"
@@ -197,7 +224,7 @@ export default function DriverRouteMap({ shipments }) {
                     opacity={0.7}
                     dashArray="10, 10"
                 />
-            )} */}
+            )}
         </MapContainer>
     )
 }
