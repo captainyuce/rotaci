@@ -274,39 +274,39 @@ export default function AssignmentsPage() {
         }
     }
 
-    // Automatic optimization when shipments change (only if composition changes, not order)
-    useEffect(() => {
-        if (loading || vehicles.length === 0) return
+    // Automatic optimization disabled - now manual via button
+    // useEffect(() => {
+    //     if (loading || vehicles.length === 0) return
 
-        const timer = setTimeout(() => {
-            vehicles.forEach(vehicle => {
-                const vehicleShipments = shipments.filter(s => s.assigned_vehicle_id === vehicle.id)
+    //     const timer = setTimeout(() => {
+    //         vehicles.forEach(vehicle => {
+    //             const vehicleShipments = shipments.filter(s => s.assigned_vehicle_id === vehicle.id)
 
-                // Create a signature based on sorted IDs to detect if composition changed
-                const currentIds = vehicleShipments.map(s => s.id).sort().join(',')
-                const prevIds = prevVehicleShipments.current[vehicle.id]
+    //             // Create a signature based on sorted IDs to detect if composition changed
+    //             const currentIds = vehicleShipments.map(s => s.id).sort().join(',')
+    //             const prevIds = prevVehicleShipments.current[vehicle.id]
 
-                // Only optimize if the set of shipments changed (added/removed)
-                // This prevents re-optimization when user manually reorders (which changes shipments state but not IDs)
-                if (currentIds !== prevIds) {
-                    if (vehicleShipments.length > 0) {
-                        optimizeVehicleRoute(vehicle.id, vehicleShipments)
-                    } else {
-                        // Clear optimization if no shipments
-                        setOptimizedRoutes(prev => {
-                            const newRoutes = { ...prev }
-                            delete newRoutes[vehicle.id]
-                            return newRoutes
-                        })
-                    }
-                    // Update ref
-                    prevVehicleShipments.current[vehicle.id] = currentIds
-                }
-            })
-        }, 1000) // 1 second debounce
+    //             // Only optimize if the set of shipments changed (added/removed)
+    //             // This prevents re-optimization when user manually reorders (which changes shipments state but not IDs)
+    //             if (currentIds !== prevIds) {
+    //                 if (vehicleShipments.length > 0) {
+    //                     optimizeVehicleRoute(vehicle.id, vehicleShipments)
+    //                 } else {
+    //                     // Clear optimization if no shipments
+    //                     setOptimizedRoutes(prev => {
+    //                         const newRoutes = { ...prev }
+    //                         delete newRoutes[vehicle.id]
+    //                         return newRoutes
+    //                     })
+    //                 }
+    //                 // Update ref
+    //                 prevVehicleShipments.current[vehicle.id] = currentIds
+    //             }
+    //         })
+    //     }, 1000) // 1 second debounce
 
-        return () => clearTimeout(timer)
-    }, [shipments, vehicles, loading])
+    //     return () => clearTimeout(timer)
+    // }, [shipments, vehicles, loading])
 
     const optimizeVehicleRoute = async (vehicleId, currentShipments, keepOrder = false) => {
         // Don't optimize if already optimizing to prevent race conditions
@@ -470,12 +470,23 @@ export default function AssignmentsPage() {
                                             <span className="font-bold text-slate-900">{vehicle.plate}</span>
                                             <span className="text-xs text-slate-600">({vehicleShipments.length} sevkiyat)</span>
                                         </div>
-                                        {isOptimizing && (
-                                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-medium">
-                                                <Zap size={14} className="animate-pulse" />
-                                                Rota Hesaplanıyor...
-                                            </span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {!isOptimizing && (
+                                                <button
+                                                    onClick={() => optimizeVehicleRoute(vehicle.id, vehicleShipments, false)}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+                                                >
+                                                    <Zap size={14} />
+                                                    Optimize Et
+                                                </button>
+                                            )}
+                                            {isOptimizing && (
+                                                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-medium">
+                                                    <Zap size={14} className="animate-pulse" />
+                                                    Rota Hesaplanıyor...
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Optimization Summary */}
