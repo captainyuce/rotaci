@@ -135,17 +135,26 @@ export default function MapInner() {
             />
 
             {/* Optimized Route Lines - Using actual road geometry */}
-            {selectedVehicle && optimizedRoute && optimizedRoute.routes && optimizedRoute.routes.length > 0 && (
-                optimizedRoute.routes.map((routeGeometry, index) => (
+            {/* Optimized Route Lines - Show for ALL vehicles */}
+            {vehicles.map(vehicle => {
+                const route = optimizedRoutes[vehicle.id]
+                if (!route || !route.routes || route.routes.length === 0) return null
+
+                // Generate a consistent color based on vehicle ID or plate
+                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+                const colorIndex = vehicle.plate.charCodeAt(vehicle.plate.length - 1) % colors.length
+                const color = colors[colorIndex]
+
+                return route.routes.map((routeGeometry, index) => (
                     <Polyline
-                        key={`optimized-route-${index}`}
+                        key={`optimized-route-${vehicle.id}-${index}`}
                         positions={routeGeometry}
-                        color="#3b82f6"
+                        color={color}
                         weight={4}
                         opacity={0.8}
                     />
                 ))
-            )}
+            })}
 
             {/* Fallback: Simple lines if no optimized route */}
             {selectedVehicle && !optimizedRoute && selectedVehicle.current_lat && selectedVehicle.current_lng && selectedVehicleShipments.map((shipment, index) => {

@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
-import { Truck, Package, CheckCircle, Zap, Clock, MapPin } from 'lucide-react'
+import { Truck, Package, CheckCircle, Zap, Clock, MapPin, GripVertical } from 'lucide-react'
+import { DragDropContext, Draggable } from 'react-beautiful-dnd'
+import { StrictModeDroppable } from '@/components/StrictModeDroppable'
 import { formatDistance, formatDuration } from '@/lib/routeOptimizer'
 import { useDashboard } from '@/contexts/DashboardContext'
 import { logShipmentAction } from '@/lib/auditLog'
@@ -33,6 +35,7 @@ export default function AssignmentsPage() {
                 .from('shipments')
                 .select('*')
                 .in('status', ['pending', 'assigned'])
+                .order('route_order', { ascending: true })
                 .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate')
         ])
@@ -201,6 +204,70 @@ export default function AssignmentsPage() {
         )
     }
 
+    const onDragEnd = async (result) => {
+        const { destination, source, draggableId } = result
+
+        if (!destination) return
+
+        if (
+            destination.droppableId === source.droppableId &&
+            destination.index === source.index
+        ) {
+            return
+        }
+
+        const vehicleId = source.droppableId
+
+        // Get current shipments for this vehicle (check if optimized route exists)
+        let vehicleShipments = []
+        if (optimizedRoutes[vehicleId]?.optimizedShipments) {
+            vehicleShipments = optimizedRoutes[vehicleId].optimizedShipments
+        } else {
+            vehicleShipments = shipments
+                .filter(s => s.assigned_vehicle_id === vehicleId)
+                .sort((a, b) => (a.route_order || 0) - (b.route_order || 0))
+        }
+
+        const newShipments = Array.from(vehicleShipments)
+        const [movedShipment] = newShipments.splice(source.index, 1)
+        newShipments.splice(destination.index, 0, movedShipment)
+
+        // Calculate new orders
+        const updatedShipments = newShipments.map((s, index) => ({
+            ...s,
+            route_order: index + 1
+        }))
+
+        // Optimistic update
+        setShipments(prev => {
+            // We need to update the main shipments list
+            // We replace the modified shipments with new ones (which have new route_order)
+            const newMap = prev.map(s => {
+                const updated = updatedShipments.find(us => us.id === s.id)
+                return updated ? { ...s, route_order: updated.route_order } : s
+            })
+            return newMap
+        })
+
+        // Clear optimization for this vehicle as manual order overrides it
+        // But we keep the new order derived FROM the optimized route if it was optimized
+        setOptimizedRoutes(prev => {
+            const newRoutes = { ...prev }
+            delete newRoutes[vehicleId]
+            return newRoutes
+        })
+
+        // Update DB
+        try {
+            await Promise.all(updatedShipments.map(s =>
+                supabase.from('shipments').update({ route_order: s.route_order }).eq('id', s.id)
+            ))
+        } catch (error) {
+            console.error('Error updating route order:', error)
+            fetchData() // Revert on error
+        }
+    }
+
     // Automatic optimization when shipments change
     useEffect(() => {
         if (loading || vehicles.length === 0) return
@@ -364,97 +431,131 @@ export default function AssignmentsPage() {
                         Atanmış Sevkiyatlar ({assignedShipments.length})
                     </h3>
 
-                    {vehicles.map(vehicle => {
-                        const vehicleShipments = assignedShipments.filter(s => s.assigned_vehicle_id === vehicle.id)
-                        if (vehicleShipments.length === 0) return null
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        {vehicles.map(vehicle => {
+                            const vehicleShipments = assignedShipments
+                                .filter(s => s.assigned_vehicle_id === vehicle.id)
+                                .sort((a, b) => (a.route_order || 0) - (b.route_order || 0))
 
-                        const optimizedRoute = optimizedRoutes[vehicle.id]
-                        const isOptimizing = optimizing[vehicle.id]
+                            if (vehicleShipments.length === 0) return null
 
-                        // Use optimized order if available, otherwise use original order
-                        const displayShipments = optimizedRoute?.optimizedShipments || vehicleShipments
+                            const optimizedRoute = optimizedRoutes[vehicle.id]
+                            const isOptimizing = optimizing[vehicle.id]
 
-                        return (
-                            <div key={vehicle.id} className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
-                                {/* Vehicle Header */}
-                                <div className="bg-slate-100 p-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Truck size={16} className="text-primary" />
-                                        <span className="font-bold text-slate-900">{vehicle.plate}</span>
-                                        <span className="text-xs text-slate-600">({vehicleShipments.length} sevkiyat)</span>
+                            // Use optimized order if available, otherwise use original order (which is now sorted by route_order)
+                            const displayShipments = optimizedRoute?.optimizedShipments || vehicleShipments
+
+                            return (
+                                <div key={vehicle.id} className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
+                                    {/* Vehicle Header */}
+                                    <div className="bg-slate-100 p-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Truck size={16} className="text-primary" />
+                                            <span className="font-bold text-slate-900">{vehicle.plate}</span>
+                                            <span className="text-xs text-slate-600">({vehicleShipments.length} sevkiyat)</span>
+                                        </div>
+                                        {isOptimizing && (
+                                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-medium">
+                                                <Zap size={14} className="animate-pulse" />
+                                                Rota Hesaplanıyor...
+                                            </span>
+                                        )}
                                     </div>
-                                    {isOptimizing && (
-                                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-medium">
-                                            <Zap size={14} className="animate-pulse" />
-                                            Rota Hesaplanıyor...
-                                        </span>
+
+                                    {/* Optimization Summary */}
+                                    {optimizedRoute && (
+                                        <div className="bg-zinc-50 border-b border-blue-100 p-2 flex items-center gap-4 text-xs">
+                                            <span className="flex items-center gap-1 text-zinc-900">
+                                                <MapPin size={12} />
+                                                <strong>{formatDistance(optimizedRoute.totalDistance)}</strong>
+                                            </span>
+                                            <span className="flex items-center gap-1 text-zinc-900">
+                                                <Clock size={12} />
+                                                <strong>{formatDuration(optimizedRoute.totalDuration)}</strong>
+                                            </span>
+                                            <span className="text-zinc-700">✨ Optimize edilmiş rota</span>
+                                        </div>
                                     )}
-                                </div>
 
-                                {/* Optimization Summary */}
-                                {optimizedRoute && (
-                                    <div className="bg-zinc-50 border-b border-blue-100 p-2 flex items-center gap-4 text-xs">
-                                        <span className="flex items-center gap-1 text-zinc-900">
-                                            <MapPin size={12} />
-                                            <strong>{formatDistance(optimizedRoute.totalDistance)}</strong>
-                                        </span>
-                                        <span className="flex items-center gap-1 text-zinc-900">
-                                            <Clock size={12} />
-                                            <strong>{formatDuration(optimizedRoute.totalDuration)}</strong>
-                                        </span>
-                                        <span className="text-zinc-700">✨ Optimize edilmiş rota</span>
-                                    </div>
-                                )}
+                                    {/* Shipments List */}
+                                    <StrictModeDroppable droppableId={vehicle.id}>
+                                        {(provided) => (
+                                            <div
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
+                                                className="divide-y divide-slate-100"
+                                            >
+                                                {displayShipments.map((shipment, index) => {
+                                                    const routeOrder = index + 1
 
-                                {/* Shipments List */}
-                                <div className="divide-y divide-slate-100">
-                                    {displayShipments.map((shipment, index) => {
-                                        const routeOrder = shipment.routeOrder || (index + 1)
+                                                    return (
+                                                        <Draggable
+                                                            key={shipment.id}
+                                                            draggableId={shipment.id}
+                                                            index={index}
+                                                        >
+                                                            {(provided, snapshot) => (
+                                                                <div
+                                                                    ref={provided.innerRef}
+                                                                    {...provided.draggableProps}
+                                                                    className={`p-3 transition-colors ${snapshot.isDragging ? 'bg-blue-50 shadow-lg' : 'hover:bg-slate-50'}`}
+                                                                >
+                                                                    <div className="flex items-start gap-3">
+                                                                        {/* Drag Handle */}
+                                                                        <div
+                                                                            {...provided.dragHandleProps}
+                                                                            className="mt-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing"
+                                                                        >
+                                                                            <GripVertical size={16} />
+                                                                        </div>
 
-                                        return (
-                                            <div key={shipment.id} className="p-3 hover:bg-slate-50 transition-colors">
-                                                <div className="flex items-start gap-3">
-                                                    {/* Route Order Badge */}
-                                                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${optimizedRoute
-                                                        ? 'bg-primary text-white'
-                                                        : 'bg-slate-300 text-slate-600'
-                                                        }`}>
-                                                        {routeOrder}
-                                                    </div>
+                                                                        {/* Route Order Badge */}
+                                                                        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${optimizedRoute
+                                                                            ? 'bg-primary text-white'
+                                                                            : 'bg-slate-300 text-slate-600'
+                                                                            }`}>
+                                                                            {routeOrder}
+                                                                        </div>
 
-                                                    {/* Shipment Info */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 className="font-bold text-slate-900 truncate">{shipment.customer_name}</h4>
-                                                        <p className="text-xs text-slate-600 truncate mt-0.5">{shipment.delivery_address}</p>
+                                                                        {/* Shipment Info */}
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h4 className="font-bold text-slate-900 truncate">{shipment.customer_name}</h4>
+                                                                            <p className="text-xs text-slate-600 truncate mt-0.5">{shipment.delivery_address}</p>
 
-                                                        <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                                                            <span className="text-slate-600">⚖️ {shipment.weight} kg</span>
-                                                            {shipment.delivery_time && (
-                                                                <span className="text-slate-600">🕐 {shipment.delivery_time}</span>
+                                                                            <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                                                                                <span className="text-slate-600">⚖️ {shipment.weight} kg</span>
+                                                                                {shipment.delivery_time && (
+                                                                                    <span className="text-slate-600">🕐 {shipment.delivery_time}</span>
+                                                                                )}
+                                                                                {shipment.eta && (
+                                                                                    <span className="text-zinc-700 font-medium">
+                                                                                        ETA: {new Date(shipment.eta).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Remove Assignment Button */}
+                                                                        <button
+                                                                            onClick={() => handleAssign(shipment.id, null)}
+                                                                            className="text-xs text-red-600 hover:text-red-700 font-medium flex-shrink-0"
+                                                                        >
+                                                                            Kaldır
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
                                                             )}
-                                                            {shipment.eta && (
-                                                                <span className="text-zinc-700 font-medium">
-                                                                    ETA: {new Date(shipment.eta).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Remove Assignment Button */}
-                                                    <button
-                                                        onClick={() => handleAssign(shipment.id, null)}
-                                                        className="text-xs text-red-600 hover:text-red-700 font-medium flex-shrink-0"
-                                                    >
-                                                        Kaldır
-                                                    </button>
-                                                </div>
+                                                        </Draggable>
+                                                    )
+                                                })}
+                                                {provided.placeholder}
                                             </div>
-                                        )
-                                    })}
+                                        )}
+                                    </StrictModeDroppable>
                                 </div>
-                            </div>
-                        )
-                    })}
+                            )
+                        })}
+                    </DragDropContext>
 
                     {assignedShipments.length === 0 && (
                         <p className="text-center text-slate-500 py-8">Atanmış sevkiyat yok</p>
