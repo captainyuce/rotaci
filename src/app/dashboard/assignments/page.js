@@ -19,6 +19,8 @@ export default function AssignmentsPage() {
     const [loading, setLoading] = useState(true)
     const [selectedShipments, setSelectedShipments] = useState([])
     const [optimizing, setOptimizing] = useState({})
+    const [editingVehicle, setEditingVehicle] = useState(null) // ID of vehicle being edited
+    const [tempShipments, setTempShipments] = useState({}) // Temporary order during edit
     const prevVehicleShipments = useRef({})
 
     useEffect(() => {
@@ -205,71 +207,99 @@ export default function AssignmentsPage() {
         )
     }
 
-    const onDragEnd = async (result) => {
-        const { destination, source, draggableId } = result
+    const handleStartEdit = (vehicleId, currentShipments) => {
+        setEditingVehicle(vehicleId)
+        setTempShipments(prev => ({
+            ...prev,
+            [vehicleId]: currentShipments
+        }))
+    }
+
+    const handleCancelEdit = () => {
+        setEditingVehicle(null)
+        setTempShipments({})
+    }
+
+    const handleSaveOrder = async (vehicleId) => {
+        const shipmentsToSave = tempShipments[vehicleId]
+        if (!shipmentsToSave) return
+
+        try {
+            // 1. Update DB with new order
+            await Promise.all(shipmentsToSave.map((s, index) =>
+                supabase.from('shipments').update({ route_order: index + 1 }).eq('id', s.id)
+            ))
+
+            // 2. Update local shipments state to reflect saved order
+            setShipments(prev => {
+                const newMap = prev.map(s => {
+                    const updated = shipmentsToSave.find(us => us.id === s.id)
+                    return updated ? { ...s, route_order: shipmentsToSave.indexOf(updated) + 1 } : s
+                })
+                return newMap
+            })
+
+            // 3. Calculate route geometry for the new manual order (keepOrder: true)
+            await optimizeVehicleRoute(vehicleId, shipmentsToSave, true)
+
+            // 4. Exit edit mode
+            handleCancelEdit()
+
+        } catch (error) {
+            console.error('Error saving route order:', error)
+            alert('Sıralama kaydedilirken bir hata oluştu.')
+        }
+    }
+
+    const handleAutoOptimize = async (vehicleId, currentShipments) => {
+        if (confirm('Otomatik optimizasyon mevcut sıralamayı değiştirecektir. Emin misiniz?')) {
+            try {
+                // 1. Call optimization API (keepOrder: false)
+                const result = await optimizeVehicleRoute(vehicleId, currentShipments, false)
+
+                if (result && result.optimizedShipments) {
+                    // 2. Update DB with optimized order
+                    await Promise.all(result.optimizedShipments.map((s, index) =>
+                        supabase.from('shipments').update({ route_order: index + 1 }).eq('id', s.id)
+                    ))
+
+                    // 3. Update local shipments state
+                    setShipments(prev => {
+                        const newMap = prev.map(s => {
+                            const updated = result.optimizedShipments.find(us => us.id === s.id)
+                            return updated ? { ...s, route_order: result.optimizedShipments.indexOf(updated) + 1 } : s
+                        })
+                        return newMap
+                    })
+                }
+            } catch (error) {
+                console.error('Auto optimization error:', error)
+                alert('Optimizasyon sırasında bir hata oluştu.')
+            }
+        }
+    }
+
+    const onDragEnd = (result) => {
+        const { destination, source } = result
 
         if (!destination) return
-
-        if (
-            destination.droppableId === source.droppableId &&
-            destination.index === source.index
-        ) {
-            return
-        }
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return
 
         const vehicleId = source.droppableId
 
-        // Get current shipments for this vehicle (check if optimized route exists)
-        let vehicleShipments = []
-        if (optimizedRoutes[vehicleId]?.optimizedShipments) {
-            vehicleShipments = optimizedRoutes[vehicleId].optimizedShipments
-        } else {
-            vehicleShipments = shipments
-                .filter(s => s.assigned_vehicle_id === vehicleId)
-                .sort((a, b) => (a.route_order || 0) - (b.route_order || 0))
-        }
+        // Only allow dragging if editing this vehicle
+        if (editingVehicle !== vehicleId) return
 
-        const newShipments = Array.from(vehicleShipments)
+        const currentList = tempShipments[vehicleId] || []
+        const newShipments = Array.from(currentList)
         const [movedShipment] = newShipments.splice(source.index, 1)
         newShipments.splice(destination.index, 0, movedShipment)
 
-        // Calculate new orders
-        const updatedShipments = newShipments.map((s, index) => ({
-            ...s,
-            route_order: index + 1
+        // Update temp state
+        setTempShipments(prev => ({
+            ...prev,
+            [vehicleId]: newShipments
         }))
-
-        // Optimistic update
-        setShipments(prev => {
-            // We need to update the main shipments list
-            // We replace the modified shipments with new ones (which have new route_order)
-            const newMap = prev.map(s => {
-                const updated = updatedShipments.find(us => us.id === s.id)
-                return updated ? { ...s, route_order: updated.route_order } : s
-            })
-            return newMap
-        })
-
-        // Clear optimization for this vehicle as manual order overrides it
-        // But we keep the new order derived FROM the optimized route if it was optimized
-        setOptimizedRoutes(prev => {
-            const newRoutes = { ...prev }
-            delete newRoutes[vehicleId]
-            return newRoutes
-        })
-
-        // Update DB
-        try {
-            await Promise.all(updatedShipments.map(s =>
-                supabase.from('shipments').update({ route_order: s.route_order }).eq('id', s.id)
-            ))
-
-            // Route calculation removed - user must click "Optimize Et" button manually
-
-        } catch (error) {
-            console.error('Error updating route order:', error)
-            fetchData() // Revert on error
-        }
     }
 
     // Automatic optimization disabled - now manual via button
@@ -308,7 +338,7 @@ export default function AssignmentsPage() {
 
     const optimizeVehicleRoute = async (vehicleId, currentShipments, keepOrder = false) => {
         // Don't optimize if already optimizing to prevent race conditions
-        if (optimizing[vehicleId]) return
+        if (optimizing[vehicleId]) return null
 
         setOptimizing(prev => ({ ...prev, [vehicleId]: true }))
 
@@ -328,11 +358,14 @@ export default function AssignmentsPage() {
 
             if (response.ok) {
                 setOptimizedRoutes(prev => ({ ...prev, [vehicleId]: data }))
+                return data
             } else {
                 console.error('Route optimization failed:', data.error)
+                return null
             }
         } catch (error) {
             console.error('Optimization error:', error)
+            return null
         } finally {
             setOptimizing(prev => ({ ...prev, [vehicleId]: false }))
         }
@@ -456,8 +489,13 @@ export default function AssignmentsPage() {
                             const optimizedRoute = optimizedRoutes[vehicle.id]
                             const isOptimizing = optimizing[vehicle.id]
 
-                            // Use optimized order if available, otherwise use original order (which is now sorted by route_order)
-                            const displayShipments = optimizedRoute?.optimizedShipments || vehicleShipments
+                            // Use temp shipments if editing, otherwise optimized or default order
+                            let displayShipments = []
+                            if (editingVehicle === vehicle.id && tempShipments[vehicle.id]) {
+                                displayShipments = tempShipments[vehicle.id]
+                            } else {
+                                displayShipments = optimizedRoute?.optimizedShipments || vehicleShipments
+                            }
 
                             return (
                                 <div key={vehicle.id} className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
@@ -469,20 +507,48 @@ export default function AssignmentsPage() {
                                             <span className="text-xs text-slate-600">({vehicleShipments.length} sevkiyat)</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {!isOptimizing && (
-                                                <button
-                                                    onClick={() => optimizeVehicleRoute(vehicle.id, vehicleShipments, false)}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
-                                                >
-                                                    <Zap size={14} />
-                                                    Optimize Et
-                                                </button>
-                                            )}
-                                            {isOptimizing && (
-                                                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-medium">
-                                                    <Zap size={14} className="animate-pulse" />
-                                                    Rota Hesaplanıyor...
-                                                </span>
+                                            {editingVehicle === vehicle.id ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleSaveOrder(vehicle.id)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors"
+                                                    >
+                                                        <CheckCircle size={14} />
+                                                        Kaydet
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCancelEdit}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                                                    >
+                                                        <XCircle size={14} />
+                                                        İptal
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleStartEdit(vehicle.id, displayShipments)}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors"
+                                                    >
+                                                        <GripVertical size={14} />
+                                                        Sıralamayı Düzenle
+                                                    </button>
+
+                                                    {!isOptimizing ? (
+                                                        <button
+                                                            onClick={() => handleAutoOptimize(vehicle.id, vehicleShipments)}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+                                                        >
+                                                            <Zap size={14} />
+                                                            Otomatik Optimize Et
+                                                        </button>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-medium">
+                                                            <Zap size={14} className="animate-pulse" />
+                                                            Hesaplanıyor...
+                                                        </span>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -518,6 +584,7 @@ export default function AssignmentsPage() {
                                                             key={shipment.id}
                                                             draggableId={shipment.id}
                                                             index={index}
+                                                            isDragDisabled={editingVehicle !== vehicle.id}
                                                         >
                                                             {(provided, snapshot) => (
                                                                 <div
@@ -526,13 +593,15 @@ export default function AssignmentsPage() {
                                                                     className={`p-3 transition-colors ${snapshot.isDragging ? 'bg-blue-50 shadow-lg' : 'hover:bg-slate-50'}`}
                                                                 >
                                                                     <div className="flex items-start gap-3">
-                                                                        {/* Drag Handle */}
-                                                                        <div
-                                                                            {...provided.dragHandleProps}
-                                                                            className="mt-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing"
-                                                                        >
-                                                                            <GripVertical size={16} />
-                                                                        </div>
+                                                                        {/* Drag Handle - Only show when editing */}
+                                                                        {editingVehicle === vehicle.id && (
+                                                                            <div
+                                                                                {...provided.dragHandleProps}
+                                                                                className="mt-1 text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing"
+                                                                            >
+                                                                                <GripVertical size={16} />
+                                                                            </div>
+                                                                        )}
 
                                                                         {/* Route Order Badge */}
                                                                         <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${optimizedRoute
