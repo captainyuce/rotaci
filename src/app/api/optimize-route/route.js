@@ -4,7 +4,7 @@ import { optimizeRoute } from '@/lib/routeOptimizer'
 
 export async function POST(request) {
     try {
-        const { vehicleId, shipmentIds, departureTime, keepOrder } = await request.json()
+        const { vehicleId, shipmentIds, departureTime, keepOrder, saveToDb } = await request.json()
 
         if (!vehicleId || !shipmentIds || shipmentIds.length === 0) {
             return NextResponse.json({ error: 'Vehicle ID and shipment IDs are required' }, { status: 400 })
@@ -89,15 +89,14 @@ export async function POST(request) {
             }
         )
 
-        // Save optimization results to database
-        if (result.optimizedShipments && result.optimizedShipments.length > 0) {
-            // Update each shipment with its new order and ETA
+        // Save optimization results to database ONLY if requested
+        if (saveToDb && result.optimizedShipments && result.optimizedShipments.length > 0) {
+            // Update each shipment with its new order
             await Promise.all(result.optimizedShipments.map(s =>
                 supabase
                     .from('shipments')
                     .update({
                         route_order: s.routeOrder,
-                        // We could also save ETA if we had a column for it
                     })
                     .eq('id', s.id)
             ))
