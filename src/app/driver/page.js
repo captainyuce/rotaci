@@ -212,15 +212,24 @@ export default function DriverPage() {
                 </span>
             </div>
 
-            {/* Late Arrival Warning */}
+            {/* Working Hours Warning */}
             {job.closing_time && job.status !== 'delivered' && job.status !== 'failed' && (
                 (() => {
                     const now = new Date()
-                    const [hours, minutes] = job.closing_time.split(':').map(Number)
-                    const closingDate = new Date()
-                    closingDate.setHours(hours, minutes, 0)
 
-                    // If closing time is past (and it's not early morning next day logic which we ignore for simplicity for now)
+                    // Parse times
+                    const [closeHours, closeMinutes] = job.closing_time.split(':').map(Number)
+                    const closingDate = new Date()
+                    closingDate.setHours(closeHours, closeMinutes, 0)
+
+                    let openingDate = null
+                    if (job.opening_time) {
+                        const [openHours, openMinutes] = job.opening_time.split(':').map(Number)
+                        openingDate = new Date()
+                        openingDate.setHours(openHours, openMinutes, 0)
+                    }
+
+                    // Check if closed (past closing time)
                     if (now > closingDate) {
                         return (
                             <div className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
@@ -228,13 +237,29 @@ export default function DriverPage() {
                                 <div>
                                     <h4 className="font-bold text-red-800 text-sm">İşyeri Kapanmış Olabilir!</h4>
                                     <p className="text-xs text-red-700 mt-1">
-                                        Kapanış saati: {job.closing_time.slice(0, 5)}. Lütfen teyit alınız.
+                                        Kapanış saati: {job.closing_time.slice(0, 5)}.
                                     </p>
                                 </div>
                             </div>
                         )
                     }
-                    // Warning if less than 30 mins left
+
+                    // Check if not yet open (before opening time)
+                    if (openingDate && now < openingDate) {
+                        return (
+                            <div className="mx-4 mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-3">
+                                <span className="text-xl">🔒</span>
+                                <div>
+                                    <h4 className="font-bold text-orange-800 text-sm">İşyeri Henüz Açılmadı</h4>
+                                    <p className="text-xs text-orange-700 mt-1">
+                                        Açılış saati: {job.opening_time.slice(0, 5)}.
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    // Warning if less than 30 mins left to closing
                     const diffMinutes = (closingDate - now) / 1000 / 60
                     if (diffMinutes > 0 && diffMinutes < 60) {
                         return (
