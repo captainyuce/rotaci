@@ -40,8 +40,8 @@ export default function MapInner() {
     const [vehicles, setVehicles] = useState([])
     const [shipments, setShipments] = useState([])
     const [depotLocation, setDepotLocation] = useState(null)
-    const [showRoutes, setShowRoutes] = useState(false) // Toggle for route visibility
-    const { selectedVehicle, optimizedRoutes } = useDashboard()
+    const [calculating, setCalculating] = useState(false)
+    const { selectedVehicle, optimizedRoutes, setOptimizedRoutes } = useDashboard()
 
     // Default center (Istanbul)
     const center = [41.0082, 28.9784]
@@ -80,21 +80,14 @@ export default function MapInner() {
             .single()
 
         if (settings?.value) {
-            console.log('Depot Settings Found:', settings.value)
             try {
                 const parsed = JSON.parse(settings.value)
-                console.log('Depot Parsed:', parsed)
                 if (parsed.lat && parsed.lng) {
                     setDepotLocation(parsed)
-                    console.log('Depot Location Set:', parsed)
-                } else {
-                    console.warn('Depot location missing lat/lng')
                 }
             } catch (e) {
                 console.error('Error parsing depot location:', e)
             }
-        } else {
-            console.log('No depot settings found')
         }
     }
 
@@ -110,13 +103,51 @@ export default function MapInner() {
 
     const handleShipmentUpdate = (payload) => {
         if (payload.eventType === 'UPDATE') {
-            // If delivered, remove from map? Or change color?
-            // For now, update it.
             setShipments(prev => prev.map(s => s.id === payload.new.id ? payload.new : s))
         } else if (payload.eventType === 'INSERT') {
             setShipments(prev => [...prev, payload.new])
         } else if (payload.eventType === 'DELETE') {
             setShipments(prev => prev.filter(s => s.id !== payload.old.id))
+        }
+    }
+
+    const calculateAllRoutes = async () => {
+        setCalculating(true)
+        const newRoutes = {}
+
+        try {
+            await Promise.all(vehicles.map(async (vehicle) => {
+                const vehicleShipments = shipments.filter(s => s.assigned_vehicle_id === vehicle.id)
+                if (vehicleShipments.length === 0) return
+
+                try {
+                    const response = await fetch('/api/optimize-route', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            vehicleId: vehicle.id,
+                            shipmentIds: vehicleShipments.map(s => s.id),
+                            departureTime: new Date().toISOString(),
+                            keepOrder: true, // Respect DB order
+                            saveToDb: false // Don't update DB, just visualize
+                        })
+                    })
+
+                    const data = await response.json()
+                    if (data.routes && data.routes.length > 0) {
+                        newRoutes[vehicle.id] = data
+                    }
+                } catch (err) {
+                    console.error(`Error calculating route for vehicle ${vehicle.plate}:`, err)
+                }
+            }))
+
+            setOptimizedRoutes(newRoutes)
+        } catch (error) {
+            console.error('Error calculating routes:', error)
+            alert('Rotalar hesaplanırken bir hata oluştu.')
+        } finally {
+            setCalculating(false)
         }
     }
 
@@ -130,15 +161,26 @@ export default function MapInner() {
 
     return (
         <div className="relative h-full w-full">
-            {/* Route Toggle Button */}
+            {/* Calculate Route Button */}
             <button
-                onClick={() => setShowRoutes(!showRoutes)}
-                className={`absolute top-4 right-4 z-[1000] px-4 py-2 rounded-lg font-medium shadow-lg transition-colors ${showRoutes
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+                onClick={calculateAllRoutes}
+                disabled={calculating}
+                className={`absolute top-4 right-4 z-[1000] px-4 py-2 rounded-lg font-medium shadow-lg transition-colors flex items-center gap-2 ${calculating
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
             >
-                {showRoutes ? '🗺️ Rotayı Gizle' : '🗺️ Rotayı Göster'}
+                {calculating ? (
+                    <>
+                        <span className="animate-spin">⌛</span>
+                        Hesaplanıyor...
+                    </>
+                ) : (
+                    <>
+                        <span>🗺️</span>
+                        Rotayı Hesapla
+                    </>
+                )}
             </button>
 
             <MapContainer center={center} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
@@ -147,8 +189,8 @@ export default function MapInner() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {/* Optimized Route Lines - Show for ALL vehicles when showRoutes is true */}
-                {showRoutes && vehicles.map(vehicle => {
+                {/* Optimized Route Lines - Show for ALL vehicles if available */}
+                {vehicles.map(vehicle => {
                     const route = optimizedRoutes[vehicle.id]
                     if (!route || !route.routes || route.routes.length === 0) return null
 
