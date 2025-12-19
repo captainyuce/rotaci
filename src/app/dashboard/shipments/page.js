@@ -88,6 +88,21 @@ export default function ShipmentsPage() {
                 return
             }
 
+            // Notify Driver if assigned
+            if (formData.assigned_vehicle_id && formData.assigned_vehicle_id !== editingShipment.assigned_vehicle_id) {
+                try {
+                    await supabase.from('notifications').insert({
+                        user_id: formData.assigned_vehicle_id, // Vehicle ID acts as User ID for drivers
+                        title: 'Yeni İş Atandı',
+                        message: `${formData.customer_name} adresine yeni bir sevkiyat atandı.`,
+                        type: 'success',
+                        link: '/driver'
+                    })
+                } catch (err) {
+                    console.error('Error notifying driver:', err)
+                }
+            }
+
             // Log the update
             console.log('Logging update for:', editingShipment.id, user)
             await logShipmentAction(
@@ -121,6 +136,29 @@ export default function ShipmentsPage() {
                     user?.id,
                     user?.full_name || 'Bilinmeyen Kullanıcı'
                 )
+
+                // Notify Managers
+                try {
+                    // 1. Get all managers
+                    const { data: managers } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('role', 'manager')
+
+                    if (managers && managers.length > 0) {
+                        const notifications = managers.map(manager => ({
+                            user_id: manager.id,
+                            title: 'Yeni Sevkiyat',
+                            message: `${formData.customer_name} için yeni bir sevkiyat oluşturuldu.`,
+                            type: 'info',
+                            link: '/dashboard/shipments'
+                        }))
+
+                        await supabase.from('notifications').insert(notifications)
+                    }
+                } catch (err) {
+                    console.error('Error sending notifications:', err)
+                }
             }
         }
 

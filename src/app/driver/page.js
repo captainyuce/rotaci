@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell, Map, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
+import NotificationBell from '@/components/NotificationBell'
 import { logShipmentAction } from '@/lib/auditLog'
 
 const NavigationMap = dynamic(() => import('@/components/NavigationMap'), { ssr: false })
@@ -360,6 +361,7 @@ export default function DriverPage() {
                     <span className="text-xs text-slate-500">
                         Son: {lastUpdate.toLocaleTimeString('tr-TR')}
                     </span>
+                    <NotificationBell />
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}

@@ -83,6 +83,11 @@ export default function DashboardLayout({ children }) {
                     {menuOpen ? <X size={24} className="text-slate-700" /> : <Menu size={24} className="text-slate-700" />}
                 </button>
 
+                {/* Notification Bell */}
+                <div className="fixed top-4 right-4 z-50 bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
+                    <NotificationBell />
+                </div>
+
                 {/* Sliding Menu */}
                 {menuOpen && (
                     <div className="fixed left-4 top-20 w-64 md:w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 z-40 max-h-[calc(100vh-104px)] flex flex-col">
