@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PERMISSIONS, hasAnyPermission } from '@/lib/permissions'
 import { DashboardProvider } from '@/contexts/DashboardContext'
+import NotificationBell from '@/components/NotificationBell'
 
 export default function DashboardLayout({ children }) {
     const { user, role, permissions, hasPermission, loading, signOut } = useAuth()
