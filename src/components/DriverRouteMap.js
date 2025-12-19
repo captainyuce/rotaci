@@ -6,7 +6,6 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
-import { useDashboard } from '@/contexts/DashboardContext'
 
 // Fix for Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl
@@ -57,10 +56,10 @@ function MapBounds({ bounds }) {
 
 export default function DriverRouteMap({ shipments }) {
     const { user } = useAuth()
-    const { optimizedRoutes } = useDashboard()
     const [vehicleLocation, setVehicleLocation] = useState(null)
     const [depotLocation, setDepotLocation] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [routeGeometry, setRouteGeometry] = useState(null)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -105,8 +104,37 @@ export default function DriverRouteMap({ shipments }) {
         fetchData()
     }, [user])
 
-    // Driver map is read-only - no route calculation
-    // Routes are managed entirely by admin panel
+    // Fetch optimized route from admin panel (calculated via API)
+    useEffect(() => {
+        const fetchOptimizedRoute = async () => {
+            if (!user?.id || shipments.length === 0) return
+
+            try {
+                const response = await fetch('/api/optimize-route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vehicleId: user.id,
+                        shipmentIds: shipments
+                            .filter(s => s.status !== 'delivered' && s.status !== 'failed')
+                            .map(s => s.id),
+                        departureTime: new Date().toISOString(),
+                        keepOrder: true // Use the order set by admin, don't optimize
+                    })
+                })
+
+                const data = await response.json()
+
+                if (data.routes && data.routes.length > 0) {
+                    setRouteGeometry(data.routes[0])
+                }
+            } catch (error) {
+                console.error('Error fetching optimized route:', error)
+            }
+        }
+
+        fetchOptimizedRoute()
+    }, [user, shipments])
 
     if (loading) return <div className="h-full flex items-center justify-center bg-slate-100">Yükleniyor...</div>
 
@@ -187,16 +215,15 @@ export default function DriverRouteMap({ shipments }) {
             })}
 
             {/* Route Lines - Show optimized route from admin panel */}
-            {user?.id && optimizedRoutes[user.id]?.routes && optimizedRoutes[user.id].routes.map((routeGeometry, index) => (
+            {routeGeometry && (
                 <Polyline
-                    key={`route-${index}`}
                     positions={routeGeometry}
                     color="#3b82f6"
                     weight={4}
                     opacity={0.7}
                     dashArray="10, 10"
                 />
-            ))}
+            )}
         </MapContainer>
     )
 }
