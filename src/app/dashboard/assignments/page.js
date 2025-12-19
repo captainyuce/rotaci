@@ -208,10 +208,15 @@ export default function AssignmentsPage() {
     }
 
     const handleStartEdit = (vehicleId, currentShipments) => {
+        if (!currentShipments || !Array.isArray(currentShipments)) {
+            console.error('Invalid shipments passed to handleStartEdit', currentShipments)
+            return
+        }
         setEditingVehicle(vehicleId)
+        // Deep copy to ensure no reference issues
         setTempShipments(prev => ({
             ...prev,
-            [vehicleId]: currentShipments
+            [vehicleId]: JSON.parse(JSON.stringify(currentShipments))
         }))
     }
 
@@ -582,7 +587,7 @@ export default function AssignmentsPage() {
                                                     return (
                                                         <Draggable
                                                             key={shipment.id}
-                                                            draggableId={shipment.id}
+                                                            draggableId={String(shipment.id)}
                                                             index={index}
                                                             isDragDisabled={editingVehicle !== vehicle.id}
                                                         >
