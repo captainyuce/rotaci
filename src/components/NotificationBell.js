@@ -18,26 +18,31 @@ export default function NotificationBell() {
         fetchNotifications()
 
         // Real-time subscription
-        const channel = supabase
-            .channel('notifications_bell')
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'notifications',
-                filter: `user_id=eq.${user.id}`
-            }, (payload) => {
-                console.log('New notification:', payload)
-                setNotifications(prev => [payload.new, ...prev])
-                setUnreadCount(prev => prev + 1)
-
-                // Play sound (optional)
-                // const audio = new Audio('/notification.mp3')
-                // audio.play().catch(e => console.log('Audio play failed', e))
-            })
-            .subscribe()
+        let channel
+        try {
+            channel = supabase
+                .channel('notifications_bell')
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`
+                }, (payload) => {
+                    console.log('New notification:', payload)
+                    setNotifications(prev => [payload.new, ...prev])
+                    setUnreadCount(prev => prev + 1)
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Notification subscription active')
+                    }
+                })
+        } catch (error) {
+            console.error('Notification subscription error:', error)
+        }
 
         return () => {
-            supabase.removeChannel(channel)
+            if (channel) supabase.removeChannel(channel)
         }
     }, [user?.id])
 
@@ -56,16 +61,23 @@ export default function NotificationBell() {
     }, [])
 
     const fetchNotifications = async () => {
-        const { data } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(20)
+        try {
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(20)
 
-        if (data) {
-            setNotifications(data)
-            setUnreadCount(data.filter(n => !n.is_read).length)
+            if (error) throw error
+
+            if (data) {
+                setNotifications(data)
+                setUnreadCount(data.filter(n => !n.is_read).length)
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error)
+            // Don't crash the UI, just log the error
         }
     }
 
@@ -95,17 +107,24 @@ export default function NotificationBell() {
     const deleteNotification = async (e, id) => {
         e.stopPropagation()
 
-        // Optimistic update
-        const isUnread = notifications.find(n => n.id === id)?.is_read === false
-        setNotifications(prev => prev.filter(n => n.id !== id))
-        if (isUnread) {
-            setUnreadCount(prev => Math.max(0, prev - 1))
-        }
+        try {
+            // Optimistic update
+            const isUnread = notifications.find(n => n.id === id)?.is_read === false
+            setNotifications(prev => prev.filter(n => n.id !== id))
+            if (isUnread) {
+                setUnreadCount(prev => Math.max(0, prev - 1))
+            }
 
-        await supabase
-            .from('notifications')
-            .delete()
-            .eq('id', id)
+            const { error } = await supabase
+                .from('notifications')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+        } catch (error) {
+            console.error('Error deleting notification:', error)
+            // Revert optimistic update if needed
+        }
     }
 
     return (
