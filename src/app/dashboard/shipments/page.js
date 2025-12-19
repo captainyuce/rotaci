@@ -29,7 +29,11 @@ export default function ShipmentsPage() {
         notes: '',
         delivery_lat: 41.0082,
         delivery_lng: 28.9784,
-        type: 'delivery' // 'delivery' or 'pickup'
+        delivery_lat: 41.0082,
+        delivery_lng: 28.9784,
+        type: 'delivery',
+        opening_time: '',
+        closing_time: ''
     })
 
     useEffect(() => {
@@ -173,7 +177,9 @@ export default function ShipmentsPage() {
                 notes: '',
                 delivery_lat: 41.0082,
                 delivery_lng: 28.9784,
-                type: 'delivery'
+                type: 'delivery',
+                opening_time: '',
+                closing_time: ''
             })
         }
         setSelectedCategory('')
@@ -493,6 +499,8 @@ export default function ShipmentsPage() {
                                                         delivery_address: selectedAddress.address,
                                                         delivery_lat: selectedAddress.lat || 41.0082,
                                                         delivery_lng: selectedAddress.lng || 28.9784,
+                                                        opening_time: selectedAddress.opening_time || '',
+                                                        closing_time: selectedAddress.closing_time || ''
                                                     })
                                                 }
                                             }}
@@ -613,6 +621,26 @@ export default function ShipmentsPage() {
                                         value={formData.delivery_time}
                                         onChange={e => setFormData({ ...formData, delivery_time: e.target.value })}
                                         placeholder="Örn: 14:00"
+                                    />
+                                </div>
+
+                                {/* Working Hours */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Açılış Saati</label>
+                                    <input
+                                        type="time"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        value={formData.opening_time || ''}
+                                        onChange={e => setFormData({ ...formData, opening_time: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Kapanış Saati</label>
+                                    <input
+                                        type="time"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        value={formData.closing_time || ''}
+                                        onChange={e => setFormData({ ...formData, closing_time: e.target.value })}
                                     />
                                 </div>
 

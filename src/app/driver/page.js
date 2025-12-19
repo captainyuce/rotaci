@@ -212,6 +212,47 @@ export default function DriverPage() {
                 </span>
             </div>
 
+            {/* Late Arrival Warning */}
+            {job.closing_time && job.status !== 'delivered' && job.status !== 'failed' && (
+                (() => {
+                    const now = new Date()
+                    const [hours, minutes] = job.closing_time.split(':').map(Number)
+                    const closingDate = new Date()
+                    closingDate.setHours(hours, minutes, 0)
+
+                    // If closing time is past (and it's not early morning next day logic which we ignore for simplicity for now)
+                    if (now > closingDate) {
+                        return (
+                            <div className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
+                                <span className="text-xl">⚠️</span>
+                                <div>
+                                    <h4 className="font-bold text-red-800 text-sm">İşyeri Kapanmış Olabilir!</h4>
+                                    <p className="text-xs text-red-700 mt-1">
+                                        Kapanış saati: {job.closing_time.slice(0, 5)}. Lütfen teyit alınız.
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    }
+                    // Warning if less than 30 mins left
+                    const diffMinutes = (closingDate - now) / 1000 / 60
+                    if (diffMinutes > 0 && diffMinutes < 60) {
+                        return (
+                            <div className="mx-4 mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-3">
+                                <span className="text-xl">⏳</span>
+                                <div>
+                                    <h4 className="font-bold text-amber-800 text-sm">Kapanışa Az Kaldı</h4>
+                                    <p className="text-xs text-amber-700 mt-1">
+                                        Kapanış saati: {job.closing_time.slice(0, 5)}. {Math.floor(diffMinutes)} dakika kaldı.
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    }
+                    return null
+                })()
+            )}
+
             <div className="p-4 space-y-4">
                 <div className="flex items-start gap-3 text-slate-600">
                     <MapPin className="shrink-0 mt-1 text-blue-500" size={20} />
