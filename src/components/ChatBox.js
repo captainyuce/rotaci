@@ -10,6 +10,7 @@ export default function ChatBox() {
     const { user, role } = useAuth()
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState([])
+    const [unreadCount, setUnreadCount] = useState(0)
     const [newMessage, setNewMessage] = useState('')
     const [loading, setLoading] = useState(false)
     const [mounted, setMounted] = useState(false)
@@ -24,6 +25,11 @@ export default function ChatBox() {
         if (isOpen) {
             fetchMessages()
             scrollToBottom()
+            setUnreadCount(0)
+            localStorage.setItem('lastReadChat', new Date().toISOString())
+        } else {
+            // Check for unread messages on mount
+            checkUnreadMessages()
         }
 
         const channel = supabase
@@ -37,6 +43,24 @@ export default function ChatBox() {
             supabase.removeChannel(channel)
         }
     }, [isOpen])
+
+    const checkUnreadMessages = async () => {
+        const lastRead = localStorage.getItem('lastReadChat')
+        if (!lastRead) {
+            setUnreadCount(0)
+            return
+        }
+
+        const { count, error } = await supabase
+            .from('manager_messages')
+            .select('*', { count: 'exact', head: true })
+            .gt('created_at', lastRead)
+            .neq('user_id', user?.id)
+
+        if (!error && count > 0) {
+            setUnreadCount(count)
+        }
+    }
 
     useEffect(() => {
         scrollToBottom()
@@ -68,6 +92,11 @@ export default function ChatBox() {
 
         setMessages(prev => [...prev, messageWithUser])
 
+        // Increment unread count if chat is closed and message is from someone else
+        if (!isOpen && message.user_id !== user?.id) {
+            setUnreadCount(prev => prev + 1)
+        }
+
         // Play sound if message is from someone else
         if (message.user_id !== user?.id && audioRef.current) {
             audioRef.current.play().catch(e => console.error('Audio play error:', e))
@@ -91,6 +120,7 @@ export default function ChatBox() {
             alert('Mesaj gönderilemedi.')
         } else {
             setNewMessage('')
+            localStorage.setItem('lastReadChat', new Date().toISOString())
         }
         setLoading(false)
     }
@@ -186,6 +216,11 @@ export default function ChatBox() {
                 title="Yönetici Sohbeti"
             >
                 <MessageSquare size={24} />
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white px-1">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
             </button>
 
             {chatWindow}

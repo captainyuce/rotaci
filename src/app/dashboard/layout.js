@@ -86,12 +86,12 @@ export default function DashboardLayout({ children }) {
                 </button>
 
                 {/* Notification Bell & Chat */}
-                <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-                    <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
-                        <NotificationBell />
-                    </div>
+                <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
                     <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
                         <ChatBox />
+                    </div>
+                    <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
+                        <NotificationBell />
                     </div>
                 </div>
 
