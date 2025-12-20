@@ -22,7 +22,7 @@ export default function LoginPage() {
                 .select('*')
                 .eq('username', username)
                 .eq('password', password)
-                .eq('role', 'manager')
+                .in('role', ['manager', 'admin'])
 
             if (users && users.length > 0) {
                 // Store user data in localStorage
