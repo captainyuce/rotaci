@@ -29,7 +29,7 @@ export default function DashboardLayout({ children }) {
     }, [user, role, loading, router])
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Yükleniyor...</div>
-    if (!user || role !== 'manager') return null
+    if (!user || (role !== 'manager' && role !== 'admin')) return null
 
     const allMenuItems = [
         { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW },

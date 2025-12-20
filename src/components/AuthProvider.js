@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }) => {
     }, [pathname])
 
     const hasPermission = (permission) => {
+        if (role === 'admin') return true
         return checkPermission(permissions, permission)
     }
 
