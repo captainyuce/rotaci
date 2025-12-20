@@ -161,28 +161,6 @@ export default function MapInner() {
 
     return (
         <div className="relative h-full w-full">
-            {/* Calculate Route Button */}
-            <button
-                onClick={calculateAllRoutes}
-                disabled={calculating}
-                className={`absolute top-4 right-4 z-[1000] px-4 py-2 rounded-lg font-medium shadow-lg transition-colors flex items-center gap-2 ${calculating
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-            >
-                {calculating ? (
-                    <>
-                        <span className="animate-spin">⌛</span>
-                        Hesaplanıyor...
-                    </>
-                ) : (
-                    <>
-                        <span>🗺️</span>
-                        Rotayı Hesapla
-                    </>
-                )}
-            </button>
-
             <MapContainer center={center} zoom={11} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

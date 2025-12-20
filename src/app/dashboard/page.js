@@ -8,7 +8,22 @@ import { useDashboard } from '@/contexts/DashboardContext'
 export default function DashboardPage() {
     const [vehicles, setVehicles] = useState([])
     const [loading, setLoading] = useState(true)
-    const { selectedVehicle, setSelectedVehicle } = useDashboard()
+    const { selectedVehicle, setSelectedVehicle, calculateVehicleRoute, calculatingVehicleId } = useDashboard()
+
+    const handleCalculateRoute = async (vehicle) => {
+        // Fetch shipments for this vehicle first to get the latest IDs
+        const { data: shipments } = await supabase
+            .from('shipments')
+            .select('id')
+            .eq('assigned_vehicle_id', vehicle.id)
+            .neq('status', 'delivered')
+
+        if (shipments && shipments.length > 0) {
+            await calculateVehicleRoute(vehicle.id, shipments.map(s => s.id))
+        } else {
+            alert('Bu araç için hesaplanacak aktif sevkiyat bulunamadı.')
+        }
+    }
 
     useEffect(() => {
         fetchVehicles()
@@ -142,10 +157,29 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
 
-                                {vehicle.current_lat && vehicle.current_lng && (
-                                    <button className="mt-2 md:mt-3 w-full flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs md:text-sm font-medium transition-colors">
-                                        <Navigation size={12} className="md:w-3.5 md:h-3.5" />
-                                        Konuma Git
+                                {vehicle.stats?.total > 0 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleCalculateRoute(vehicle)
+                                        }}
+                                        disabled={calculatingVehicleId === vehicle.id}
+                                        className={`mt-2 md:mt-3 w-full flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${calculatingVehicleId === vehicle.id
+                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                                            }`}
+                                    >
+                                        {calculatingVehicleId === vehicle.id ? (
+                                            <>
+                                                <span className="animate-spin">⌛</span>
+                                                Hesaplanıyor...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Navigation size={12} className="md:w-3.5 md:h-3.5" />
+                                                Rotayı Hesapla
+                                            </>
+                                        )}
                                     </button>
                                 )}
                             </div>
