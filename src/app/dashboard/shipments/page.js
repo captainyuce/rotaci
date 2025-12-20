@@ -45,7 +45,7 @@ export default function ShipmentsPage() {
         const [shipmentsRes, vehiclesRes, addressesRes] = await Promise.all([
             supabase
                 .from('shipments')
-                .select('*, creator:users!created_by(full_name)')
+                .select('*, creator:users(full_name)')
                 .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate'),
             supabase.from('addresses').select('*').order('name')
@@ -415,6 +415,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
                                         <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -439,6 +440,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
                                         <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -463,6 +465,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
                                         <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
@@ -487,6 +490,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
                                         <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
