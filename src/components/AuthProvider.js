@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(userData)
                 setRole(roleStr)
 
-                if (roleStr === 'manager' && permissionsStr) {
+                if (permissionsStr) {
                     setPermissions(JSON.parse(permissionsStr))
                 }
             }

@@ -22,13 +22,13 @@ export default function LoginPage() {
                 .select('*')
                 .eq('username', username)
                 .eq('password', password)
-                .in('role', ['manager', 'admin'])
 
             if (users && users.length > 0) {
+                const user = users[0]
                 // Store user data in localStorage
-                localStorage.setItem('user', JSON.stringify(users[0]))
-                localStorage.setItem('role', 'manager')
-                localStorage.setItem('permissions', JSON.stringify(users[0].permissions || []))
+                localStorage.setItem('user', JSON.stringify(user))
+                localStorage.setItem('role', user.role || 'manager')
+                localStorage.setItem('permissions', JSON.stringify(user.permissions || []))
                 window.location.href = '/dashboard'
             } else {
                 setError('Kullanıcı adı veya şifre hatalı')
