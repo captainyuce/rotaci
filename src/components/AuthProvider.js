@@ -24,12 +24,14 @@ export const AuthProvider = ({ children }) => {
 
             if (userStr && roleStr) {
                 const userData = JSON.parse(userStr)
-                setUser(userData)
-                setRole(roleStr)
+                const roleData = roleStr.toLowerCase()
+                const permsData = permissionsStr ? JSON.parse(permissionsStr) : []
 
-                if (permissionsStr) {
-                    setPermissions(JSON.parse(permissionsStr))
-                }
+                console.log('Auth Check:', { username: userData.username, role: roleData, permissions: permsData })
+
+                setUser(userData)
+                setRole(roleData)
+                setPermissions(permsData)
             }
 
             setLoading(false)
@@ -39,8 +41,14 @@ export const AuthProvider = ({ children }) => {
     }, [pathname])
 
     const hasPermission = (permission) => {
-        if (role === 'admin') return true
-        return checkPermission(permissions, permission)
+        const currentRole = role?.toLowerCase()
+        if (currentRole === 'admin') return true
+        if (currentRole === 'manager') {
+            // Managers might have specific permissions or all by default
+            // For now, let's check the permissions array
+            return checkPermission(permissions, permission)
+        }
+        return false
     }
 
     const signOut = async () => {

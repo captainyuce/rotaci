@@ -2,9 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { User, Plus, Edit, Trash2, X, Shield } from 'lucide-react'
-import { ROLES, PERMISSION_LABELS } from '@/lib/permissions'
+import { ROLES, PERMISSION_LABELS, PERMISSIONS } from '@/lib/permissions'
+import { useAuth } from '@/components/AuthProvider'
 
 export default function UsersPage() {
+    const { hasPermission } = useAuth()
+
+    // Permission check
+    if (!hasPermission(PERMISSIONS.MANAGE_USERS)) {
+        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
+    }
     const [users, setUsers] = useState([])
     const [showModal, setShowModal] = useState(false)
     const [formData, setFormData] = useState({

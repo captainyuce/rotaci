@@ -13,6 +13,11 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false }
 
 export default function ShipmentsPage() {
     const { user, hasPermission } = useAuth()
+
+    // Permission check - MUST be after all hooks
+    if (!hasPermission(PERMISSIONS.VIEW)) {
+        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
+    }
     const [shipments, setShipments] = useState([])
     const [vehicles, setVehicles] = useState([])
     const [addresses, setAddresses] = useState([])
@@ -77,6 +82,15 @@ export default function ShipmentsPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+
+        if (editingShipment && !hasPermission(PERMISSIONS.EDIT_SHIPMENTS)) {
+            alert('Düzenleme yetkiniz yok.')
+            return
+        }
+        if (!editingShipment && !hasPermission(PERMISSIONS.CREATE_SHIPMENTS)) {
+            alert('Yeni sevkiyat ekleme yetkiniz yok.')
+            return
+        }
 
         if (editingShipment) {
             // Update shipment
@@ -182,6 +196,10 @@ export default function ShipmentsPage() {
     }
 
     const handleDelete = async (id) => {
+        if (!hasPermission(PERMISSIONS.DELETE_SHIPMENTS)) {
+            alert('Silme yetkiniz yok.')
+            return
+        }
         const shipmentToDelete = shipments.find(s => s.id === id)
 
         // Log the deletion BEFORE deleting (to avoid foreign key violation)
@@ -336,18 +354,22 @@ export default function ShipmentsPage() {
                             shipmentId={shipment.id}
                             shipmentName={shipment.customer_name}
                         />
-                        <button
-                            onClick={() => handleOpenModal(shipment)}
-                            className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
-                        >
-                            <Edit size={16} />
-                        </button>
-                        <button
-                            onClick={() => handleDelete(shipment.id)}
-                            className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                            <Trash2 size={16} />
-                        </button>
+                        {hasPermission(PERMISSIONS.EDIT_SHIPMENTS) && (
+                            <button
+                                onClick={() => handleOpenModal(shipment)}
+                                className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
+                            >
+                                <Edit size={16} />
+                            </button>
+                        )}
+                        {hasPermission(PERMISSIONS.DELETE_SHIPMENTS) && (
+                            <button
+                                onClick={() => handleDelete(shipment.id)}
+                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
                     </div>
                 </td>
             </tr>

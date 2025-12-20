@@ -3,8 +3,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Plus, X, Trash2, Edit } from 'lucide-react'
+import { useAuth } from '@/components/AuthProvider'
+import { PERMISSIONS } from '@/lib/permissions'
 
 export default function VehiclesPage() {
+    const { hasPermission } = useAuth()
+
+    // Permission check
+    if (!hasPermission(PERMISSIONS.MANAGE_VEHICLES)) {
+        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
+    }
     const [vehicles, setVehicles] = useState([])
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -118,13 +126,15 @@ export default function VehiclesPage() {
                     <h2 className="text-lg font-bold text-slate-900">Araçlar</h2>
                     <p className="text-xs text-slate-500">{vehicles.length} araç</p>
                 </div>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
-                >
-                    <Plus size={16} />
-                    Yeni
-                </button>
+                {hasPermission(PERMISSIONS.MANAGE_VEHICLES) && (
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
+                    >
+                        <Plus size={16} />
+                        Yeni
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto">
@@ -137,22 +147,24 @@ export default function VehiclesPage() {
                                 <p className="text-xs text-slate-500">Kapasite: {vehicle.capacity} kg</p>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => handleOpenModal(vehicle)}
-                                className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
-                                title="Düzenle"
-                            >
-                                <Edit size={16} />
-                            </button>
-                            <button
-                                onClick={() => handleDelete(vehicle.id)}
-                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Sil"
-                            >
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
+                        {hasPermission(PERMISSIONS.MANAGE_VEHICLES) && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleOpenModal(vehicle)}
+                                    className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
+                                    title="Düzenle"
+                                >
+                                    <Edit size={16} />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(vehicle.id)}
+                                    className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Sil"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

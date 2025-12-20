@@ -25,6 +25,8 @@ export default function LoginPage() {
 
             if (users && users.length > 0) {
                 const user = users[0]
+                console.log('Login Success:', { username: user.username, role: user.role, db_permissions: user.permissions })
+
                 // Store user data in localStorage
                 localStorage.setItem('user', JSON.stringify(user))
                 localStorage.setItem('role', user.role || 'manager')

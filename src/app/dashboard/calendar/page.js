@@ -3,8 +3,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
+import { useAuth } from '@/components/AuthProvider'
+import { PERMISSIONS } from '@/lib/permissions'
 
 export default function CalendarPage() {
+    const { hasPermission } = useAuth()
+
+    // Permission check
+    if (!hasPermission(PERMISSIONS.VIEW)) {
+        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
+    }
     const [currentDate, setCurrentDate] = useState(new Date())
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)

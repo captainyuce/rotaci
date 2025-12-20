@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Plus, X, MapPin, Phone, Edit, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { useAuth } from '@/components/AuthProvider'
+import { PERMISSIONS } from '@/lib/permissions'
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
 
@@ -14,6 +16,13 @@ const CATEGORIES = [
 ]
 
 export default function AddressesPage() {
+    const { hasPermission } = useAuth()
+
+    // Permission check
+    if (!hasPermission(PERMISSIONS.MANAGE_ADDRESSES)) {
+        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
+    }
+
     const [addresses, setAddresses] = useState([])
     const [activeCategory, setActiveCategory] = useState('customer')
     const [loading, setLoading] = useState(true)
@@ -163,13 +172,15 @@ export default function AddressesPage() {
                             <h2 className="text-lg font-bold text-slate-900">Adres Defteri</h2>
                             <p className="text-xs text-slate-500">{addresses.length} kayıtlı adres</p>
                         </div>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
-                        >
-                            <Plus size={16} />
-                            Yeni Adres
-                        </button>
+                        {hasPermission(PERMISSIONS.MANAGE_ADDRESSES) && (
+                            <button
+                                onClick={() => handleOpenModal()}
+                                className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
+                            >
+                                <Plus size={16} />
+                                Yeni Adres
+                            </button>
+                        )}
                     </div>
 
                     {/* Category Tabs */}
@@ -215,20 +226,22 @@ export default function AddressesPage() {
                                         📍 {addr.lat?.toFixed(4)}, {addr.lng?.toFixed(4)}
                                     </p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => handleOpenModal(addr)}
-                                        className="p-2 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
-                                    >
-                                        <Edit size={16} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(addr.id)}
-                                        className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+                                {hasPermission(PERMISSIONS.MANAGE_ADDRESSES) && (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleOpenModal(addr)}
+                                            className="p-2 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(addr.id)}
+                                            className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
