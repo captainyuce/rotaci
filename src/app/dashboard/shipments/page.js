@@ -149,7 +149,7 @@ export default function ShipmentsPage() {
                         const notifications = managers.map(manager => ({
                             user_id: manager.id,
                             title: 'Yeni Sevkiyat',
-                            message: `${formData.customer_name} için yeni bir sevkiyat oluşturuldu.`,
+                            message: `${formData.customer_name} için yeni bir sevkiyat oluşturuldu. Oluşturan: ${user?.full_name || 'Bilinmeyen Kullanıcı'}`,
                             type: 'info',
                             link: '/dashboard/shipments'
                         }))
