@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }) {
         if (!loading) {
             if (!user) {
                 router.push('/login')
-            } else if (role !== 'manager') {
+            } else if (role !== 'manager' && role !== 'admin') {
                 router.push('/driver')
             }
         }
