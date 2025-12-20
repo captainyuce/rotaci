@@ -109,70 +109,79 @@ export default function ChatBox() {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 w-80 md:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-[100] overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-                    {/* Header */}
-                    <div className="p-4 bg-primary text-white flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <MessageSquare size={20} />
-                            <h3 className="font-bold">Yönetici Sohbeti</h3>
-                        </div>
-                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors">
-                            <X size={20} />
-                        </button>
-                    </div>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300"
+                        onClick={() => setIsOpen(false)}
+                    />
 
-                    {/* Messages Area */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
-                        {messages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm italic">
-                                <MessageSquare size={48} className="mb-2 opacity-20" />
-                                Henüz mesaj yok. İlk mesajı siz yazın!
+                    {/* Window */}
+                    <div className="relative w-full max-w-md h-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                        {/* Header */}
+                        <div className="p-4 bg-primary text-white flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <MessageSquare size={20} />
+                                <h3 className="font-bold">Yönetici Sohbeti</h3>
                             </div>
-                        ) : (
-                            messages.map((msg) => (
-                                <div
-                                    key={msg.id}
-                                    className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}
-                                >
-                                    <div className="flex items-center gap-1 mb-1 px-1">
-                                        <span className="text-[10px] font-bold text-slate-500">
-                                            {msg.user?.full_name || 'Bilinmeyen Kullanıcı'}
-                                        </span>
-                                        <span className="text-[10px] text-slate-400">
-                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                    <div
-                                        className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${msg.user_id === user?.id
-                                                ? 'bg-primary text-white rounded-tr-none'
-                                                : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
-                                            }`}
-                                    >
-                                        {msg.message}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
+                            <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                    {/* Input Area */}
-                    <form onSubmit={sendMessage} className="p-4 bg-white border-t border-slate-100 flex gap-2">
-                        <input
-                            type="text"
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Mesajınızı yazın..."
-                            className="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none text-slate-900"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!newMessage.trim() || loading}
-                            className="p-2 bg-primary text-white rounded-full hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-                        >
-                            <Send size={18} />
-                        </button>
-                    </form>
+                        {/* Messages Area */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                            {messages.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm italic">
+                                    <MessageSquare size={48} className="mb-2 opacity-20" />
+                                    Henüz mesaj yok. İlk mesajı siz yazın!
+                                </div>
+                            ) : (
+                                messages.map((msg) => (
+                                    <div
+                                        key={msg.id}
+                                        className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}
+                                    >
+                                        <div className="flex items-center gap-1 mb-1 px-1">
+                                            <span className="text-[10px] font-bold text-slate-500">
+                                                {msg.user?.full_name || 'Bilinmeyen Kullanıcı'}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400">
+                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div
+                                            className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${msg.user_id === user?.id
+                                                    ? 'bg-primary text-white rounded-tr-none'
+                                                    : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
+                                                }`}
+                                        >
+                                            {msg.message}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Input Area */}
+                        <form onSubmit={sendMessage} className="p-4 bg-white border-t border-slate-100 flex gap-2">
+                            <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                placeholder="Mesajınızı yazın..."
+                                className="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none text-slate-900"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!newMessage.trim() || loading}
+                                className="p-2 bg-primary text-white rounded-full hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                            >
+                                <Send size={18} />
+                            </button>
+                        </form>
+                    </div>
                 </div>
             )}
 
