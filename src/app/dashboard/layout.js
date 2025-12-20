@@ -85,9 +85,14 @@ export default function DashboardLayout({ children }) {
                     {menuOpen ? <X size={24} className="text-slate-700" /> : <Menu size={24} className="text-slate-700" />}
                 </button>
 
-                {/* Notification Bell */}
-                <div className="fixed top-4 right-4 z-50 bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
-                    <NotificationBell />
+                {/* Notification Bell & Chat */}
+                <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+                    <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
+                        <NotificationBell />
+                    </div>
+                    <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
+                        <ChatBox />
+                    </div>
                 </div>
 
                 {/* Sliding Menu */}
@@ -129,8 +134,6 @@ export default function DashboardLayout({ children }) {
                         </nav>
 
                         <div className="flex flex-col items-center gap-4 py-4 border-t border-slate-100">
-                            <NotificationBell />
-                            <ChatBox />
                             <button
                                 onClick={signOut}
                                 className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"

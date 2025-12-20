@@ -41,6 +41,14 @@ export function DashboardProvider({ children }) {
         }
     }
 
+    const hideVehicleRoute = (vehicleId) => {
+        setOptimizedRoutes(prev => {
+            const newRoutes = { ...prev }
+            delete newRoutes[vehicleId]
+            return newRoutes
+        })
+    }
+
     return (
         <DashboardContext.Provider value={{
             selectedVehicle,
@@ -48,7 +56,8 @@ export function DashboardProvider({ children }) {
             optimizedRoutes,
             setOptimizedRoutes,
             calculatingVehicleId,
-            calculateVehicleRoute
+            calculateVehicleRoute,
+            hideVehicleRoute
         }}>
             {children}
         </DashboardContext.Provider>

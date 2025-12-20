@@ -8,7 +8,7 @@ import { useDashboard } from '@/contexts/DashboardContext'
 export default function DashboardPage() {
     const [vehicles, setVehicles] = useState([])
     const [loading, setLoading] = useState(true)
-    const { selectedVehicle, setSelectedVehicle, calculateVehicleRoute, calculatingVehicleId } = useDashboard()
+    const { selectedVehicle, setSelectedVehicle, calculateVehicleRoute, calculatingVehicleId, optimizedRoutes, hideVehicleRoute } = useDashboard()
 
     const handleCalculateRoute = async (vehicle) => {
         // Fetch shipments for this vehicle first to get the latest IDs
@@ -161,18 +161,29 @@ export default function DashboardPage() {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation()
-                                            handleCalculateRoute(vehicle)
+                                            if (optimizedRoutes[vehicle.id]) {
+                                                hideVehicleRoute(vehicle.id)
+                                            } else {
+                                                handleCalculateRoute(vehicle)
+                                            }
                                         }}
                                         disabled={calculatingVehicleId === vehicle.id}
                                         className={`mt-2 md:mt-3 w-full flex items-center justify-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${calculatingVehicleId === vehicle.id
                                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                                            : optimizedRoutes[vehicle.id]
+                                                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
                                             }`}
                                     >
                                         {calculatingVehicleId === vehicle.id ? (
                                             <>
                                                 <span className="animate-spin">⌛</span>
                                                 Hesaplanıyor...
+                                            </>
+                                        ) : optimizedRoutes[vehicle.id] ? (
+                                            <>
+                                                <X size={12} className="md:w-3.5 md:h-3.5" />
+                                                Rotayı Gizle
                                             </>
                                         ) : (
                                             <>
