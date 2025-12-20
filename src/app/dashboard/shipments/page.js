@@ -43,7 +43,10 @@ export default function ShipmentsPage() {
     const fetchData = async () => {
         setLoading(true)
         const [shipmentsRes, vehiclesRes, addressesRes] = await Promise.all([
-            supabase.from('shipments').select('*').order('created_at', { ascending: false }),
+            supabase
+                .from('shipments')
+                .select('*, creator:users!created_by(full_name)')
+                .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate'),
             supabase.from('addresses').select('*').order('name')
         ])
@@ -118,7 +121,7 @@ export default function ShipmentsPage() {
             // Create new shipment
             const { data, error } = await supabase
                 .from('shipments')
-                .insert([formData])
+                .insert([{ ...formData, created_by: user?.id }])
                 .select()
 
             if (error) {
@@ -303,6 +306,9 @@ export default function ShipmentsPage() {
                         <span className="text-slate-400 text-xs">-</span>
                     )}
                 </td>
+                <td className="p-3 text-slate-600 text-xs">
+                    {shipment.creator?.full_name || '-'}
+                </td>
                 <td className="p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
                         shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
@@ -385,6 +391,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Ağırlık</th>
                                         <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
                                         <th className="p-3 font-medium"></th>
                                     </tr>
