@@ -144,8 +144,8 @@ export default function DashboardLayout({ children }) {
                             >
                                 <LogOut size={24} />
                             </button>
-                            <div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded">
-                                v1.2
+                            <div className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">
+                                v1.3 - SYSTEM READY
                             </div>
                         </div>
                     </div>
