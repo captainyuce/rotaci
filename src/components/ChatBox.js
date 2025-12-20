@@ -27,8 +27,8 @@ export default function ChatBox() {
         }
 
         const channel = supabase
-            .channel('public:messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+            .channel('public:manager_messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'manager_messages' }, (payload) => {
                 handleNewMessage(payload.new)
             })
             .subscribe()
@@ -44,7 +44,7 @@ export default function ChatBox() {
 
     const fetchMessages = async () => {
         const { data, error } = await supabase
-            .from('messages')
+            .from('manager_messages')
             .select('*, user:users(full_name)')
             .order('created_at', { ascending: true })
             .limit(50)
@@ -80,7 +80,7 @@ export default function ChatBox() {
 
         setLoading(true)
         const { error } = await supabase
-            .from('messages')
+            .from('manager_messages')
             .insert([{
                 user_id: user.id,
                 message: newMessage.trim()
