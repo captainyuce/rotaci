@@ -87,7 +87,12 @@ export default function DashboardPage() {
 
         if (vehiclesData) {
             const vehiclesWithStats = await Promise.all(vehiclesData.map(async (vehicle) => {
-                const today = new Date().toLocaleDateString('en-CA')
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const todayStr = today.toLocaleDateString('en-CA')
+                const tomorrow = new Date(today)
+                tomorrow.setDate(tomorrow.getDate() + 1)
+                const tomorrowStr = tomorrow.toLocaleDateString('en-CA')
 
                 const { data: shipments } = await supabase
                     .from('shipments')
@@ -95,13 +100,28 @@ export default function DashboardPage() {
                     .eq('assigned_vehicle_id', vehicle.id)
 
                 let total = 0
+                let todayCount = 0
+                let tomorrowCount = 0
                 let delivered = 0
                 let currentLoad = 0
 
                 shipments?.forEach(s => {
-                    // Total: Count ALL assigned shipments (active or completed)
-                    // We don't filter by date anymore as per user request
-                    total++
+                    // Determine effective date
+                    let effectiveDate = s.delivery_date
+                    if ((s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at) {
+                        // Convert UTC to local date
+                        const deliveredDate = new Date(s.delivered_at)
+                        effectiveDate = deliveredDate.toLocaleDateString('en-CA')
+                    }
+
+                    // Count by date
+                    if (effectiveDate === todayStr) todayCount++
+                    if (effectiveDate === tomorrowStr) tomorrowCount++
+
+                    // Total: Only count today and tomorrow
+                    if (effectiveDate === todayStr || effectiveDate === tomorrowStr) {
+                        total++
+                    }
 
                     // Delivered: Count if status is delivered or unloaded
                     if (s.status === 'delivered' || s.status === 'unloaded') {
@@ -122,7 +142,7 @@ export default function DashboardPage() {
                 return {
                     ...vehicle,
                     current_load: currentLoad,
-                    stats: { total, delivered }
+                    stats: { total, delivered, todayCount, tomorrowCount }
                 }
             }))
             setVehicles(vehiclesWithStats)
@@ -336,7 +356,9 @@ export default function DashboardPage() {
                                     // Helper to determine effective date
                                     let effectiveDate = s.delivery_date
                                     if ((s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at) {
-                                        effectiveDate = new Date(s.delivered_at).toLocaleDateString('en-CA')
+                                        // Convert UTC timestamp to local date string
+                                        const deliveredDate = new Date(s.delivered_at)
+                                        effectiveDate = deliveredDate.toLocaleDateString('en-CA')
                                     }
 
                                     if (activeTab === 'today') {

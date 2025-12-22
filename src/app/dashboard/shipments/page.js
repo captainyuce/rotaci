@@ -304,10 +304,20 @@ export default function ShipmentsPage() {
         // Exclude failed shipments from other lists to avoid duplication
         const activeShipments = shipments.filter(s => s.status !== 'failed')
 
-        const todayShipments = activeShipments.filter(s => s.delivery_date === today)
-        const tomorrowShipments = activeShipments.filter(s => s.delivery_date === tomorrow)
-        const futureShipments = activeShipments.filter(s => s.delivery_date > tomorrow)
-        const pastShipments = activeShipments.filter(s => s.delivery_date < today)
+        // Helper function to get effective date
+        const getEffectiveDate = (shipment) => {
+            if ((shipment.status === 'delivered' || shipment.status === 'unloaded') && shipment.delivered_at) {
+                // Convert UTC timestamp to local date string
+                const deliveredDate = new Date(shipment.delivered_at)
+                return deliveredDate.toLocaleDateString('en-CA')
+            }
+            return shipment.delivery_date
+        }
+
+        const todayShipments = activeShipments.filter(s => getEffectiveDate(s) === today)
+        const tomorrowShipments = activeShipments.filter(s => getEffectiveDate(s) === tomorrow)
+        const futureShipments = activeShipments.filter(s => getEffectiveDate(s) > tomorrow)
+        const pastShipments = activeShipments.filter(s => getEffectiveDate(s) < today)
 
         return { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments }
     }
