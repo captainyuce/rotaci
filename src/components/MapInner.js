@@ -527,10 +527,12 @@ export default function MapInner() {
                                     <h3 className="font-bold">{shipment.customer_name}</h3>
                                     <p className="text-sm">{shipment.delivery_address}</p>
                                     <p className="text-xs text-slate-500">{shipment.weight} Palet</p>
-                                    {shipment.notes && (
+                                    {shipment.notes ? (
                                         <div className="mt-2 p-1.5 bg-yellow-50 border border-yellow-100 rounded text-xs text-slate-700 italic">
                                             📝 {shipment.notes}
                                         </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-1 italic">Not yok</p>
                                     )}
                                     <p className={`text-xs font-medium mt-1 ${shipment.status === 'delivered' || shipment.status === 'unloaded' ? 'text-green-600' : 'text-slate-600'}`}>
                                         Durum: {(shipment.status === 'delivered' || shipment.status === 'unloaded')

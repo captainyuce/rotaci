@@ -288,12 +288,14 @@ async function getRoute(start, end, bridgePreference = null, startPoint = null, 
 
     const coordString = coordinates.map(c => `${c[0]},${c[1]}`).join(';')
     const url = `${OSRM_BASE_URL}/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=true`
+    console.log('OSRM Route URL:', url)
 
     const response = await fetch(url)
     const data = await response.json()
 
     if (data.code !== 'Ok') {
-        throw new Error('OSRM routing failed')
+        console.error('OSRM Route Error:', data)
+        throw new Error(`OSRM routing failed: ${data.code} ${data.message || ''}`)
     }
 
     const route = data.routes[0]
@@ -311,12 +313,14 @@ async function getRoute(start, end, bridgePreference = null, startPoint = null, 
 async function getTripOptimization(coordinates) {
     const coordString = coordinates.map(c => `${c[0]},${c[1]}`).join(';')
     const url = `${OSRM_BASE_URL}/trip/v1/driving/${coordString}?source=first&destination=last&roundtrip=false&overview=full&geometries=geojson&steps=true`
+    console.log('OSRM Trip URL:', url)
 
     const response = await fetch(url)
     const data = await response.json()
 
     if (data.code !== 'Ok') {
-        throw new Error('OSRM trip optimization failed')
+        console.error('OSRM Trip Error:', data)
+        throw new Error(`OSRM trip optimization failed: ${data.code} ${data.message || ''}`)
     }
 
     const trip = data.trips[0]

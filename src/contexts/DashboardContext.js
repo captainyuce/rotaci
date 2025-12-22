@@ -63,15 +63,19 @@ export function DashboardProvider({ children }) {
             })
 
             const data = await response.json()
-            if (data.routes && data.routes.length > 0) {
+            if (response.ok && data.routes && data.routes.length > 0) {
                 setOptimizedRoutes(prev => ({
                     ...prev,
                     [vehicleId]: data
                 }))
+            } else {
+                const errorMsg = data.error || 'Bilinmeyen bir hata oluştu.'
+                console.error('Route optimization failed:', errorMsg)
+                alert(`Rota hesaplanamadı: ${errorMsg}`)
             }
         } catch (err) {
             console.error(`Error calculating route for vehicle ${vehicleId}:`, err)
-            alert('Rota hesaplanırken bir hata oluştu.')
+            alert('Rota hesaplanırken bir bağlantı hatası oluştu.')
         } finally {
             setCalculatingVehicleId(null)
         }

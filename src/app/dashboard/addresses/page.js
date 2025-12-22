@@ -349,33 +349,46 @@ export default function AddressesPage() {
                                     </p>
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Açık Adres</label>
-                                    <textarea
-                                        required
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
-                                        rows="2"
-                                        value={formData.address}
-                                        onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                        onBlur={async (e) => {
-                                            const address = e.target.value
-                                            if (address && address.length > 5) {
-                                                try {
-                                                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
-                                                    const data = await response.json()
-                                                    if (data && data.length > 0) {
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            lat: parseFloat(data[0].lat),
-                                                            lng: parseFloat(data[0].lon)
-                                                        }))
+                                    <div className="flex gap-2">
+                                        <textarea
+                                            required
+                                            className="flex-1 p-2 border rounded-lg text-sm text-slate-900"
+                                            rows="2"
+                                            value={formData.address}
+                                            onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                            placeholder="Örn: Kadıköy Merkez, İstanbul"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                const address = formData.address
+                                                if (address && address.length > 5) {
+                                                    try {
+                                                        const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`)
+                                                        const data = await response.json()
+                                                        if (data && data.length > 0) {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                lat: parseFloat(data[0].lat),
+                                                                lng: parseFloat(data[0].lon)
+                                                            }))
+                                                            alert('Konum bulundu ve haritada işaretlendi.')
+                                                        } else {
+                                                            alert('Konum bulunamadı. Lütfen adresi kontrol edin veya haritadan manuel seçin.')
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('Geocoding error:', error)
+                                                        alert('Konum aranırken bir hata oluştu.')
                                                     }
-                                                } catch (error) {
-                                                    console.error('Geocoding error:', error)
+                                                } else {
+                                                    alert('Lütfen geçerli bir adres girin.')
                                                 }
-                                            }
-                                        }}
-                                        placeholder="Örn: Kadıköy Merkez, İstanbul"
-                                    />
+                                            }}
+                                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium h-fit self-end"
+                                        >
+                                            Konum Bul
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Telefon</label>
