@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { MessageSquare, Send, X } from 'lucide-react'
+import { MessageSquare, Send, X, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
+import { PERMISSIONS } from '@/lib/permissions'
+import { logShipmentAction } from '@/lib/auditLog'
 
 export default function ChatBox() {
-    const { user, role } = useAuth()
+    const { user, role, hasPermission } = useAuth()
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState([])
     const [unreadCount, setUnreadCount] = useState(0)
@@ -36,6 +38,9 @@ export default function ChatBox() {
             .channel('public:manager_messages')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'manager_messages' }, (payload) => {
                 handleNewMessage(payload.new)
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'manager_messages' }, (payload) => {
+                setMessages(prev => prev.filter(msg => msg.id !== payload.old.id))
             })
             .subscribe()
 
@@ -117,12 +122,64 @@ export default function ChatBox() {
 
         if (error) {
             console.error('Error sending message:', error)
-            alert('Mesaj gönderilemedi.')
+            alert('Mesaj gönderilemedi: ' + (error.message || error.details || JSON.stringify(error)))
         } else {
             setNewMessage('')
             localStorage.setItem('lastReadChat', new Date().toISOString())
         }
         setLoading(false)
+    }
+
+    const deleteMessage = async (messageId) => {
+        if (!hasPermission(PERMISSIONS.MANAGE_CHAT)) {
+            alert('Bu işlem için yetkiniz yok.')
+            return
+        }
+
+        if (!confirm('Bu mesajı silmek istediğinize emin misiniz?')) return
+
+        // Get message details for logging
+        const { data: messageData } = await supabase
+            .from('manager_messages')
+            .select('*')
+            .eq('id', messageId)
+            .single()
+
+        let senderName = 'Bilinmeyen Kullanıcı'
+        if (messageData && messageData.user_id) {
+            const { data: userData } = await supabase
+                .from('users')
+                .select('full_name, username')
+                .eq('id', messageData.user_id)
+                .single()
+            if (userData) {
+                senderName = userData.full_name || userData.username || 'İsimsiz Kullanıcı'
+            }
+        }
+
+        const { error } = await supabase
+            .from('manager_messages')
+            .delete()
+            .eq('id', messageId)
+
+        if (error) {
+            console.error('Error deleting message:', error)
+            alert('Mesaj silinemedi: ' + error.message)
+        } else if (messageData) {
+            // Log the deletion
+            await logShipmentAction(
+                'deleted',
+                null,
+                {
+                    type: 'chat_message',
+                    content: messageData.message,
+                    original_sender: messageData.user_id,
+                    original_sender_name: senderName
+                },
+                user.id,
+                user.full_name || user.username
+            )
+        }
     }
 
     const scrollToBottom = () => {
@@ -161,7 +218,7 @@ export default function ChatBox() {
                         messages.map((msg) => (
                             <div
                                 key={msg.id}
-                                className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'}`}
+                                className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'} group relative`}
                             >
                                 <div className="flex items-center gap-1 mb-1 px-1">
                                     <span className="text-[10px] font-bold text-slate-500">
@@ -178,6 +235,15 @@ export default function ChatBox() {
                                         }`}
                                 >
                                     {msg.message}
+                                    {hasPermission(PERMISSIONS.MANAGE_CHAT) && (
+                                        <button
+                                            onClick={() => deleteMessage(msg.id)}
+                                            className={`absolute -top-2 -right-2 p-1 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${msg.user_id === user?.id ? 'bg-red-500 text-white' : 'bg-white text-red-500 border border-red-100'}`}
+                                            title="Mesajı Sil"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))

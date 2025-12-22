@@ -5,12 +5,14 @@ import { supabase } from '@/lib/supabaseClient'
 import { Plus, X, Trash2, Edit } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
+import { logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
 
 export default function VehiclesPage() {
-    const { hasPermission } = useAuth()
+    const { user, hasPermission } = useAuth()
 
     // Permission check
     if (!hasPermission(PERMISSIONS.MANAGE_VEHICLES)) {
+        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/vehicles', 'Page Access Denied')
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
     const [vehicles, setVehicles] = useState([])
@@ -106,6 +108,25 @@ export default function VehiclesPage() {
             }
         }
 
+        if (editingVehicle) {
+            await logShipmentAction(
+                'updated',
+                null,
+                { type: 'vehicle', ...formData },
+                user.id,
+                user.full_name || user.username,
+                { before: editingVehicle, after: formData }
+            )
+        } else {
+            await logShipmentAction(
+                'created',
+                null,
+                { type: 'vehicle', ...formData },
+                user.id,
+                user.full_name || user.username
+            )
+        }
+
         setIsModalOpen(false)
         setEditingVehicle(null)
         setFormData({ plate: '', driver_name: '', capacity: '', driver_password: '' })
@@ -113,9 +134,26 @@ export default function VehiclesPage() {
     }
 
     const handleDelete = async (id) => {
+        if (!hasPermission(PERMISSIONS.MANAGE_VEHICLES)) {
+            logSecurityEvent(user?.id, user?.full_name || user?.username, 'delete_vehicle', `Attempted to delete vehicle ${id}`)
+            alert('Bu işlem için yetkiniz yok')
+            return
+        }
         if (confirm('Bu aracı silmek istediğinize emin misiniz?')) {
             await supabase.from('vehicles').delete().eq('id', id)
             fetchVehicles()
+
+            // Log deletion
+            const deletedVehicle = vehicles.find(v => v.id === id)
+            if (deletedVehicle) {
+                await logShipmentAction(
+                    'deleted',
+                    null,
+                    { type: 'vehicle', ...deletedVehicle },
+                    user.id,
+                    user.full_name || user.username
+                )
+            }
         }
     }
 
@@ -144,7 +182,7 @@ export default function VehiclesPage() {
                             <h3 className="font-bold text-slate-800">{vehicle.plate}</h3>
                             <p className="text-sm text-slate-600">{vehicle.driver_name || 'Sürücü atanmamış'}</p>
                             {vehicle.capacity && (
-                                <p className="text-xs text-slate-500">Kapasite: {vehicle.capacity} kg</p>
+                                <p className="text-xs text-slate-500">Kapasite: {vehicle.capacity} Palet</p>
                             )}
                         </div>
                         {hasPermission(PERMISSIONS.MANAGE_VEHICLES) && (
@@ -192,14 +230,14 @@ export default function VehiclesPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Kapasite (kg)</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Kapasite (Palet)</label>
                                 <input
                                     type="number"
                                     required
                                     className="w-full p-2 border rounded-lg text-slate-900 placeholder:text-slate-400 text-sm"
                                     value={formData.capacity}
                                     onChange={e => setFormData({ ...formData, capacity: e.target.value })}
-                                    placeholder="1000"
+                                    placeholder="20"
                                 />
                             </div>
                             <div>
@@ -224,13 +262,13 @@ export default function VehiclesPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Kapasite (kg)</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Kapasite (Palet)</label>
                                 <input
                                     type="number"
                                     className="w-full p-2 border rounded-lg text-sm"
                                     value={formData.capacity}
                                     onChange={e => setFormData({ ...formData, capacity: e.target.value })}
-                                    placeholder="1000"
+                                    placeholder="20"
                                 />
                             </div>
                             <div>

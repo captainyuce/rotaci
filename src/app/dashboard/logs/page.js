@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
-import { getActionLabel, getActionColor } from '@/lib/auditLog'
-import { Clock, User, Package, Filter } from 'lucide-react'
+import { getActionLabel, getActionColor, logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
+import { Clock, User, Package, Filter, Trash2 } from 'lucide-react'
 
 export default function LogsPage() {
-    const { hasPermission } = useAuth()
+    const { user, hasPermission } = useAuth()
     const [logs, setLogs] = useState([])
     const [loading, setLoading] = useState(true)
     const [filterAction, setFilterAction] = useState('all')
@@ -54,6 +54,46 @@ export default function LogsPage() {
         setLoading(false)
     }
 
+    const handleClearLogs = async () => {
+        if (!hasPermission(PERMISSIONS.CLEAR_LOGS)) {
+            alert('Bu işlem için yetkiniz yok.')
+            return
+        }
+
+        if (!confirm('DİKKAT: Tüm işlem geçmişi silinecek! Bu işlem geri alınamaz.\n\nDevam etmek istiyor musunuz?')) {
+            return
+        }
+
+        // Double confirmation
+        const confirmation = prompt('Silme işlemini onaylamak için lütfen "sil" yazın:')
+        if (confirmation !== 'sil') {
+            alert('İşlem iptal edildi.')
+            return
+        }
+
+        setLoading(true)
+        const { error } = await supabase
+            .from('shipment_logs')
+            .delete()
+            .gt('created_at', '2000-01-01') // Delete all rows (valid condition)
+
+        if (error) {
+            alert('Hata: ' + error.message)
+        } else {
+            // Log that logs were cleared
+            await logSecurityEvent(
+                user.id,
+                user.full_name || user.username,
+                '/dashboard/logs',
+                'All audit logs cleared by user'
+            )
+
+            alert('Tüm kayıtlar temizlendi.')
+            fetchLogs()
+        }
+        setLoading(false)
+    }
+
     if (!hasPermission(PERMISSIONS.VIEW_LOGS)) {
         return (
             <div className="h-full flex flex-col bg-white">
@@ -86,6 +126,15 @@ export default function LogsPage() {
                         <p className="text-xs text-slate-500">{logs.length} kayıt</p>
                     </div>
                     <div className="flex items-center gap-2">
+                        {hasPermission(PERMISSIONS.CLEAR_LOGS) && (
+                            <button
+                                onClick={handleClearLogs}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors mr-2"
+                                title="Tüm Kayıtları Temizle"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
                         <Filter size={16} className="text-slate-400" />
                         <select
                             className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 bg-white"
@@ -100,6 +149,7 @@ export default function LogsPage() {
                             <option value="acknowledged">Kabul Edilenler</option>
                             <option value="delivered">Teslim Edilenler</option>
                             <option value="failed">Teslim Edilemeyenler</option>
+                            <option value="unauthorized_access">Yetkisiz Erişimler</option>
                         </select>
                     </div>
                 </div>
@@ -147,16 +197,62 @@ export default function LogsPage() {
                                     <div className="flex items-center gap-2 mb-2">
                                         <Package size={14} className="text-slate-500" />
                                         <span className="font-medium text-slate-800">
-                                            {log.shipment_data?.customer_name || 'Bilinmeyen Müşteri'}
+                                            {log.shipment_data?.type === 'chat_message'
+                                                ? 'Sohbet Mesajı'
+                                                : log.shipment_data?.type === 'address'
+                                                    ? 'Adres İşlemi'
+                                                    : log.shipment_data?.type === 'vehicle'
+                                                        ? 'Araç İşlemi'
+                                                        : log.shipment_data?.type === 'user'
+                                                            ? 'Kullanıcı İşlemi'
+                                                            : (log.shipment_data?.customer_name || 'Bilinmeyen Müşteri')}
                                         </span>
                                     </div>
                                     <div className="text-xs text-slate-700 space-y-1">
-                                        <div>📍 {log.shipment_data?.delivery_address}</div>
-                                        {log.shipment_data?.weight && (
-                                            <div>⚖️ {log.shipment_data.weight} kg</div>
-                                        )}
-                                        {log.shipment_data?.delivery_time && (
-                                            <div>🕐 {log.shipment_data.delivery_time}</div>
+                                        {log.action === 'unauthorized_access' ? (
+                                            <>
+                                                <div className="font-bold text-red-600">⚠️ Yetkisiz Erişim Denemesi</div>
+                                                <div>Hedef: {log.shipment_data?.resource || 'Bilinmiyor'}</div>
+                                                <div>Detay: {log.shipment_data?.details || '-'}</div>
+                                            </>
+                                        ) : log.shipment_data?.type === 'chat_message' ? (
+                                            <>
+                                                <div className="font-medium text-slate-800">"{log.shipment_data.content}"</div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    Gönderen: {log.shipment_data.original_sender_name || log.shipment_data.original_sender}
+                                                </div>
+                                            </>
+                                        ) : log.shipment_data?.type === 'address' ? (
+                                            <>
+                                                <div className="font-medium text-slate-800">{log.shipment_data.name}</div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    📍 {log.shipment_data.address}
+                                                </div>
+                                            </>
+                                        ) : log.shipment_data?.type === 'vehicle' ? (
+                                            <>
+                                                <div className="font-medium text-slate-800">{log.shipment_data.plate}</div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    Sürücü: {log.shipment_data.driver_name || '-'}
+                                                </div>
+                                            </>
+                                        ) : log.shipment_data?.type === 'user' ? (
+                                            <>
+                                                <div className="font-medium text-slate-800">{log.shipment_data.full_name}</div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    @{log.shipment_data.username} ({log.shipment_data.role})
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div>📍 {log.shipment_data?.delivery_address}</div>
+                                                {log.shipment_data?.weight && (
+                                                    <div>📦 {log.shipment_data.weight} Palet</div>
+                                                )}
+                                                {log.shipment_data?.delivery_time && (
+                                                    <div>🕐 {log.shipment_data.delivery_time}</div>
+                                                )}
+                                            </>
                                         )}
                                     </div>
 
@@ -188,6 +284,6 @@ export default function LogsPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     )
 }

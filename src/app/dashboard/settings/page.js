@@ -5,12 +5,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { Save, MapPin, Building2 } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
+import { logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
 import dynamic from 'next/dynamic'
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
 
 export default function SettingsPage() {
-    const { hasPermission } = useAuth()
+    const { user, hasPermission } = useAuth()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [baseAddress, setBaseAddress] = useState({
@@ -58,6 +59,13 @@ export default function SettingsPage() {
             alert('Hata: ' + error.message)
         } else {
             alert('Ayarlar kaydedildi!')
+            await logShipmentAction(
+                'updated',
+                null,
+                { type: 'settings', key: 'base_address', value: baseAddress },
+                user.id,
+                user.full_name || user.username
+            )
         }
         setSaving(false)
     }

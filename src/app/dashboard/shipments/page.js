@@ -6,7 +6,7 @@ import { Plus, X, Truck, Edit, Trash2, ArrowDownCircle, ArrowUpCircle } from 'lu
 import dynamic from 'next/dynamic'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
-import { logShipmentAction } from '@/lib/auditLog'
+import { logShipmentAction, logSecurityEvent } from '@/lib/auditLog'
 import ChatButton from '@/components/ChatButton'
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
@@ -16,6 +16,7 @@ export default function ShipmentsPage() {
 
     // Permission check - MUST be after all hooks
     if (!hasPermission(PERMISSIONS.VIEW)) {
+        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/shipments', 'Page Access Denied')
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
     const [shipments, setShipments] = useState([])
@@ -30,7 +31,7 @@ export default function ShipmentsPage() {
         delivery_address: '',
         weight: '',
         delivery_time: '',
-        delivery_date: new Date().toISOString().split('T')[0],
+        delivery_date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD in local time
         notes: '',
         delivery_lat: 41.0082,
         delivery_lng: 28.9784,
@@ -84,10 +85,12 @@ export default function ShipmentsPage() {
         e.preventDefault()
 
         if (editingShipment && !hasPermission(PERMISSIONS.EDIT_SHIPMENTS)) {
+            logSecurityEvent(user?.id, user?.full_name || user?.username, 'edit_shipment', `Attempted to edit shipment ${editingShipment.id}`)
             alert('Düzenleme yetkiniz yok.')
             return
         }
         if (!editingShipment && !hasPermission(PERMISSIONS.CREATE_SHIPMENTS)) {
+            logSecurityEvent(user?.id, user?.full_name || user?.username, 'create_shipment', 'Attempted to create shipment')
             alert('Yeni sevkiyat ekleme yetkiniz yok.')
             return
         }
@@ -95,9 +98,25 @@ export default function ShipmentsPage() {
         if (editingShipment) {
             // Update shipment
             console.log('Updating shipment:', editingShipment.id)
+
+            // Sanitize formData to exclude joined fields like 'creator'
+            const updates = {
+                customer_name: formData.customer_name,
+                delivery_address: formData.delivery_address,
+                weight: formData.weight,
+                delivery_time: formData.delivery_time,
+                delivery_date: formData.delivery_date,
+                notes: formData.notes,
+                delivery_lat: formData.delivery_lat,
+                delivery_lng: formData.delivery_lng,
+                type: formData.type,
+                opening_time: formData.opening_time,
+                closing_time: formData.closing_time
+            }
+
             const { error } = await supabase
                 .from('shipments')
-                .update(formData)
+                .update(updates)
                 .eq('id', editingShipment.id)
 
             if (error) {
@@ -156,11 +175,11 @@ export default function ShipmentsPage() {
 
                 // Notify Managers
                 try {
-                    // 1. Get all managers
+                    // 1. Get all managers and admins
                     const { data: managers } = await supabase
                         .from('users')
                         .select('id')
-                        .eq('role', 'manager')
+                        .in('role', ['manager', 'admin'])
 
                     if (managers && managers.length > 0) {
                         const notifications = managers.map(manager => ({
@@ -186,7 +205,7 @@ export default function ShipmentsPage() {
             delivery_address: '',
             weight: '',
             delivery_time: '',
-            delivery_date: new Date().toISOString().split('T')[0],
+            delivery_date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD in local time
             notes: '',
             delivery_lat: 41.0082,
             delivery_lng: 28.9784,
@@ -197,6 +216,7 @@ export default function ShipmentsPage() {
 
     const handleDelete = async (id) => {
         if (!hasPermission(PERMISSIONS.DELETE_SHIPMENTS)) {
+            logSecurityEvent(user?.id, user?.full_name || user?.username, 'delete_shipment', `Attempted to delete shipment ${id}`)
             alert('Silme yetkiniz yok.')
             return
         }
@@ -232,7 +252,7 @@ export default function ShipmentsPage() {
                 delivery_address: '',
                 weight: '',
                 delivery_time: '',
-                delivery_date: new Date().toISOString().split('T')[0],
+                delivery_date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD in local time
                 notes: '',
                 delivery_lat: 41.0082,
                 delivery_lng: 28.9784,
@@ -313,7 +333,7 @@ export default function ShipmentsPage() {
                     </div>
                 </td>
                 <td className="p-3 max-w-xs truncate text-slate-600">{shipment.delivery_address}</td>
-                <td className="p-3 text-slate-700">{shipment.weight} kg</td>
+                <td className="p-3 text-slate-700">{shipment.weight} Palet</td>
                 <td className="p-3">
                     {assignedVehicle ? (
                         <div className="flex items-center gap-1.5 text-slate-700">
@@ -328,15 +348,16 @@ export default function ShipmentsPage() {
                     {shipment.creator?.full_name || '-'}
                 </td>
                 <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' || shipment.status === 'unloaded' ? 'bg-green-100 text-green-700' :
                         shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
                             shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
                                 'bg-amber-100 text-amber-700'
                         }`}>
-                        {shipment.status === 'delivered' ? 'Teslim Edildi' :
-                            shipment.status === 'assigned' ? 'Yolda' :
-                                shipment.status === 'failed' ? 'Teslim Edilemedi' :
-                                    'Bekliyor'}
+                        {(shipment.status === 'delivered' || shipment.status === 'unloaded')
+                            ? (shipment.type === 'pickup' ? 'Teslim Alındı' : 'Teslim Edildi')
+                            : shipment.status === 'assigned' ? 'Yolda'
+                                : shipment.status === 'failed' ? 'Teslim Edilemedi'
+                                    : 'Bekliyor'}
                     </span>
                 </td>
                 <td className="p-3 text-right">
@@ -380,7 +401,7 @@ export default function ShipmentsPage() {
     return (
         <>
             {/* Content Panel */}
-            <div className="fixed left-4 right-4 md:left-20 md:right-auto top-20 md:top-4 bottom-20 md:bottom-4 md:w-[600px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden pointer-events-auto z-10">
+            <div className="fixed left-4 right-4 md:left-20 md:right-auto top-20 md:top-4 bottom-20 md:bottom-4 md:w-[750px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden pointer-events-auto z-10">
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-bold text-slate-900">Sevkiyatlar (Güncel)</h2>
@@ -411,7 +432,7 @@ export default function ShipmentsPage() {
                                     <tr className="text-left text-xs text-slate-600">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
-                                        <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Palet</th>
                                         <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
@@ -435,7 +456,7 @@ export default function ShipmentsPage() {
                                     <tr className="text-left text-xs text-slate-600">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
-                                        <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Palet</th>
                                         <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
@@ -460,7 +481,7 @@ export default function ShipmentsPage() {
                                     <tr className="text-left text-xs text-slate-600">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
-                                        <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Palet</th>
                                         <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
@@ -485,7 +506,7 @@ export default function ShipmentsPage() {
                                     <tr className="text-left text-xs text-slate-600">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
-                                        <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Palet</th>
                                         <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
@@ -510,7 +531,7 @@ export default function ShipmentsPage() {
                                     <tr className="text-left text-xs text-slate-600">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
-                                        <th className="p-3 font-medium">Ağırlık</th>
+                                        <th className="p-3 font-medium">Palet</th>
                                         <th className="p-3 font-medium">Araç</th>
                                         <th className="p-3 font-medium">Oluşturan</th>
                                         <th className="p-3 font-medium">Durum</th>
@@ -672,7 +693,7 @@ export default function ShipmentsPage() {
 
                                 {/* Weight */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Ağırlık (kg)</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Palet Sayısı</label>
                                     <input
                                         type="number"
                                         required

@@ -17,7 +17,6 @@ export default function NotificationBell() {
 
         fetchNotifications()
 
-        // Real-time subscription
         let channel
         try {
             channel = supabase
@@ -26,19 +25,20 @@ export default function NotificationBell() {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'notifications',
-                    filter: `user_id=eq.${user.id}`
                 }, (payload) => {
-                    console.log('New notification:', payload)
-                    setNotifications(prev => [payload.new, ...prev])
-                    setUnreadCount(prev => prev + 1)
+                    // Client-side filtering to ensure we only show relevant notifications
+                    if (payload.new.user_id === user.id) {
+                        setNotifications(prev => [payload.new, ...prev])
+                        setUnreadCount(prev => prev + 1)
 
-                    // Play sound
-                    try {
-                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
-                        audio.volume = 0.5
-                        audio.play().catch(e => console.log('Audio play failed', e))
-                    } catch (e) {
-                        console.error('Error playing sound:', e)
+                        // Play sound
+                        try {
+                            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
+                            audio.volume = 0.5
+                            audio.play().catch(e => console.log('Audio play failed', e))
+                        } catch (e) {
+                            console.error('Error playing sound:', e)
+                        }
                     }
                 })
                 .subscribe((status) => {
@@ -140,9 +140,9 @@ export default function NotificationBell() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-full hover:bg-slate-100 relative transition-colors"
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
             >
-                <Bell size={20} className="text-slate-600" />
+                <Bell size={24} />
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] flex items-center justify-center border-2 border-white">
                         {unreadCount > 9 ? '9+' : unreadCount}

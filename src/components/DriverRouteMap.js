@@ -60,6 +60,19 @@ export default function DriverRouteMap({ shipments }) {
     const [depotLocation, setDepotLocation] = useState(null)
     const [loading, setLoading] = useState(true)
     const [routeGeometry, setRouteGeometry] = useState(null)
+    const [routeLegs, setRouteLegs] = useState([])
+
+    // Predefined colors for route segments
+    const segmentColors = [
+        '#2563eb', // Blue
+        '#dc2626', // Red
+        '#16a34a', // Green
+        '#d97706', // Amber
+        '#7c3aed', // Violet
+        '#db2777', // Pink
+        '#0891b2', // Cyan
+        '#ea580c', // Orange
+    ]
 
     useEffect(() => {
         const fetchData = async () => {
@@ -104,7 +117,6 @@ export default function DriverRouteMap({ shipments }) {
         fetchData()
     }, [user])
 
-    // Fetch optimized route from admin panel (calculated via API)
     useEffect(() => {
         const fetchOptimizedRoute = async () => {
             if (!user?.id || shipments.length === 0) return
@@ -127,6 +139,22 @@ export default function DriverRouteMap({ shipments }) {
 
                 if (data.routes && data.routes.length > 0) {
                     setRouteGeometry(data.routes[0])
+                }
+
+                if (data.legs && data.legs.length > 0) {
+                    // Process legs to extract geometry for each segment
+                    const processedLegs = data.legs.map((leg, index) => {
+                        // Extract coordinates from steps
+                        const coordinates = leg.steps.flatMap(step =>
+                            step.geometry.coordinates.map(coord => [coord[1], coord[0]]) // Convert [lng, lat] to [lat, lng]
+                        )
+                        return {
+                            id: index,
+                            coordinates: coordinates,
+                            color: segmentColors[index % segmentColors.length]
+                        }
+                    })
+                    setRouteLegs(processedLegs)
                 }
             } catch (error) {
                 console.error('Error fetching optimized route:', error)
@@ -214,15 +242,28 @@ export default function DriverRouteMap({ shipments }) {
                 )
             })}
 
-            {/* Route Lines - Show optimized route from admin panel */}
-            {routeGeometry && (
-                <Polyline
-                    positions={routeGeometry}
-                    color="#3b82f6"
-                    weight={4}
-                    opacity={0.7}
-                    dashArray="10, 10"
-                />
+            {/* Route Lines - Show colored segments */}
+            {routeLegs.length > 0 ? (
+                routeLegs.map(leg => (
+                    <Polyline
+                        key={leg.id}
+                        positions={leg.coordinates}
+                        color={leg.color}
+                        weight={5}
+                        opacity={0.8}
+                    />
+                ))
+            ) : (
+                // Fallback to single line if legs are not available
+                routeGeometry && (
+                    <Polyline
+                        positions={routeGeometry}
+                        color="#3b82f6"
+                        weight={4}
+                        opacity={0.7}
+                        dashArray="10, 10"
+                    />
+                )
             )}
         </MapContainer>
     )

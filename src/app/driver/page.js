@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
-import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell, Map, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
+import { MapPin, CheckCircle, XCircle, Navigation, Package, RefreshCw, Bell, Map, ArrowDownCircle, ArrowUpCircle, Truck } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
 import NotificationBell from '@/components/NotificationBell'
 import { logShipmentAction } from '@/lib/auditLog'
+import LocationTracker from '@/components/LocationTracker'
 
 const NavigationMap = dynamic(() => import('@/components/NavigationMap'), { ssr: false })
 const DriverRouteMap = dynamic(() => import('@/components/DriverRouteMap'), { ssr: false })
@@ -134,7 +135,12 @@ export default function DriverPage() {
     const updateStatus = async (id, status) => {
         const { data, error } = await supabase
             .from('shipments')
-            .update({ status })
+            .update({
+                status,
+                delivered_at: status === 'delivered' ? new Date().toISOString() : null,
+                // STRICT RULE: If delivered, update delivery_date to TODAY regardless of original schedule
+                delivery_date: status === 'delivered' ? new Date().toLocaleDateString('en-CA') : undefined
+            })
             .eq('id', id)
             .select()
 
@@ -173,13 +179,68 @@ export default function DriverPage() {
         }
     }
 
+    const handleUnload = async () => {
+        if (!confirm('Araçtaki toplanan yükleri boşaltmak istediğinize emin misiniz?')) return
+
+        const loadedPickups = jobs.filter(j => j.type === 'pickup' && j.status === 'delivered')
+
+        if (loadedPickups.length === 0) {
+            alert('Boşaltılacak yük bulunamadı.')
+            return
+        }
+
+        setLoading(true)
+        try {
+            // Update all loaded pickups to 'unloaded'
+            const { error } = await supabase
+                .from('shipments')
+                .update({
+                    status: 'unloaded',
+                    delivered_at: new Date().toISOString(),
+                    // STRICT RULE: If unloaded (completed), update delivery_date to TODAY
+                    delivery_date: new Date().toLocaleDateString('en-CA')
+                })
+                .in('id', loadedPickups.map(j => j.id))
+
+            if (error) throw error
+
+            // Log the action for each shipment
+            // Get driver name once
+            const { data: driverData } = await supabase
+                .from('vehicles')
+                .select('driver_name')
+                .eq('id', user.id)
+                .single()
+            const driverName = driverData?.driver_name || 'Sürücü'
+
+            for (const job of loadedPickups) {
+                await logShipmentAction(
+                    'unloaded',
+                    job.id,
+                    { ...job, status: 'unloaded' },
+                    user.id,
+                    driverName
+                )
+            }
+
+            alert('Yükler başarıyla boşaltıldı.')
+            fetchJobs()
+        } catch (err) {
+            console.error('Error unloading:', err)
+            alert('Hata: ' + err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const showNavigation = (job) => {
         setSelectedJob(job)
     }
 
-    const newJobs = jobs.filter(j => !j.acknowledged_at && j.status !== 'delivered')
-    const acknowledgedJobs = jobs.filter(j => j.acknowledged_at && j.status !== 'delivered')
-    const completedJobs = jobs.filter(j => j.status === 'delivered')
+    const newJobs = jobs.filter(j => !j.acknowledged_at && j.status !== 'delivered' && j.status !== 'unloaded')
+    const acknowledgedJobs = jobs.filter(j => j.acknowledged_at && j.status !== 'delivered' && j.status !== 'unloaded')
+    const completedJobs = jobs.filter(j => j.status === 'delivered' || j.status === 'unloaded')
+    const hasLoadedPickups = jobs.some(j => j.type === 'pickup' && j.status === 'delivered')
 
     const renderJobCard = (job, showAcknowledgeButton = false, isCompleted = false) => (
         <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200 relative">
@@ -209,7 +270,7 @@ export default function DriverPage() {
                     <p className="text-sm text-slate-500">{job.delivery_time || 'Saat belirtilmedi'}</p>
                 </div>
                 <span className="bg-zinc-100 text-zinc-700 text-xs font-bold px-2 py-1 rounded-full mt-8">
-                    {job.weight} kg
+                    {job.weight} Palet
                 </span>
             </div>
 
@@ -325,7 +386,7 @@ export default function DriverPage() {
                                     className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
                                 >
                                     <CheckCircle size={16} />
-                                    Teslim Et
+                                    {job.type === 'pickup' ? 'Teslim Aldım' : 'Teslim Ettim'}
                                 </button>
                             ) : (
                                 <button
@@ -343,7 +404,7 @@ export default function DriverPage() {
                                 className="w-full flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 py-2 rounded-lg text-sm transition-colors"
                             >
                                 <XCircle size={16} />
-                                Teslim Edilemedi
+                                {job.type === 'pickup' ? 'Teslim Alınamadı' : 'Teslim Edilemedi'}
                             </button>
                         )}
                     </>
@@ -354,6 +415,8 @@ export default function DriverPage() {
 
     return (
         <>
+            {user?.id && <LocationTracker vehicleId={user.id} />}
+
             {/* Refresh Button */}
             <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-slate-700">İşlerim</h2>
@@ -362,6 +425,16 @@ export default function DriverPage() {
                         Son: {lastUpdate.toLocaleTimeString('tr-TR')}
                     </span>
                     <NotificationBell />
+                    {hasLoadedPickups && (
+                        <button
+                            onClick={handleUnload}
+                            className="p-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                            title="Yükü Boşalt"
+                        >
+                            <Truck size={16} />
+                            <span className="hidden md:inline">Yükü Boşalt</span>
+                        </button>
+                    )}
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}

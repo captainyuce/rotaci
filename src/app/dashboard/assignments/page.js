@@ -452,7 +452,7 @@ export default function AssignmentsPage() {
                                             <h4 className="font-bold text-slate-900">{shipment.customer_name}</h4>
                                             <p className="text-xs text-slate-600 mt-0.5">{shipment.delivery_address}</p>
                                             <div className="flex gap-3 mt-2 text-xs text-slate-500">
-                                                <span>⚖️ {shipment.weight} kg</span>
+                                                <span>📦 {shipment.weight} Palet</span>
                                                 {shipment.delivery_time && <span>🕐 {shipment.delivery_time}</span>}
                                             </div>
                                         </div>
@@ -622,7 +622,7 @@ export default function AssignmentsPage() {
                                                                             <p className="text-xs text-slate-600 truncate mt-0.5">{shipment.delivery_address}</p>
 
                                                                             <div className="flex flex-wrap gap-2 mt-2 text-xs">
-                                                                                <span className="text-slate-600">⚖️ {shipment.weight} kg</span>
+                                                                                <span className="text-slate-600">📦 {shipment.weight} Palet</span>
                                                                                 {shipment.delivery_time && (
                                                                                     <span className="text-slate-600">🕐 {shipment.delivery_time}</span>
                                                                                 )}

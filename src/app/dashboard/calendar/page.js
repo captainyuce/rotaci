@@ -5,12 +5,14 @@ import { supabase } from '@/lib/supabaseClient'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
+import { logSecurityEvent } from '@/lib/auditLog'
 
 export default function CalendarPage() {
     const { hasPermission } = useAuth()
 
     // Permission check
     if (!hasPermission(PERMISSIONS.VIEW)) {
+        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/calendar', 'Page Access Denied')
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
     const [currentDate, setCurrentDate] = useState(new Date())
@@ -73,18 +75,21 @@ export default function CalendarPage() {
 
     const getShipmentsForDay = (date) => {
         if (!date) return []
-        const dateStr = date.toISOString().split('T')[0]
+        // Use local date to match the calendar cell's date
+        const offset = date.getTimezoneOffset()
+        const localDate = new Date(date.getTime() - (offset * 60 * 1000))
+        const dateStr = localDate.toISOString().split('T')[0]
         return shipments.filter(s => s.delivery_date === dateStr)
     }
 
     return (
         <div className="p-4 md:p-8 h-full overflow-y-auto pointer-events-auto">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 relative">
                 <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                     <CalendarIcon className="text-primary" />
                     Sevkiyat Takvimi
                 </h1>
-                <div className="flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
                     <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
                         <ChevronLeft size={20} />
                     </button>
@@ -181,7 +186,7 @@ export default function CalendarPage() {
                                         <p className="text-sm text-slate-600 truncate">{s.delivery_address}</p>
                                         <div className="mt-2 flex gap-2 text-xs">
                                             <span className="bg-zinc-50 text-zinc-700 px-2 py-0.5 rounded border border-blue-100">
-                                                {s.weight} kg
+                                                {s.weight} Palet
                                             </span>
                                             {s.status === 'pending' && (
                                                 <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">

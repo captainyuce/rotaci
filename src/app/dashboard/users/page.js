@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react'
 import { User, Plus, Edit, Trash2, X, Shield } from 'lucide-react'
 import { ROLES, PERMISSION_LABELS, PERMISSIONS } from '@/lib/permissions'
 import { useAuth } from '@/components/AuthProvider'
+import { logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
 
 export default function UsersPage() {
-    const { hasPermission } = useAuth()
+    const { user, hasPermission } = useAuth()
 
     // Permission check
     if (!hasPermission(PERMISSIONS.MANAGE_USERS)) {
+        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/users', 'Page Access Denied')
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
     const [users, setUsers] = useState([])
@@ -57,15 +59,54 @@ export default function UsersPage() {
             setEditId(null)
             setFormData({ username: '', password: '', full_name: '', role: 'admin', permissions: [] })
             fetchUsers()
+
+            // Log action
+            if (editId) {
+                const oldUser = users.find(u => u.id === editId)
+                await logShipmentAction(
+                    'updated',
+                    null,
+                    { type: 'user', ...body },
+                    user.id,
+                    user.full_name || user.username,
+                    { before: oldUser, after: body }
+                )
+            } else {
+                await logShipmentAction(
+                    'created',
+                    null,
+                    { type: 'user', ...body },
+                    user.id,
+                    user.full_name || user.username
+                )
+            }
         } else {
             alert('Hata: ' + (responseData.error || 'Bilinmeyen hata'))
         }
     }
 
     const handleDelete = async (id) => {
+        if (!hasPermission(PERMISSIONS.MANAGE_USERS)) {
+            logSecurityEvent(user?.id, user?.full_name || user?.username, 'delete_user', `Attempted to delete user ${id}`)
+            alert('Bu işlem için yetkiniz yok')
+            return
+        }
         if (!confirm('Kullanıcıyı silmek istediğinize emin misiniz?')) return
         const res = await fetch(`/api/users?id=${id}`, { method: 'DELETE' })
-        if (res.ok) fetchUsers()
+        if (res.ok) {
+            fetchUsers()
+            // Log deletion
+            const deletedUser = users.find(u => u.id === id)
+            if (deletedUser) {
+                await logShipmentAction(
+                    'deleted',
+                    null,
+                    { type: 'user', ...deletedUser },
+                    user.id,
+                    user.full_name || user.username
+                )
+            }
+        }
     }
 
     const getUserPermissions = (user) => {
@@ -195,9 +236,29 @@ export default function UsersPage() {
                             />
                             <select
                                 className="w-full p-2 border rounded-lg text-slate-900"
-                                value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                value={formData.role}
+                                onChange={e => {
+                                    const newRole = e.target.value
+                                    let newPermissions = []
+
+                                    // Find permissions for the selected role
+                                    const roleDef = Object.values(ROLES).find(r => r.name.toLowerCase() === newRole)
+                                    if (roleDef) {
+                                        newPermissions = roleDef.permissions
+                                    }
+
+                                    setFormData({
+                                        ...formData,
+                                        role: newRole,
+                                        permissions: newPermissions
+                                    })
+                                }}
                             >
-                                <option value="admin">Yönetici</option>
+                                {Object.values(ROLES).map(role => (
+                                    <option key={role.name} value={role.name.toLowerCase()}>
+                                        {role.label}
+                                    </option>
+                                ))}
                                 <option value="driver">Sürücü</option>
                             </select>
 

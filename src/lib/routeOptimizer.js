@@ -80,8 +80,8 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
     }
 
     try {
-        // For single shipment, no optimization needed
-        if (validShipments.length === 1) {
+        // For single shipment, no optimization needed UNLESS endLocation is set
+        if (validShipments.length === 1 && !options.endLocation) {
             const route = await getRoute(
                 [vehicleLocation.lng, vehicleLocation.lat],
                 [validShipments[0].delivery_lng, validShipments[0].delivery_lat],
@@ -101,7 +101,8 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
                 }],
                 totalDistance: route.distance,
                 totalDuration: adjustedDuration,
-                routes: [route.geometry]
+                routes: [route.geometry],
+                legs: route.legs // Return legs for single shipment too
             }
         }
 
@@ -210,8 +211,25 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
             .map((waypoint, index) => {
                 const shipmentIndex = waypoint.waypoint_index - waypointOffset
 
+                // If shipmentIndex matches validShipments length, it's the End Location (Depot)
+                if (shipmentIndex === validShipments.length && options.endLocation) {
+                    const metrics = waypointMetrics[waypoint.waypoint_index]
+                    return {
+                        id: 'depot-return',
+                        customer_name: 'Merkez Depo',
+                        delivery_address: 'Dönüş',
+                        delivery_lat: options.endLocation.lat,
+                        delivery_lng: options.endLocation.lng,
+                        status: 'returning',
+                        type: 'depot',
+                        routeOrder: index + 1,
+                        eta: calculateETA(metrics.duration, options.departureTime),
+                        distance: metrics.distance,
+                        isDepotReturn: true
+                    }
+                }
+
                 // If shipmentIndex is negative, it means this waypoint is one of the bridge waypoints or start point
-                // which shouldn't happen due to slice, but good to be safe
                 if (shipmentIndex < 0) return null
 
                 const shipment = validShipments[shipmentIndex]
@@ -230,13 +248,15 @@ export async function optimizeRoute(vehicleLocation, shipments, options = {}) {
             .filter(Boolean) // Remove nulls
 
         // Sort shipments by delivery time if specified
-        const finalOrder = sortByDeliveryTime(optimizedShipments)
+        // Sort shipments by delivery time ONLY if keepOrder is false
+        const finalOrder = options.keepOrder ? optimizedShipments : sortByDeliveryTime(optimizedShipments)
 
         return {
             optimizedShipments: finalOrder,
             totalDistance: tripResult.distance,
             totalDuration: tripResult.duration * TRAFFIC_FACTOR,
-            routes: tripResult.geometry ? [tripResult.geometry] : []
+            routes: tripResult.geometry ? [tripResult.geometry] : [],
+            legs: tripResult.legs // Return legs for segment rendering
         }
     } catch (error) {
         console.error('Route optimization error:', error)
@@ -267,7 +287,7 @@ async function getRoute(start, end, bridgePreference = null, startPoint = null, 
     }
 
     const coordString = coordinates.map(c => `${c[0]},${c[1]}`).join(';')
-    const url = `${OSRM_BASE_URL}/route/v1/driving/${coordString}?overview=full&geometries=geojson`
+    const url = `${OSRM_BASE_URL}/route/v1/driving/${coordString}?overview=full&geometries=geojson&steps=true`
 
     const response = await fetch(url)
     const data = await response.json()
@@ -280,7 +300,8 @@ async function getRoute(start, end, bridgePreference = null, startPoint = null, 
     return {
         distance: route.distance, // meters
         duration: route.duration, // seconds
-        geometry: route.geometry.coordinates.map(coord => [coord[1], coord[0]]) // Convert to [lat, lng]
+        geometry: route.geometry.coordinates.map(coord => [coord[1], coord[0]]), // Convert to [lat, lng]
+        legs: route.legs // Return legs
     }
 }
 

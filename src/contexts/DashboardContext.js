@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabaseClient'
 
 const DashboardContext = createContext()
 
@@ -8,6 +9,40 @@ export function DashboardProvider({ children }) {
     const [selectedVehicle, setSelectedVehicle] = useState(null)
     const [optimizedRoutes, setOptimizedRoutes] = useState({}) // vehicleId -> route data with geometry
     const [calculatingVehicleId, setCalculatingVehicleId] = useState(null)
+    const [hiddenShipments, setHiddenShipments] = useState({}) // { shipmentId: true }
+    const [activeRouteDate, setActiveRouteDate] = useState(null) // 'YYYY-MM-DD' or null
+    const [depotLocation, setDepotLocation] = useState(null)
+
+    // Fetch depot location on mount
+    useEffect(() => {
+        const fetchDepot = async () => {
+            const { data: settings } = await supabase
+                .from('settings')
+                .select('value')
+                .eq('key', 'base_address')
+                .single()
+
+            if (settings?.value) {
+                try {
+                    const parsed = JSON.parse(settings.value)
+                    if (parsed.lat && parsed.lng) {
+                        setDepotLocation(parsed)
+                    }
+                } catch (e) {
+                    console.error('Error parsing depot location:', e)
+                }
+            }
+        }
+        fetchDepot()
+    }, [])
+
+    const toggleVisibility = (shipmentId) => {
+        console.log('Toggling visibility for:', shipmentId)
+        setHiddenShipments(prev => ({
+            ...prev,
+            [shipmentId]: !prev[shipmentId]
+        }))
+    }
 
     const calculateVehicleRoute = async (vehicleId, shipmentIds) => {
         if (!vehicleId || !shipmentIds || shipmentIds.length === 0) return
@@ -22,7 +57,8 @@ export function DashboardProvider({ children }) {
                     shipmentIds,
                     departureTime: new Date().toISOString(),
                     keepOrder: true,
-                    saveToDb: false
+                    saveToDb: false,
+                    depotLocation // Pass depot location to API
                 })
             })
 
@@ -49,16 +85,22 @@ export function DashboardProvider({ children }) {
         })
     }
 
+    const value = {
+        selectedVehicle,
+        setSelectedVehicle,
+        optimizedRoutes,
+        setOptimizedRoutes,
+        calculatingVehicleId,
+        calculateVehicleRoute,
+        hideVehicleRoute,
+        hiddenShipments,
+        toggleVisibility,
+        activeRouteDate,
+        setActiveRouteDate
+    }
+
     return (
-        <DashboardContext.Provider value={{
-            selectedVehicle,
-            setSelectedVehicle,
-            optimizedRoutes,
-            setOptimizedRoutes,
-            calculatingVehicleId,
-            calculateVehicleRoute,
-            hideVehicleRoute
-        }}>
+        <DashboardContext.Provider value={value}>
             {children}
         </DashboardContext.Provider>
     )

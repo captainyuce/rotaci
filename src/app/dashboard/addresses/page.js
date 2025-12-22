@@ -6,6 +6,7 @@ import { Plus, X, MapPin, Phone, Edit, Trash2 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
+import { logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
 
@@ -16,10 +17,11 @@ const CATEGORIES = [
 ]
 
 export default function AddressesPage() {
-    const { hasPermission } = useAuth()
+    const { user, hasPermission } = useAuth()
 
     // Permission check
     if (!hasPermission(PERMISSIONS.MANAGE_ADDRESSES)) {
+        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/addresses', 'Page Access Denied')
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
 
@@ -92,6 +94,25 @@ export default function AddressesPage() {
 
             if (error) throw error
 
+            if (editingAddress) {
+                await logShipmentAction(
+                    'updated',
+                    null,
+                    { type: 'address', ...dataToSave },
+                    user.id,
+                    user.full_name || user.username,
+                    { before: editingAddress, after: dataToSave }
+                )
+            } else {
+                await logShipmentAction(
+                    'created',
+                    null,
+                    { type: 'address', ...dataToSave },
+                    user.id,
+                    user.full_name || user.username
+                )
+            }
+
             setIsModalOpen(false)
             setEditingAddress(null)
             setFormData({
@@ -112,6 +133,11 @@ export default function AddressesPage() {
     }
 
     const handleDelete = async (id) => {
+        if (!hasPermission(PERMISSIONS.MANAGE_ADDRESSES)) {
+            logSecurityEvent(user?.id, user?.full_name || user?.username, 'delete_address', `Attempted to delete address ${id}`)
+            alert('Bu işlem için yetkiniz yok')
+            return
+        }
         if (confirm('Bu adresi silmek istediğinize emin misiniz?')) {
             const { error } = await supabase.from('addresses').delete().eq('id', id)
             if (error) {
@@ -119,6 +145,17 @@ export default function AddressesPage() {
                 alert('Silme işlemi başarısız oldu.')
             } else {
                 fetchAddresses()
+                // Log deletion
+                const deletedAddress = addresses.find(a => a.id === id)
+                if (deletedAddress) {
+                    await logShipmentAction(
+                        'deleted',
+                        null,
+                        { type: 'address', ...deletedAddress },
+                        user.id,
+                        user.full_name || user.username
+                    )
+                }
             }
         }
     }
@@ -319,6 +356,24 @@ export default function AddressesPage() {
                                         rows="2"
                                         value={formData.address}
                                         onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                        onBlur={async (e) => {
+                                            const address = e.target.value
+                                            if (address && address.length > 5) {
+                                                try {
+                                                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+                                                    const data = await response.json()
+                                                    if (data && data.length > 0) {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            lat: parseFloat(data[0].lat),
+                                                            lng: parseFloat(data[0].lon)
+                                                        }))
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Geocoding error:', error)
+                                                }
+                                            }
+                                        }}
                                         placeholder="Örn: Kadıköy Merkez, İstanbul"
                                     />
                                 </div>
