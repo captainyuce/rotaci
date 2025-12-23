@@ -223,6 +223,42 @@ export default function DashboardPage() {
 
     return (
         <>
+            {/* Route Info Card - Top Center */}
+            {selectedVehicle && optimizedRoutes[selectedVehicle.id] && (
+                <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-30 pointer-events-auto">
+                    <div className="bg-white rounded-lg shadow-lg border border-slate-200 px-4 py-3 flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-2xl">🚗</span>
+                            <span className="font-bold text-slate-800">{selectedVehicle.plate}</span>
+                        </div>
+                        <div className="h-8 w-px bg-slate-300"></div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-center">
+                                <div className="text-xs text-slate-500">Mesafe</div>
+                                <div className="font-bold text-blue-600">
+                                    {(optimizedRoutes[selectedVehicle.id].totalDistance / 1000).toFixed(1)} km
+                                </div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-xs text-slate-500">Süre</div>
+                                <div className="font-bold text-green-600">
+                                    {Math.round(optimizedRoutes[selectedVehicle.id].totalDuration / 60)} dk
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                hideVehicleRoute(selectedVehicle.id)
+                                setActiveRouteDate(null)
+                            }}
+                            className="ml-2 p-1.5 hover:bg-slate-100 rounded-full transition-colors"
+                        >
+                            <X size={16} className="text-slate-500" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Vehicle Status Cards - Fixed at Bottom */}
             <div className="fixed bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white to-transparent pb-safe pointer-events-none">
                 <div className="px-2 md:px-4 py-3 md:py-4 overflow-x-auto pointer-events-auto">
@@ -509,8 +545,8 @@ export default function DashboardPage() {
                                     key={tourNum}
                                     onClick={() => setModalSelectedTour(tourNum)}
                                     className={`w-full p-3 rounded-lg border-2 transition-all ${modalSelectedTour === tourNum
-                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                            : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                        : 'border-slate-200 hover:border-slate-300 text-slate-700'
                                         }`}
                                 >
                                     <span className="font-bold">{tourNum}. Tur</span>
