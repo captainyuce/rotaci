@@ -57,6 +57,8 @@ export default function DashboardPage() {
 
         if (shipments && shipments.length > 0) {
             await calculateVehicleRoute(vehicle.id, shipments.map(s => s.id))
+            // Set selected vehicle so route info card appears
+            setSelectedVehicle(vehicle)
         } else {
             alert(`${dateType === 'today' ? 'Bugün' : 'Yarın'} için ${modalSelectedTour}. turda hesaplanacak aktif sevkiyat bulunamadı.`)
         }
