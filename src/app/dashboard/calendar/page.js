@@ -152,18 +152,18 @@ export default function CalendarPage() {
 
     return (
         <div className="p-4 md:p-8 h-full overflow-y-auto pointer-events-auto">
-            {/* Compact Header */}
+            {/* Compact Inline Header */}
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-6">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
                     {/* Month Navigation */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                         <button
                             onClick={() => changeMonth(-1)}
                             className="p-2 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
                         >
                             <ChevronLeft size={20} />
                         </button>
-                        <span className="font-bold text-base md:text-lg min-w-[120px] md:min-w-[140px] text-center text-slate-900">
+                        <span className="font-bold text-base md:text-lg text-slate-900 px-2">
                             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                         </span>
                         <button
@@ -173,6 +173,12 @@ export default function CalendarPage() {
                             <ChevronRight size={20} />
                         </button>
                     </div>
+
+                    {/* Title */}
+                    <h1 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <CalendarIcon className="text-primary" size={22} />
+                        Sevkiyat Takvimi
+                    </h1>
 
                     {/* Search Button */}
                     <button
