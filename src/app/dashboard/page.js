@@ -23,7 +23,15 @@ export default function DashboardPage() {
 
 
     const handleCalculateRoute = async (vehicle, dateType) => {
-        // dateType: 'today' or 'tomorrow'
+        // Open tour selection modal
+        setPendingRouteCalc({ vehicle, dateType })
+        setIsTourSelectOpen(true)
+    }
+
+    const executeRouteCalculation = async () => {
+        if (!pendingRouteCalc) return
+
+        const { vehicle, dateType } = pendingRouteCalc
         const today = new Date()
         const targetDate = new Date(today)
 
@@ -35,6 +43,7 @@ export default function DashboardPage() {
         console.log(`Calculating route for ${vehicle.plate} on ${dateStr} (${dateType}) - Tour: ${modalSelectedTour}`)
 
         setActiveRouteDate(dateStr)
+        setIsTourSelectOpen(false)
 
         // Fetch shipments for this vehicle AND selected tour
         const { data: shipments } = await supabase
@@ -169,6 +178,8 @@ export default function DashboardPage() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [activeTab, setActiveTab] = useState('today') // 'today' or 'tomorrow'
     const [modalSelectedTour, setModalSelectedTour] = useState(1) // Selected tour in modal
+    const [isTourSelectOpen, setIsTourSelectOpen] = useState(false) // Tour selection modal for route calc
+    const [pendingRouteCalc, setPendingRouteCalc] = useState(null) // Store vehicle and dateType for route calc
 
     const handleVehicleClick = async (vehicle) => {
         if (selectedVehicle?.id === vehicle.id) {
@@ -478,6 +489,51 @@ export default function DashboardPage() {
                                     </div>
                                 ))
                             })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Tour Selection Modal for Route Calculation */}
+            {isTourSelectOpen && pendingRouteCalc && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[70] p-4 pointer-events-auto">
+                    <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
+                        <h3 className="font-bold text-lg text-slate-900 mb-4">Tur Seçin</h3>
+                        <p className="text-sm text-slate-600 mb-4">
+                            {pendingRouteCalc.vehicle.plate} için {pendingRouteCalc.dateType === 'today' ? 'bugünün' : 'yarının'} hangi turunu hesaplamak istiyorsunuz?
+                        </p>
+
+                        <div className="space-y-2 mb-6">
+                            {[1, 2, 3, 4, 5].map(tourNum => (
+                                <button
+                                    key={tourNum}
+                                    onClick={() => setModalSelectedTour(tourNum)}
+                                    className={`w-full p-3 rounded-lg border-2 transition-all ${modalSelectedTour === tourNum
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                                        }`}
+                                >
+                                    <span className="font-bold">{tourNum}. Tur</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setIsTourSelectOpen(false)
+                                    setPendingRouteCalc(null)
+                                }}
+                                className="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors"
+                            >
+                                İptal
+                            </button>
+                            <button
+                                onClick={executeRouteCalculation}
+                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                            >
+                                Hesapla
+                            </button>
                         </div>
                     </div>
                 </div>
