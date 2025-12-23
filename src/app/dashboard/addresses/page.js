@@ -362,26 +362,37 @@ export default function AddressesPage() {
                                             type="button"
                                             onClick={async () => {
                                                 const address = formData.address
-                                                if (address && address.length > 5) {
-                                                    try {
-                                                        const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`)
-                                                        const data = await response.json()
-                                                        if (data && data.length > 0) {
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                lat: parseFloat(data[0].lat),
-                                                                lng: parseFloat(data[0].lon)
-                                                            }))
-                                                            alert('Konum bulundu ve haritada işaretlendi.')
-                                                        } else {
-                                                            alert('Konum bulunamadı. Lütfen adresi kontrol edin veya haritadan manuel seçin.')
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('Geocoding error:', error)
-                                                        alert('Konum aranırken bir hata oluştu.')
+                                                if (!address || address.length < 5) {
+                                                    alert('Lütfen en az 5 karakter uzunluğunda bir adres girin.')
+                                                    return
+                                                }
+
+                                                try {
+                                                    console.log('Geocoding request for:', address)
+                                                    const response = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`)
+                                                    console.log('Geocoding response status:', response.status)
+
+                                                    if (!response.ok) {
+                                                        throw new Error(`API returned status ${response.status}`)
                                                     }
-                                                } else {
-                                                    alert('Lütfen geçerli bir adres girin.')
+
+                                                    const data = await response.json()
+                                                    console.log('Geocoding data:', data)
+
+                                                    if (data && data.length > 0) {
+                                                        const result = data[0]
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            lat: parseFloat(result.lat),
+                                                            lng: parseFloat(result.lon)
+                                                        }))
+                                                        alert(`Konum bulundu: ${result.display_name}`)
+                                                    } else {
+                                                        alert('Bu adres için konum bulunamadı.\n\nÖneriler:\n- Şehir adını ekleyin (örn: "Kadıköy, İstanbul")\n- Daha genel bir adres deneyin\n- Veya haritadan manuel olarak seçin')
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Geocoding error:', error)
+                                                    alert(`Konum aranırken bir hata oluştu: ${error.message}\n\nLütfen haritadan manuel olarak konum seçin.`)
                                                 }
                                             }}
                                             className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium h-fit self-end"
