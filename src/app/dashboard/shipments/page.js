@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
 import { logShipmentAction, logSecurityEvent } from '@/lib/auditLog'
 import ChatButton from '@/components/ChatButton'
+import { shouldHideCompletedShipment } from '@/lib/shipmentHelpers'
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
 
@@ -300,9 +301,12 @@ export default function ShipmentsPage() {
         const today = new Date().toISOString().split('T')[0]
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
 
-        const failedShipments = shipments.filter(s => s.status === 'failed')
+        // Filter out shipments completed after 7 PM
+        const visibleShipments = shipments.filter(s => !shouldHideCompletedShipment(s))
+
+        const failedShipments = visibleShipments.filter(s => s.status === 'failed')
         // Exclude failed shipments from other lists to avoid duplication
-        const activeShipments = shipments.filter(s => s.status !== 'failed')
+        const activeShipments = visibleShipments.filter(s => s.status !== 'failed')
 
         // Helper function to get effective date
         const getEffectiveDate = (shipment) => {

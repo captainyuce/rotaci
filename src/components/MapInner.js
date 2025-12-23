@@ -8,6 +8,7 @@ import 'leaflet-defaulticon-compatibility'
 import { supabase } from '@/lib/supabaseClient'
 import L from 'leaflet'
 import { useDashboard } from '@/contexts/DashboardContext'
+import { shouldHideCompletedShipment } from '@/lib/shipmentHelpers'
 
 // Custom Icons (using simple colors for now, can be enhanced)
 const vehicleIcon = new L.Icon({
@@ -350,6 +351,9 @@ export default function MapInner() {
 
                     // Filter out hidden shipments for map rendering
                     const visibleShipments = vehicleShipments.filter(s => {
+                        // Hide completed shipments after 7 PM
+                        if (shouldHideCompletedShipment(s)) return false
+
                         if (hiddenShipments[s.id]) return false
 
                         // If activeRouteDate is set, only show shipments for that date

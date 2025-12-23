@@ -230,7 +230,6 @@ export default function DashboardPage() {
                 <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-30 pointer-events-auto">
                     <div className="bg-white rounded-lg shadow-lg border border-slate-200 px-4 py-3 flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-2xl">🚗</span>
                             <span className="font-bold text-slate-800">{selectedVehicle.plate}</span>
                         </div>
                         <div className="h-8 w-px bg-slate-300"></div>
