@@ -31,7 +31,7 @@ export default function CalendarPage() {
 
         const { data, error } = await supabase
             .from('shipments')
-            .select('*')
+            .select('*, vehicle:vehicles(plate)')
             .gte('delivery_date', startOfMonth.toISOString().split('T')[0])
             .lte('delivery_date', endOfMonth.toISOString().split('T')[0])
 
@@ -184,15 +184,28 @@ export default function CalendarPage() {
                                             </span>
                                         </div>
                                         <p className="text-sm text-slate-600 truncate">{s.delivery_address}</p>
-                                        <div className="mt-2 flex gap-2 text-xs">
+                                        <div className="mt-2 flex gap-2 text-xs flex-wrap">
                                             <span className="bg-zinc-50 text-zinc-700 px-2 py-0.5 rounded border border-blue-100">
                                                 {s.weight} Palet
                                             </span>
-                                            {s.status === 'pending' && (
+                                            {s.vehicle?.plate && (
+                                                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
+                                                    🚐 {s.vehicle.plate}
+                                                </span>
+                                            )}
+                                            {s.status === 'delivered' || s.status === 'unloaded' ? (
+                                                <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200">
+                                                    {s.type === 'pickup' ? 'Teslim Alındı' : 'Teslim Edildi'}
+                                                </span>
+                                            ) : s.status === 'pending' ? (
                                                 <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">
                                                     Bekliyor
                                                 </span>
-                                            )}
+                                            ) : s.status === 'assigned' ? (
+                                                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                                                    Yolda
+                                                </span>
+                                            ) : null}
                                         </div>
                                     </div>
                                 ))}

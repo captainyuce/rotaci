@@ -367,8 +367,14 @@ export default function MapInner() {
                     })
 
                     const completedShipments = vehicleShipments.filter(s => {
-                        // Date filter for list
-                        if (activeRouteDate && getEffectiveDate(s) !== activeRouteDate) return false
+                        // Only show today's completed shipments
+                        const today = new Date().toISOString().split('T')[0]
+                        const effectiveDate = getEffectiveDate(s)
+
+                        if (effectiveDate !== today) return false
+
+                        // Date filter for active route
+                        if (activeRouteDate && effectiveDate !== activeRouteDate) return false
                         return s.status === 'delivered' || s.status === 'unloaded'
                     })
 
