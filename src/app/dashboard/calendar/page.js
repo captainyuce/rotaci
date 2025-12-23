@@ -175,40 +175,54 @@ export default function CalendarPage() {
                             <p className="text-slate-500 text-center py-8">Bu tarihte planlanmış sevkiyat yok.</p>
                         ) : (
                             <div className="space-y-3">
-                                {selectedDay.shipments.map(s => (
-                                    <div key={s.id} className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className="font-bold text-slate-900">{s.customer_name}</span>
-                                            <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">
-                                                {s.delivery_time || '--:--'}
-                                            </span>
+                                {selectedDay.shipments.map(s => {
+                                    // Format delivered_at time if available
+                                    const deliveredTime = s.delivered_at
+                                        ? new Date(s.delivered_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                                        : null;
+
+                                    return (
+                                        <div key={s.id} className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="font-bold text-slate-900">{s.customer_name}</span>
+                                                <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">
+                                                    {s.delivery_time || '--:--'}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-slate-600 truncate">{s.delivery_address}</p>
+                                            <div className="mt-2 flex gap-2 text-xs flex-wrap">
+                                                <span className="bg-zinc-50 text-zinc-700 px-2 py-0.5 rounded border border-blue-100">
+                                                    {s.weight} Palet
+                                                </span>
+                                                {s.vehicle?.plate && (
+                                                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
+                                                        🚐 {s.vehicle.plate}
+                                                    </span>
+                                                )}
+                                                {s.status === 'delivered' || s.status === 'unloaded' ? (
+                                                    <>
+                                                        <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200">
+                                                            {s.type === 'pickup' ? 'Teslim Alındı' : 'Teslim Edildi'}
+                                                        </span>
+                                                        {deliveredTime && (
+                                                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                                                                ✓ {deliveredTime}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : s.status === 'pending' ? (
+                                                    <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">
+                                                        Bekliyor
+                                                    </span>
+                                                ) : s.status === 'assigned' ? (
+                                                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                                                        Yolda
+                                                    </span>
+                                                ) : null}
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-slate-600 truncate">{s.delivery_address}</p>
-                                        <div className="mt-2 flex gap-2 text-xs flex-wrap">
-                                            <span className="bg-zinc-50 text-zinc-700 px-2 py-0.5 rounded border border-blue-100">
-                                                {s.weight} Palet
-                                            </span>
-                                            {s.vehicle?.plate && (
-                                                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1">
-                                                    🚐 {s.vehicle.plate}
-                                                </span>
-                                            )}
-                                            {s.status === 'delivered' || s.status === 'unloaded' ? (
-                                                <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200">
-                                                    {s.type === 'pickup' ? 'Teslim Alındı' : 'Teslim Edildi'}
-                                                </span>
-                                            ) : s.status === 'pending' ? (
-                                                <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">
-                                                    Bekliyor
-                                                </span>
-                                            ) : s.status === 'assigned' ? (
-                                                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
-                                                    Yolda
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
                     </div>
