@@ -16,7 +16,8 @@ export default function CalendarPage() {
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
     const [currentDate, setCurrentDate] = useState(new Date())
-    const [shipments, setShipments] = useState([]) \n    const [loading, setLoading] = useState(true)
+    const [shipments, setShipments] = useState([])
+   const [loading, setLoading] = useState(true)
     const [selectedDay, setSelectedDay] = useState(null)
     const [isSearchOpen, setIsSearchOpen] = useState(false)
     const [searchResults, setSearchResults] = useState(null)
