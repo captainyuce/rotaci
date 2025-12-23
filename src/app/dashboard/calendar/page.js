@@ -152,23 +152,35 @@ export default function CalendarPage() {
 
     return (
         <div className="p-4 md:p-8 h-full overflow-y-auto pointer-events-auto">
-            <div className="flex items-center justify-between mb-6 relative">
-                <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <CalendarIcon className="text-primary" />
-                    Sevkiyat Takvimi
-                </h1>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
-                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
+            {/* Unified Header */}
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
+                <div className="flex items-center justify-between gap-4">
+                    {/* Left: Month Navigation */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => changeMonth(-1)}
+                            className="p-2 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
+                        >
                             <ChevronLeft size={20} />
                         </button>
-                        <span className="font-bold text-lg w-32 text-center text-slate-900">
+                        <span className="font-bold text-lg min-w-[140px] text-center text-slate-900">
                             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                         </span>
-                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
+                        <button
+                            onClick={() => changeMonth(1)}
+                            className="p-2 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
+                        >
                             <ChevronRight size={20} />
                         </button>
                     </div>
+
+                    {/* Center: Title */}
+                    <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <CalendarIcon className="text-primary" size={24} />
+                        Sevkiyat Takvimi
+                    </h1>
+
+                    {/* Right: Search Button */}
                     <button
                         onClick={() => setIsSearchOpen(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-zinc-700 text-white rounded-lg shadow-sm transition-colors"
