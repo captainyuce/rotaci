@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
 import { logSecurityEvent } from '@/lib/auditLog'
@@ -16,9 +16,17 @@ export default function CalendarPage() {
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
     const [currentDate, setCurrentDate] = useState(new Date())
-    const [shipments, setShipments] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [shipments, setShipments] = useState([]) \n    const [loading, setLoading] = useState(true)
     const [selectedDay, setSelectedDay] = useState(null)
+    const [isSearchOpen, setIsSearchOpen] = useState(false)
+    const [searchResults, setSearchResults] = useState(null)
+    const [searchFilters, setSearchFilters] = useState({
+        startDate: '',
+        endDate: '',
+        customerName: '',
+        vehiclePlate: '',
+        status: ''
+    })
 
     useEffect(() => {
         fetchShipments()
@@ -80,6 +88,53 @@ export default function CalendarPage() {
         const localDate = new Date(date.getTime() - (offset * 60 * 1000))
         const dateStr = localDate.toISOString().split('T')[0]
         return shipments.filter(s => s.delivery_date === dateStr)
+    }
+
+    const handleSearch = async () => {
+        if (!searchFilters.startDate || !searchFilters.endDate) {
+            alert('Lütfen başlangıç ve bitiş tarihlerini seçin.')
+            return
+        }
+
+        setLoading(true)
+        let query = supabase
+            .from('shipments')
+            .select('*, vehicle:vehicles(plate)')
+            .gte('delivery_date', searchFilters.startDate)
+            .lte('delivery_date', searchFilters.endDate)
+
+        if (searchFilters.customerName) {
+            query = query.ilike('customer_name', `%${searchFilters.customerName}%`)
+        }
+
+        if (searchFilters.status) {
+            query = query.eq('status', searchFilters.status)
+        }
+
+        const { data, error } = await query.order('delivery_date', { ascending: false })
+
+        if (data) {
+            // Filter by vehicle plate if specified (since it's a joined field)
+            let results = data
+            if (searchFilters.vehiclePlate) {
+                results = data.filter(s =>
+                    s.vehicle?.plate?.toLowerCase().includes(searchFilters.vehiclePlate.toLowerCase())
+                )
+            }
+            setSearchResults(results)
+        }
+        setLoading(false)
+    }
+
+    const clearSearch = () => {
+        setSearchResults(null)
+        setSearchFilters({
+            startDate: '',
+            endDate: '',
+            customerName: '',
+            vehiclePlate: '',
+            status: ''
+        })
     }
 
     return (
