@@ -242,7 +242,21 @@ export default function DriverPage() {
     const completedJobs = jobs.filter(j => j.status === 'delivered' || j.status === 'unloaded')
     const hasLoadedPickups = jobs.some(j => j.type === 'pickup' && j.status === 'delivered')
 
-    // Group jobs by tour
+    // Determine active tour: the lowest tour number that has incomplete shipments
+    const getActiveTour = () => {
+        const incompleteTours = [...new Set(
+            [...newJobs, ...acknowledgedJobs].map(j => j.tour_number || 1)
+        )].sort((a, b) => a - b)
+        return incompleteTours.length > 0 ? incompleteTours[0] : 1
+    }
+
+    const activeTour = getActiveTour()
+
+    // Filter jobs to show only active tour
+    const activeNewJobs = newJobs.filter(j => (j.tour_number || 1) === activeTour)
+    const activeAcknowledgedJobs = acknowledgedJobs.filter(j => (j.tour_number || 1) === activeTour)
+
+    // Group jobs by tour (for display purposes)
     const groupByTour = (jobsList) => {
         const grouped = {}
         jobsList.forEach(job => {
@@ -253,8 +267,8 @@ export default function DriverPage() {
         return grouped
     }
 
-    const newJobsByTour = groupByTour(newJobs)
-    const acknowledgedJobsByTour = groupByTour(acknowledgedJobs)
+    const newJobsByTour = groupByTour(activeNewJobs)
+    const acknowledgedJobsByTour = groupByTour(activeAcknowledgedJobs)
 
     const renderJobCard = (job, showAcknowledgeButton = false, isCompleted = false) => (
         <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200 relative">
@@ -433,7 +447,14 @@ export default function DriverPage() {
 
             {/* Refresh Button */}
             <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-slate-700">İşlerim</h2>
+                <div>
+                    <h2 className="font-bold text-slate-700">İşlerim</h2>
+                    {(activeNewJobs.length > 0 || activeAcknowledgedJobs.length > 0) && (
+                        <p className="text-xs text-blue-600 font-medium mt-0.5">
+                            Aktif: {activeTour}. Tur
+                        </p>
+                    )}
+                </div>
                 <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-500">
                         Son: {lastUpdate.toLocaleTimeString('tr-TR')}
@@ -555,7 +576,7 @@ export default function DriverPage() {
 
                 {activeTab === 'map' && (
                     <div className="h-full bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-                        <DriverRouteMap shipments={acknowledgedJobs} />
+                        <DriverRouteMap shipments={activeAcknowledgedJobs} />
                     </div>
                 )}
 
