@@ -15,7 +15,7 @@ export default function CalendarPage() {
     const [loading, setLoading] = useState(true)
     const [selectedDay, setSelectedDay] = useState(null)
     const [isSearchOpen, setIsSearchOpen] = useState(false)
-    const [searchResults, setSearchResults] = useState(null)
+    const [searchResults, setSearchResults] = useState([])
     const [searchFilters, setSearchFilters] = useState({
         startDate: '',
         endDate: '',
