@@ -8,13 +8,8 @@ import { PERMISSIONS } from '@/lib/permissions'
 import { logSecurityEvent } from '@/lib/auditLog'
 
 export default function CalendarPage() {
-    const { hasPermission } = useAuth()
+    const { hasPermission, user } = useAuth()
 
-    // Permission check
-    if (!hasPermission(PERMISSIONS.VIEW)) {
-        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/calendar', 'Page Access Denied')
-        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
-    }
     const [currentDate, setCurrentDate] = useState(new Date())
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -29,6 +24,12 @@ export default function CalendarPage() {
         status: ''
     })
     const [vehicles, setVehicles] = useState([])
+
+    // Permission check
+    if (!hasPermission(PERMISSIONS.VIEW)) {
+        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/calendar', 'Page Access Denied')
+        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
+    }
 
     useEffect(() => {
         fetchShipments()
