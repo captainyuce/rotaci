@@ -140,7 +140,7 @@ export default function CalendarPage() {
     }
 
     const clearSearch = () => {
-        setSearchResults(null)
+        setSearchResults([])
         setSearchFilters({
             startDate: '',
             endDate: '',
@@ -313,7 +313,6 @@ export default function CalendarPage() {
                 filters={searchFilters}
                 onFilterChange={setSearchFilters}
                 onSearch={handleSearch}
-                onClear={clearSearch}
                 results={searchResults}
                 vehicles={vehicles}
             />
@@ -327,7 +326,7 @@ function XIcon() {
     )
 }
 
-function SearchModal({ isOpen, onClose, filters, onFilterChange, onSearch, onClear, results, vehicles }) {
+function SearchModal({ isOpen, onClose, filters, onFilterChange, onSearch, results, vehicles }) {
     if (!isOpen) return null
 
     return (
@@ -408,19 +407,13 @@ function SearchModal({ isOpen, onClose, filters, onFilterChange, onSearch, onCle
                         </select>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-4">
+                    {/* Action Button */}
+                    <div className="pt-4">
                         <button
                             onClick={onSearch}
-                            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                         >
                             🔍 Ara
-                        </button>
-                        <button
-                            onClick={onClear}
-                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                        >
-                            Temizle
                         </button>
                     </div>
 
