@@ -242,6 +242,20 @@ export default function DriverPage() {
     const completedJobs = jobs.filter(j => j.status === 'delivered' || j.status === 'unloaded')
     const hasLoadedPickups = jobs.some(j => j.type === 'pickup' && j.status === 'delivered')
 
+    // Group jobs by tour
+    const groupByTour = (jobsList) => {
+        const grouped = {}
+        jobsList.forEach(job => {
+            const tourNum = job.tour_number || 1
+            if (!grouped[tourNum]) grouped[tourNum] = []
+            grouped[tourNum].push(job)
+        })
+        return grouped
+    }
+
+    const newJobsByTour = groupByTour(newJobs)
+    const acknowledgedJobsByTour = groupByTour(acknowledgedJobs)
+
     const renderJobCard = (job, showAcknowledgeButton = false, isCompleted = false) => (
         <div key={job.id} className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200 relative">
             {/* Order Badge */}
@@ -505,7 +519,16 @@ export default function DriverPage() {
                                 <p>Yeni atanan iş bulunmuyor.</p>
                             </div>
                         )}
-                        {newJobs.map((job) => renderJobCard(job, true, false))}
+                        {Object.keys(newJobsByTour).sort((a, b) => a - b).map(tourNum => (
+                            <div key={`new-tour-${tourNum}`}>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mb-3">
+                                    <h3 className="font-bold text-blue-800 text-sm">{tourNum}. Tur ({newJobsByTour[tourNum].length} sevkiyat)</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    {newJobsByTour[tourNum].map((job) => renderJobCard(job, true, false))}
+                                </div>
+                            </div>
+                        ))}
                     </>
                 )}
 
@@ -517,7 +540,16 @@ export default function DriverPage() {
                                 <p>Aktif iş bulunmuyor.</p>
                             </div>
                         )}
-                        {acknowledgedJobs.map((job) => renderJobCard(job, false, false))}
+                        {Object.keys(acknowledgedJobsByTour).sort((a, b) => a - b).map(tourNum => (
+                            <div key={`ack-tour-${tourNum}`}>
+                                <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">
+                                    <h3 className="font-bold text-green-800 text-sm">{tourNum}. Tur ({acknowledgedJobsByTour[tourNum].length} sevkiyat)</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    {acknowledgedJobsByTour[tourNum].map((job) => renderJobCard(job, false, false))}
+                                </div>
+                            </div>
+                        ))}
                     </>
                 )}
 
