@@ -10,7 +10,7 @@ export async function GET(request) {
 
     try {
         console.log('Geocoding request for:', q);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=tr&limit=5`;
+        const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&countrycodes=tr&limit=5';
         console.log('Fetching from:', url);
 
         const response = await fetch(url, {

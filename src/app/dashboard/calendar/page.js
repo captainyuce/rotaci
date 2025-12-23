@@ -17,7 +17,7 @@ export default function CalendarPage() {
     }
     const [currentDate, setCurrentDate] = useState(new Date())
     const [shipments, setShipments] = useState([])
-   const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(true)
     const [selectedDay, setSelectedDay] = useState(null)
     const [isSearchOpen, setIsSearchOpen] = useState(false)
     const [searchResults, setSearchResults] = useState(null)
@@ -28,9 +28,11 @@ export default function CalendarPage() {
         vehiclePlate: '',
         status: ''
     })
+    const [vehicles, setVehicles] = useState([])
 
     useEffect(() => {
         fetchShipments()
+        fetchVehicles()
     }, [currentDate])
 
     const fetchShipments = async () => {
@@ -46,6 +48,15 @@ export default function CalendarPage() {
 
         if (data) setShipments(data)
         setLoading(false)
+    }
+
+    const fetchVehicles = async () => {
+        const { data, error } = await supabase
+            .from('vehicles')
+            .select('id, plate')
+            .order('plate')
+
+        if (data) setVehicles(data)
     }
 
     const getDaysInMonth = () => {
@@ -145,15 +156,24 @@ export default function CalendarPage() {
                     <CalendarIcon className="text-primary" />
                     Sevkiyat Takvimi
                 </h1>
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
-                    <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
-                        <ChevronLeft size={20} />
-                    </button>
-                    <span className="font-bold text-lg w-32 text-center text-slate-900">
-                        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                    </span>
-                    <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
-                        <ChevronRight size={20} />
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
+                        <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
+                            <ChevronLeft size={20} />
+                        </button>
+                        <span className="font-bold text-lg w-32 text-center text-slate-900">
+                            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        </span>
+                        <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 text-slate-700 rounded-md">
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-zinc-700 text-white rounded-lg shadow-sm transition-colors"
+                    >
+                        <Search size={18} />
+                        <span className="hidden md:inline">Gelişmiş Arama</span>
                     </button>
                 </div>
             </div>
@@ -284,6 +304,18 @@ export default function CalendarPage() {
                     </div>
                 </div>
             )}
+
+            {/* Search Modal */}
+            <SearchModal
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+                filters={searchFilters}
+                onFilterChange={setSearchFilters}
+                onSearch={handleSearch}
+                onClear={clearSearch}
+                results={searchResults}
+                vehicles={vehicles}
+            />
         </div>
     )
 }
@@ -291,5 +323,157 @@ export default function CalendarPage() {
 function XIcon() {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 18 18" /></svg>
+    )
+}
+
+function SearchModal({ isOpen, onClose, filters, onFilterChange, onSearch, onClear, results, vehicles }) {
+    if (!isOpen) return null
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                    <h2 className="text-xl font-bold text-gray-800">Gelişmiş Arama</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                        <XIcon />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    {/* Date Range */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Başlangıç Tarihi</label>
+                            <input
+                                type="date"
+                                value={filters.startDate}
+                                onChange={(e) => onFilterChange({ ...filters, startDate: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Bitiş Tarihi</label>
+                            <input
+                                type="date"
+                                value={filters.endDate}
+                                onChange={(e) => onFilterChange({ ...filters, endDate: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Customer Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Müşteri Adı</label>
+                        <input
+                            type="text"
+                            value={filters.customerName}
+                            onChange={(e) => onFilterChange({ ...filters, customerName: e.target.value })}
+                            placeholder="Müşteri adı girin..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+
+                    {/* Vehicle Plate */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Araç Plakası</label>
+                        <select
+                            value={filters.vehiclePlate}
+                            onChange={(e) => onFilterChange({ ...filters, vehiclePlate: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="">Tüm Araçlar</option>
+                            {vehicles.map(v => (
+                                <option key={v.id} value={v.plate}>{v.plate}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Durum</label>
+                        <select
+                            value={filters.status}
+                            onChange={(e) => onFilterChange({ ...filters, status: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="">Tüm Durumlar</option>
+                            <option value="pending">Beklemede</option>
+                            <option value="assigned">Atandı</option>
+                            <option value="in_transit">Yolda</option>
+                            <option value="delivered">Teslim Edildi</option>
+                            <option value="unloaded">İndirildi</option>
+                            <option value="failed">Başarısız</option>
+                        </select>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            onClick={onSearch}
+                            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        >
+                            🔍 Ara
+                        </button>
+                        <button
+                            onClick={onClear}
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                        >
+                            Temizle
+                        </button>
+                    </div>
+
+                    {/* Search Results */}
+                    {results.length > 0 && (
+                        <div className="mt-6 border-t border-gray-200 pt-6">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4">
+                                Arama Sonuçları ({results.length} sonuç)
+                            </h3>
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {results.map(s => (
+                                    <div key={s.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <span className="font-bold text-gray-800">{s.customer_name}</span>
+                                                {s.vehicle?.plate && (
+                                                    <span className="ml-2 text-sm text-gray-600">🚐 {s.vehicle.plate}</span>
+                                                )}
+                                            </div>
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${s.status === 'delivered' || s.status === 'unloaded' ? 'bg-green-100 text-green-800' :
+                                                s.status === 'in_transit' ? 'bg-blue-100 text-blue-800' :
+                                                    s.status === 'assigned' ? 'bg-yellow-100 text-yellow-800' :
+                                                        s.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {s.status === 'delivered' ? 'Teslim Edildi' :
+                                                    s.status === 'unloaded' ? 'İndirildi' :
+                                                        s.status === 'in_transit' ? 'Yolda' :
+                                                            s.status === 'assigned' ? 'Atandı' :
+                                                                s.status === 'failed' ? 'Başarısız' :
+                                                                    'Beklemede'}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-1">📍 {s.delivery_address}</p>
+                                        <div className="flex gap-4 text-sm text-gray-500">
+                                            <span>📅 {s.delivery_date}</span>
+                                            <span>⚖️ {s.weight} kg</span>
+                                            {(s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at && (
+                                                <span>✓ {new Date(s.delivered_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {results.length === 0 && filters.startDate && (
+                        <div className="mt-6 border-t border-gray-200 pt-6 text-center text-gray-500">
+                            Sonuç bulunamadı
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
     )
 }
