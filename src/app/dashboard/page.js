@@ -121,14 +121,14 @@ export default function DashboardPage() {
                     // Total: Only count today and tomorrow
                     if (effectiveDate === todayStr || effectiveDate === tomorrowStr) {
                         total++
+
+                        // Delivered: Count if status is delivered or unloaded AND within today/tomorrow
+                        if (s.status === 'delivered' || s.status === 'unloaded') {
+                            delivered++
+                        }
                     }
 
-                    // Delivered: Count if status is delivered or unloaded
-                    if (s.status === 'delivered' || s.status === 'unloaded') {
-                        delivered++
-                    }
-
-                    // Load Calculation
+                    // Load Calculation (for all shipments, regardless of date)
                     const weight = Number(s.weight) || 0
                     if (s.type === 'pickup') {
                         // For pickups: Only count if status is 'delivered' (meaning picked up and on truck)
