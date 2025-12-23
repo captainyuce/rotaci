@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Search } from 'luc
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
 import { logSecurityEvent } from '@/lib/auditLog'
+import { toTurkeyDateString } from '@/lib/dateHelpers'
 
 export default function CalendarPage() {
     const { hasPermission, user } = useAuth()
@@ -44,8 +45,8 @@ export default function CalendarPage() {
         const { data, error } = await supabase
             .from('shipments')
             .select('*, vehicle:vehicles(plate)')
-            .gte('delivery_date', startOfMonth.toISOString().split('T')[0])
-            .lte('delivery_date', endOfMonth.toISOString().split('T')[0])
+            .gte('delivery_date', toTurkeyDateString(startOfMonth))
+            .lte('delivery_date', toTurkeyDateString(endOfMonth))
 
         if (data) setShipments(data)
         setLoading(false)
@@ -97,9 +98,7 @@ export default function CalendarPage() {
     const getShipmentsForDay = (date) => {
         if (!date) return []
         // Use local date to match the calendar cell's date
-        const offset = date.getTimezoneOffset()
-        const localDate = new Date(date.getTime() - (offset * 60 * 1000))
-        const dateStr = localDate.toISOString().split('T')[0]
+        const dateStr = toTurkeyDateString(date)
         return shipments.filter(s => s.delivery_date === dateStr)
     }
 

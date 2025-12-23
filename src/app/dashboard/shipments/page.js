@@ -9,6 +9,7 @@ import { PERMISSIONS } from '@/lib/permissions'
 import { logShipmentAction, logSecurityEvent } from '@/lib/auditLog'
 import ChatButton from '@/components/ChatButton'
 import { shouldHideCompletedShipment } from '@/lib/shipmentHelpers'
+import { getTurkeyDateString, getTurkeyTomorrowDateString, toTurkeyDateString } from '@/lib/dateHelpers'
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false })
 
@@ -298,8 +299,8 @@ export default function ShipmentsPage() {
 
     // Group shipments by date
     const groupShipmentsByDate = () => {
-        const today = new Date().toISOString().split('T')[0]
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+        const today = getTurkeyDateString()
+        const tomorrow = getTurkeyTomorrowDateString()
 
         // Filter out shipments completed after 7 PM
         const visibleShipments = shipments.filter(s => !shouldHideCompletedShipment(s))
@@ -311,9 +312,8 @@ export default function ShipmentsPage() {
         // Helper function to get effective date
         const getEffectiveDate = (shipment) => {
             if ((shipment.status === 'delivered' || shipment.status === 'unloaded') && shipment.delivered_at) {
-                // Convert UTC timestamp to local date string
-                const deliveredDate = new Date(shipment.delivered_at)
-                return deliveredDate.toLocaleDateString('en-CA')
+                // Convert UTC timestamp to Turkey date string
+                return toTurkeyDateString(shipment.delivered_at)
             }
             return shipment.delivery_date
         }

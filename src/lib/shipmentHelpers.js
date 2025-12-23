@@ -1,3 +1,5 @@
+import { getTurkeyTime } from './dateHelpers'
+
 // Helper function to check if a shipment should be hidden based on completion time
 export const shouldHideCompletedShipment = (shipment) => {
     // Only apply to completed shipments
@@ -12,12 +14,10 @@ export const shouldHideCompletedShipment = (shipment) => {
 
     // Convert UTC delivered_at to Turkey time
     const deliveredDate = new Date(shipment.delivered_at)
-
-    // Get Turkey time (UTC+3)
     const turkeyTime = new Date(deliveredDate.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }))
 
     // Get current Turkey time
-    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }))
+    const now = getTurkeyTime()
 
     // Check if delivered after 19:00 (7 PM)
     const deliveredHour = turkeyTime.getHours()

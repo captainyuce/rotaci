@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabaseClient'
 import L from 'leaflet'
 import { useDashboard } from '@/contexts/DashboardContext'
 import { shouldHideCompletedShipment } from '@/lib/shipmentHelpers'
+import { getTurkeyDateString, toTurkeyDateString } from '@/lib/dateHelpers'
 
 // Custom Icons (using simple colors for now, can be enhanced)
 const vehicleIcon = new L.Icon({
@@ -58,7 +59,7 @@ export default function MapInner() {
     // Helper to determine effective date for filtering
     const getEffectiveDate = (s) => {
         if ((s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at) {
-            return new Date(s.delivered_at).toLocaleDateString('en-CA')
+            return toTurkeyDateString(s.delivered_at)
         }
         return s.delivery_date
     }
@@ -372,7 +373,7 @@ export default function MapInner() {
 
                     const completedShipments = vehicleShipments.filter(s => {
                         // Only show today's completed shipments
-                        const today = new Date().toISOString().split('T')[0]
+                        const today = getTurkeyDateString()
                         const effectiveDate = getEffectiveDate(s)
 
                         if (effectiveDate !== today) return false
@@ -524,7 +525,7 @@ export default function MapInner() {
                 {/* Shipments */}
                 {shipments.map(shipment => {
                     // Filter out past shipments (only show today, tomorrow, and future)
-                    const today = new Date().toISOString().split('T')[0]
+                    const today = getTurkeyDateString()
                     const effectiveDate = getEffectiveDate(shipment)
 
                     if (effectiveDate < today) return null // Hide past shipments

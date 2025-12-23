@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Truck, Package, Navigation, X } from 'lucide-react'
 import { useDashboard } from '@/contexts/DashboardContext'
+import { getTurkeyDateString, getTurkeyTomorrowDateString, toTurkeyDateString } from '@/lib/dateHelpers'
 
 export default function DashboardPage() {
     const [vehicles, setVehicles] = useState([])
@@ -32,14 +33,14 @@ export default function DashboardPage() {
         if (!pendingRouteCalc) return
 
         const { vehicle, dateType } = pendingRouteCalc
-        const today = new Date()
-        const targetDate = new Date(today)
 
+        let dateStr
         if (dateType === 'tomorrow') {
-            targetDate.setDate(today.getDate() + 1)
+            dateStr = getTurkeyTomorrowDateString()
+        } else {
+            dateStr = getTurkeyDateString()
         }
 
-        const dateStr = targetDate.toLocaleDateString('en-CA') // YYYY-MM-DD
         console.log(`Calculating route for ${vehicle.plate} on ${dateStr} (${dateType}) - Tour: ${modalSelectedTour}`)
 
         setActiveRouteDate(dateStr)
@@ -99,12 +100,8 @@ export default function DashboardPage() {
 
         if (vehiclesData) {
             const vehiclesWithStats = await Promise.all(vehiclesData.map(async (vehicle) => {
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
-                const todayStr = today.toLocaleDateString('en-CA')
-                const tomorrow = new Date(today)
-                tomorrow.setDate(tomorrow.getDate() + 1)
-                const tomorrowStr = tomorrow.toLocaleDateString('en-CA')
+                const todayStr = getTurkeyDateString()
+                const tomorrowStr = getTurkeyTomorrowDateString()
 
                 const { data: shipments } = await supabase
                     .from('shipments')
@@ -121,9 +118,8 @@ export default function DashboardPage() {
                     // Determine effective date
                     let effectiveDate = s.delivery_date
                     if ((s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at) {
-                        // Convert UTC to local date
-                        const deliveredDate = new Date(s.delivered_at)
-                        effectiveDate = deliveredDate.toLocaleDateString('en-CA')
+                        // Convert UTC to Turkey date
+                        effectiveDate = toTurkeyDateString(s.delivered_at)
                     }
 
                     // Count by date
