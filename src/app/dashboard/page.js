@@ -147,11 +147,19 @@ export default function DashboardPage() {
                     }
                 })
 
-                // Calculate tour count and details
-                const tourNumbers = [...new Set(shipments?.map(s => s.tour_number || 1) || [])].sort((a, b) => a - b)
+                // Calculate tour count and details (Only for TODAY)
+                const todayShipmentsForTours = shipments?.filter(s => {
+                    let effectiveDate = s.delivery_date
+                    if ((s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at) {
+                        effectiveDate = toTurkeyDateString(s.delivered_at)
+                    }
+                    return effectiveDate === todayStr
+                }) || []
+
+                const tourNumbers = [...new Set(todayShipmentsForTours.map(s => s.tour_number || 1))].sort((a, b) => a - b)
                 const tourDetails = tourNumbers.map(tourNum => ({
                     tourNumber: tourNum,
-                    count: shipments?.filter(s => (s.tour_number || 1) === tourNum).length || 0
+                    count: todayShipmentsForTours.filter(s => (s.tour_number || 1) === tourNum).length
                 }))
 
                 return {
