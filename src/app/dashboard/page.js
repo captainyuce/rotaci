@@ -32,23 +32,24 @@ export default function DashboardPage() {
         }
 
         const dateStr = targetDate.toLocaleDateString('en-CA') // YYYY-MM-DD
-        console.log(`Calculating route for ${vehicle.plate} on ${dateStr} (${dateType})`)
+        console.log(`Calculating route for ${vehicle.plate} on ${dateStr} (${dateType}) - Tour: ${modalSelectedTour}`)
 
         setActiveRouteDate(dateStr)
 
-        // Fetch shipments for this vehicle first to get the latest IDs
+        // Fetch shipments for this vehicle AND selected tour
         const { data: shipments } = await supabase
             .from('shipments')
-            .select('id, delivery_date')
+            .select('id, delivery_date, tour_number')
             .eq('assigned_vehicle_id', vehicle.id)
             .neq('status', 'delivered')
             .neq('status', 'unloaded')
             .eq('delivery_date', dateStr)
+            .eq('tour_number', modalSelectedTour)
 
         if (shipments && shipments.length > 0) {
             await calculateVehicleRoute(vehicle.id, shipments.map(s => s.id))
         } else {
-            alert(`${dateType === 'today' ? 'Bugün' : 'Yarın'} için hesaplanacak aktif sevkiyat bulunamadı.`)
+            alert(`${dateType === 'today' ? 'Bugün' : 'Yarın'} için ${modalSelectedTour}. turda hesaplanacak aktif sevkiyat bulunamadı.`)
         }
     }
 
@@ -167,16 +168,19 @@ export default function DashboardPage() {
     const [vehicleShipments, setVehicleShipments] = useState([])
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [activeTab, setActiveTab] = useState('today') // 'today' or 'tomorrow'
+    const [modalSelectedTour, setModalSelectedTour] = useState(1) // Selected tour in modal
 
     const handleVehicleClick = async (vehicle) => {
         if (selectedVehicle?.id === vehicle.id) {
             // If clicking the same vehicle, just toggle the modal if it's closed, or do nothing (or deselect)
             // But user wants to see shipments, so let's open modal
             setIsModalOpen(true)
+            setModalSelectedTour(1)
             await fetchVehicleShipments(vehicle.id)
         } else {
             setSelectedVehicle(vehicle)
             setIsModalOpen(true)
+            setModalSelectedTour(1)
             await fetchVehicleShipments(vehicle.id)
         }
     }
@@ -373,15 +377,42 @@ export default function DashboardPage() {
                             </button>
                         </div>
 
+                        {/* Tour Selector */}
+                        {(() => {
+                            const tours = [...new Set(vehicleShipments.map(s => s.tour_number || 1))].sort((a, b) => a - b)
+                            if (tours.length > 1) {
+                                return (
+                                    <div className="mb-4">
+                                        <label className="text-xs text-slate-600 mb-1 block">Tur Seçin:</label>
+                                        <select
+                                            value={modalSelectedTour}
+                                            onChange={(e) => setModalSelectedTour(parseInt(e.target.value))}
+                                            className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                                        >
+                                            {tours.map(tour => (
+                                                <option key={tour} value={tour}>
+                                                    {tour}. Tur ({vehicleShipments.filter(s => (s.tour_number || 1) === tour).length} sevkiyat)
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )
+                            }
+                            return null
+                        })()}
+
                         <div className="space-y-3">
                             {(() => {
-                                // Filter shipments based on active tab
+                                // Filter shipments based on active tab AND selected tour
                                 const todayStr = new Date().toLocaleDateString('en-CA')
                                 const tomorrow = new Date()
                                 tomorrow.setDate(tomorrow.getDate() + 1)
                                 const tomorrowStr = tomorrow.toLocaleDateString('en-CA')
 
                                 const filteredShipments = vehicleShipments.filter(s => {
+                                    // Filter by tour first
+                                    if ((s.tour_number || 1) !== modalSelectedTour) return false
+
                                     // Helper to determine effective date
                                     let effectiveDate = s.delivery_date
                                     if ((s.status === 'delivered' || s.status === 'unloaded') && s.delivered_at) {
