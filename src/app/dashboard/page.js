@@ -236,13 +236,13 @@ export default function DashboardPage() {
                             <div className="text-center">
                                 <div className="text-xs text-slate-500">Mesafe</div>
                                 <div className="font-bold text-blue-600">
-                                    {(optimizedRoutes[selectedVehicle.id].totalDistance / 1000).toFixed(1)} km
+                                    {((optimizedRoutes[selectedVehicle.id]?.totalDistance || 0) / 1000).toFixed(1)} km
                                 </div>
                             </div>
                             <div className="text-center">
                                 <div className="text-xs text-slate-500">Süre</div>
                                 <div className="font-bold text-green-600">
-                                    {Math.round(optimizedRoutes[selectedVehicle.id].totalDuration / 60)} dk
+                                    {Math.round((optimizedRoutes[selectedVehicle.id]?.totalDuration || 0) / 60)} dk
                                 </div>
                             </div>
                         </div>
