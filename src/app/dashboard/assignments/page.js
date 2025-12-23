@@ -21,6 +21,8 @@ export default function AssignmentsPage() {
     const [optimizing, setOptimizing] = useState({})
     const [editingVehicle, setEditingVehicle] = useState(null) // ID of vehicle being edited
     const [tempShipments, setTempShipments] = useState({}) // Temporary order during edit
+    const [selectedTour, setSelectedTour] = useState({}) // Track selected tour for each vehicle (default: 1)
+    const [selectedAssignTour, setSelectedAssignTour] = useState(1) // Tour number for new assignments
     const prevVehicleShipments = useRef({})
 
     useEffect(() => {
@@ -74,8 +76,9 @@ export default function AssignmentsPage() {
         }
     }, [])
 
-    const handleAssign = async (shipmentId, vehicleId) => {
+    const handleAssign = async (shipmentId, vehicleId, tourNumber = null) => {
         const status = vehicleId ? 'assigned' : 'pending'
+        const tour = tourNumber || selectedAssignTour || 1
 
         // Get shipment details for notification and logging
         const { data: shipment } = await supabase
@@ -86,7 +89,11 @@ export default function AssignmentsPage() {
 
         await supabase
             .from('shipments')
-            .update({ assigned_vehicle_id: vehicleId || null, status })
+            .update({
+                assigned_vehicle_id: vehicleId || null,
+                status,
+                tour_number: vehicleId ? tour : 1 // Reset to 1 if unassigning
+            })
             .eq('id', shipmentId)
 
         // Log the assignment
@@ -138,6 +145,8 @@ export default function AssignmentsPage() {
     const handleBulkAssign = async (vehicleId) => {
         if (selectedShipments.length === 0) return
 
+        const tour = selectedAssignTour || 1
+
         // Get shipment details for notification
         const { data: shipments } = await supabase
             .from('shipments')
@@ -148,7 +157,11 @@ export default function AssignmentsPage() {
             selectedShipments.map(shipmentId =>
                 supabase
                     .from('shipments')
-                    .update({ assigned_vehicle_id: vehicleId, status: 'assigned' })
+                    .update({
+                        assigned_vehicle_id: vehicleId,
+                        status: 'assigned',
+                        tour_number: tour
+                    })
                     .eq('id', shipmentId)
             )
         )
@@ -307,6 +320,25 @@ export default function AssignmentsPage() {
         }))
     }
 
+    // Tour Management Functions
+    const getVehicleTours = (vehicleId) => {
+        const vehicleShipments = shipments.filter(s => s.assigned_vehicle_id === vehicleId)
+        const tours = [...new Set(vehicleShipments.map(s => s.tour_number || 1))].sort((a, b) => a - b)
+        return tours.length > 0 ? tours : [1]
+    }
+
+    const handleChangeTour = (vehicleId, tourNumber) => {
+        setSelectedTour(prev => ({
+            ...prev,
+            [vehicleId]: tourNumber
+        }))
+    }
+
+    const getMaxTourNumber = (vehicleId) => {
+        const tours = getVehicleTours(vehicleId)
+        return tours.length > 0 ? Math.max(...tours) : 0
+    }
+
     // Automatic optimization disabled - now manual via button
     // useEffect(() => {
     //     if (loading || vehicles.length === 0) return
@@ -402,10 +434,26 @@ export default function AssignmentsPage() {
 
             {/* Bulk Assignment Bar */}
             {selectedShipments.length > 0 && (
-                <div className="p-3 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
-                    <span className="text-sm font-medium text-zinc-900">
-                        {selectedShipments.length} sevkiyat seçildi
-                    </span>
+                <div className="p-3 bg-zinc-50 border-b border-zinc-200">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-zinc-900">
+                            {selectedShipments.length} sevkiyat seçildi
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs text-zinc-700">Tur:</label>
+                            <select
+                                value={selectedAssignTour}
+                                onChange={(e) => setSelectedAssignTour(parseInt(e.target.value))}
+                                className="text-xs border border-zinc-300 rounded px-2 py-1 bg-white"
+                            >
+                                <option value={1}>1. Tur</option>
+                                <option value={2}>2. Tur</option>
+                                <option value={3}>3. Tur</option>
+                                <option value={4}>4. Tur</option>
+                                <option value={5}>5. Tur</option>
+                            </select>
+                        </div>
+                    </div>
                     <div className="flex gap-2">
                         {vehicles.map(vehicle => (
                             <button
@@ -485,13 +533,19 @@ export default function AssignmentsPage() {
 
                     <DragDropContext onDragEnd={onDragEnd}>
                         {vehicles.map(vehicle => {
-                            const vehicleShipments = assignedShipments
+                            const allVehicleShipments = assignedShipments
                                 .filter(s => s.assigned_vehicle_id === vehicle.id)
+
+                            if (allVehicleShipments.length === 0) return null
+
+                            const tours = getVehicleTours(vehicle.id)
+                            const currentTour = selectedTour[vehicle.id] || 1
+
+                            const vehicleShipments = allVehicleShipments
+                                .filter(s => (s.tour_number || 1) === currentTour)
                                 .sort((a, b) => (a.route_order || 0) - (b.route_order || 0))
 
-                            if (vehicleShipments.length === 0) return null
-
-                            const optimizedRoute = optimizedRoutes[vehicle.id]
+                            const optimizedRoute = optimizedRoutes[`${vehicle.id}-${currentTour}`] || optimizedRoutes[vehicle.id]
                             const isOptimizing = optimizing[vehicle.id]
 
                             // Use temp shipments if editing, otherwise optimized or default order
@@ -505,11 +559,30 @@ export default function AssignmentsPage() {
                             return (
                                 <div key={vehicle.id} className="mb-4 border border-slate-200 rounded-lg overflow-hidden">
                                     {/* Vehicle Header */}
-                                    <div className="bg-slate-100 p-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Truck size={16} className="text-primary" />
-                                            <span className="font-bold text-slate-900">{vehicle.plate}</span>
-                                            <span className="text-xs text-slate-600">({vehicleShipments.length} sevkiyat)</span>
+                                    <div className="bg-slate-100 p-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <Truck size={16} className="text-primary" />
+                                                <span className="font-bold text-slate-900">{vehicle.plate}</span>
+                                                <span className="text-xs text-slate-600">({allVehicleShipments.length} toplam sevkiyat)</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <label className="text-xs text-slate-700">Tur:</label>
+                                                <select
+                                                    value={currentTour}
+                                                    onChange={(e) => handleChangeTour(vehicle.id, parseInt(e.target.value))}
+                                                    className="text-xs border border-slate-300 rounded px-2 py-1 bg-white font-medium"
+                                                >
+                                                    {tours.map(tour => (
+                                                        <option key={tour} value={tour}>
+                                                            {tour}. Tur ({allVehicleShipments.filter(s => (s.tour_number || 1) === tour).length})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs text-slate-600">{currentTour}. Turda {vehicleShipments.length} sevkiyat</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {editingVehicle === vehicle.id ? (
