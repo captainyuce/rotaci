@@ -183,7 +183,7 @@ export default function CalendarPage() {
                     {/* Search Button */}
                     <button
                         onClick={() => setIsSearchOpen(true)}
-                        className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary hover:bg-zinc-700 text-white rounded-lg shadow-sm transition-colors text-sm md:text-base"
+                        className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary hover:bg-zinc-700 text-white rounded-lg shadow-sm transition-colors text-sm md:text-base ml-4"
                     >
                         <Search size={18} />
                         <span className="hidden sm:inline">Gelişmiş Arama</span>
