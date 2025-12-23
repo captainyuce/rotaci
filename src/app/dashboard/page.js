@@ -139,13 +139,24 @@ export default function DashboardPage() {
                     }
                 })
 
-                // Calculate tour count
-                const tours = [...new Set(shipments?.map(s => s.tour_number || 1) || [])].length
+                // Calculate tour count and details
+                const tourNumbers = [...new Set(shipments?.map(s => s.tour_number || 1) || [])].sort((a, b) => a - b)
+                const tourDetails = tourNumbers.map(tourNum => ({
+                    tourNumber: tourNum,
+                    count: shipments?.filter(s => (s.tour_number || 1) === tourNum).length || 0
+                }))
 
                 return {
                     ...vehicle,
                     current_load: currentLoad,
-                    stats: { total, delivered, todayCount, tomorrowCount, tourCount: tours }
+                    stats: {
+                        total,
+                        delivered,
+                        todayCount,
+                        tomorrowCount,
+                        tourCount: tourNumbers.length,
+                        tours: tourDetails
+                    }
                 }
             }))
             setVehicles(vehiclesWithStats)
@@ -247,10 +258,19 @@ export default function DashboardPage() {
                                         <span className="text-slate-600">Yük</span>
                                         <span className="font-medium text-slate-900">{vehicle.current_load} Palet</span>
                                     </div>
-                                    {vehicle.stats?.tourCount > 1 && (
-                                        <div className="flex justify-between text-xs md:text-sm pt-1">
-                                            <span className="text-slate-600">Tur Sayısı</span>
-                                            <span className="font-medium text-blue-600">{vehicle.stats.tourCount} Tur</span>
+                                    {vehicle.stats?.tours && vehicle.stats.tours.length > 0 && (
+                                        <div className="pt-1.5 border-t border-slate-100 mt-1.5">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {vehicle.stats.tours.map(tour => (
+                                                    <div
+                                                        key={tour.tourNumber}
+                                                        className="bg-blue-50 border border-blue-200 rounded px-2 py-0.5 text-xs"
+                                                    >
+                                                        <span className="font-bold text-blue-700">{tour.tourNumber}. Tur:</span>
+                                                        <span className="text-blue-600 ml-1">{tour.count}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
