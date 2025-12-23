@@ -152,10 +152,10 @@ export default function CalendarPage() {
 
     return (
         <div className="p-4 md:p-8 h-full overflow-y-auto pointer-events-auto">
-            {/* Unified Header */}
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
-                <div className="flex items-center justify-between gap-4">
-                    {/* Left: Month Navigation */}
+            {/* Compact Header */}
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 mb-6">
+                <div className="flex items-center justify-between gap-3">
+                    {/* Month Navigation */}
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => changeMonth(-1)}
@@ -163,7 +163,7 @@ export default function CalendarPage() {
                         >
                             <ChevronLeft size={20} />
                         </button>
-                        <span className="font-bold text-lg min-w-[140px] text-center text-slate-900">
+                        <span className="font-bold text-base md:text-lg min-w-[120px] md:min-w-[140px] text-center text-slate-900">
                             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                         </span>
                         <button
@@ -174,19 +174,14 @@ export default function CalendarPage() {
                         </button>
                     </div>
 
-                    {/* Center: Title */}
-                    <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <CalendarIcon className="text-primary" size={24} />
-                        Sevkiyat Takvimi
-                    </h1>
-
-                    {/* Right: Search Button */}
+                    {/* Search Button */}
                     <button
                         onClick={() => setIsSearchOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-zinc-700 text-white rounded-lg shadow-sm transition-colors"
+                        className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary hover:bg-zinc-700 text-white rounded-lg shadow-sm transition-colors text-sm md:text-base"
                     >
                         <Search size={18} />
-                        <span className="hidden md:inline">Gelişmiş Arama</span>
+                        <span className="hidden sm:inline">Gelişmiş Arama</span>
+                        <span className="sm:hidden">Ara</span>
                     </button>
                 </div>
             </div>
