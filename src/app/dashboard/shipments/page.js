@@ -530,30 +530,7 @@ export default function ShipmentsPage() {
                         </div>
                     )}
 
-                    {/* Past Shipments (if any) */}
-                    {pastShipments.length > 0 && (
-                        <div className="mb-4">
-                            <div className="sticky top-0 bg-red-50 px-4 py-2 border-b border-red-100 z-10">
-                                <h3 className="font-bold text-red-900 text-sm">Geçmiş Tarihler ({pastShipments.length})</h3>
-                            </div>
-                            <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
-                                        <th className="p-3 font-medium">Müşteri</th>
-                                        <th className="p-3 font-medium">Adres</th>
-                                        <th className="p-3 font-medium">Palet</th>
-                                        <th className="p-3 font-medium">Araç</th>
-                                        <th className="p-3 font-medium">Oluşturan</th>
-                                        <th className="p-3 font-medium">Durum</th>
-                                        <th className="p-3 font-medium"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {pastShipments.map(renderShipmentRow)}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+
                 </div>
             </div>
 

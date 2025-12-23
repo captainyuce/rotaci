@@ -513,8 +513,14 @@ export default function MapInner() {
 
                 {/* Shipments */}
                 {shipments.map(shipment => {
-                    // Apply date filter
-                    if (activeRouteDate && getEffectiveDate(shipment) !== activeRouteDate) return null
+                    // Filter out past shipments (only show today, tomorrow, and future)
+                    const today = new Date().toISOString().split('T')[0]
+                    const effectiveDate = getEffectiveDate(shipment)
+
+                    if (effectiveDate < today) return null // Hide past shipments
+
+                    // Apply active route date filter
+                    if (activeRouteDate && effectiveDate !== activeRouteDate) return null
 
                     return !hiddenShipments[shipment.id] && shipment.delivery_lat && shipment.delivery_lng && (
                         <Marker
