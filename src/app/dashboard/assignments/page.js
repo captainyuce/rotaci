@@ -23,6 +23,7 @@ export default function AssignmentsPage() {
     const [tempShipments, setTempShipments] = useState({}) // Temporary order during edit
     const [selectedTour, setSelectedTour] = useState({}) // Track selected tour for each vehicle (default: 1)
     const [selectedAssignTour, setSelectedAssignTour] = useState(1) // Tour number for new assignments
+    const [shipmentTourSelection, setShipmentTourSelection] = useState({}) // Track tour selection for each pending shipment
     const prevVehicleShipments = useRef({})
 
     useEffect(() => {
@@ -505,16 +506,36 @@ export default function AssignmentsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <select
-                                        className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white"
-                                        value={shipment.assigned_vehicle_id || ''}
-                                        onChange={(e) => handleAssign(shipment.id, e.target.value)}
-                                    >
-                                        <option value="">-- Araç Seç --</option>
-                                        {vehicles.map(v => (
-                                            <option key={v.id} value={v.id}>{v.plate}</option>
-                                        ))}
-                                    </select>
+                                    <div className="flex flex-col gap-2">
+                                        <select
+                                            className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white"
+                                            value={shipment.assigned_vehicle_id || ''}
+                                            onChange={(e) => {
+                                                const vehicleId = e.target.value
+                                                const tourNum = shipmentTourSelection[shipment.id] || 1
+                                                handleAssign(shipment.id, vehicleId, tourNum)
+                                            }}
+                                        >
+                                            <option value="">-- Araç Seç --</option>
+                                            {vehicles.map(v => (
+                                                <option key={v.id} value={v.id}>{v.plate}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white"
+                                            value={shipmentTourSelection[shipment.id] || 1}
+                                            onChange={(e) => setShipmentTourSelection(prev => ({
+                                                ...prev,
+                                                [shipment.id]: parseInt(e.target.value)
+                                            }))}
+                                        >
+                                            <option value={1}>1. Tur</option>
+                                            <option value={2}>2. Tur</option>
+                                            <option value={3}>3. Tur</option>
+                                            <option value={4}>4. Tur</option>
+                                            <option value={5}>5. Tur</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         ))}

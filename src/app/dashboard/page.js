@@ -139,10 +139,13 @@ export default function DashboardPage() {
                     }
                 })
 
+                // Calculate tour count
+                const tours = [...new Set(shipments?.map(s => s.tour_number || 1) || [])].length
+
                 return {
                     ...vehicle,
                     current_load: currentLoad,
-                    stats: { total, delivered, todayCount, tomorrowCount }
+                    stats: { total, delivered, todayCount, tomorrowCount, tourCount: tours }
                 }
             }))
             setVehicles(vehiclesWithStats)
@@ -244,6 +247,12 @@ export default function DashboardPage() {
                                         <span className="text-slate-600">Yük</span>
                                         <span className="font-medium text-slate-900">{vehicle.current_load} Palet</span>
                                     </div>
+                                    {vehicle.stats?.tourCount > 1 && (
+                                        <div className="flex justify-between text-xs md:text-sm pt-1">
+                                            <span className="text-slate-600">Tur Sayısı</span>
+                                            <span className="font-medium text-blue-600">{vehicle.stats.tourCount} Tur</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {vehicle.stats?.total > 0 && (
