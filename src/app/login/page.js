@@ -20,27 +20,37 @@ export default function LoginPage() {
             // Assuming username input is now Email
             const email = username.includes('@') ? username : `${username}@rotaci.app` // Fallback for username-like inputs
 
+            console.log('Attempting login with:', email)
+
             const { data, error: authError } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password
             })
 
             if (authError) {
+                console.error('Auth Error:', authError)
                 setError('Giriş başarısız: ' + authError.message)
                 return
             }
+
+            console.log('Auth Success:', data)
 
             // Redirect is handled by AuthContext or we can force it here
             // But we need to wait for AuthContext to update state
             // Let's just redirect based on profile role which we can fetch here too for speed
 
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', data.user.id)
                 .single()
 
+            if (profileError) {
+                console.error('Profile Fetch Error:', profileError)
+            }
+
             const role = profile?.role || 'worker'
+            console.log('User Role:', role)
 
             if (role === 'worker') {
                 router.push('/worker')
