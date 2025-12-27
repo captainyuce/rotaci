@@ -498,7 +498,14 @@ export default function AssignmentsPage() {
                                             className="mt-1"
                                         />
                                         <div className="flex-1">
-                                            <h4 className="font-bold text-slate-900">{shipment.customer_name}</h4>
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="font-bold text-slate-900">{shipment.customer_name}</h4>
+                                                {shipment.preparation_status === 'ready' && (
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 border border-green-200" title={`Hazırlayan: ${shipment.prepared_by_name || 'Bilinmiyor'}`}>
+                                                        📦 Hazır
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-slate-600 mt-0.5">{shipment.delivery_address}</p>
                                             <div className="flex gap-3 mt-2 text-xs text-slate-500">
                                                 <span>📦 {shipment.weight} Palet</span>
