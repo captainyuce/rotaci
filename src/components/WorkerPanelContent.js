@@ -7,7 +7,7 @@ import { PERMISSIONS } from '@/lib/permissions'
 import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
 import { logShipmentAction } from '@/lib/auditLog'
-import Toast from '@/components/Toast'
+import ToastNotification from '@/components/ToastNotification'
 
 // Sound for notifications
 const playNotificationSound = () => {
@@ -27,7 +27,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [processingId, setProcessingId] = useState(null)
-    const [toast, setToast] = useState(null)
+    const [notification, setNotification] = useState(null)
 
     useEffect(() => {
         fetchShipments()
@@ -48,7 +48,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                 if (newShipment.delivery_date === today || newShipment.delivery_date === tomorrow) {
                     fetchShipments()
                     playNotificationSound()
-                    setToast({
+                    setNotification({
                         message: `Yeni Sevkiyat: ${newShipment.customer_name}`,
                         type: 'info'
                     })
@@ -209,11 +209,11 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
     return (
         <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(null)}
+            {notification && (
+                <ToastNotification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification(null)}
                 />
             )}
 
