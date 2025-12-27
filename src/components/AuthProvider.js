@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
                 const roleData = roleStr.toLowerCase()
                 const permsData = permissionsStr ? JSON.parse(permissionsStr) : []
 
-                console.log('Auth Check:', { username: userData.username, role: roleData, permissions: permsData })
+
 
                 setUser(userData)
                 setRole(roleData)
