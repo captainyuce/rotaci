@@ -126,10 +126,11 @@ export default function WorkerPanel() {
 
             if (error) throw error
 
+            const shipment = shipments.find(s => s.id === id)
             logShipmentAction(
                 'mark_ready',
                 id,
-                { status: 'ready' },
+                { ...shipment, status: 'ready' },
                 user?.id,
                 user?.full_name || 'Worker'
             )
@@ -157,10 +158,11 @@ export default function WorkerPanel() {
 
             if (error) throw error
 
+            const shipment = shipments.find(s => s.id === id)
             logShipmentAction(
                 'mark_pending',
                 id,
-                { status: 'pending' },
+                { ...shipment, status: 'pending' },
                 user?.id,
                 user?.full_name || 'Worker'
             )
