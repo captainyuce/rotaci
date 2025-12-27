@@ -4,10 +4,18 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/contexts/AuthContext'
 import { PERMISSIONS } from '@/lib/permissions'
-import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
+// import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
 // import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
 // import { logShipmentAction } from '@/lib/auditLog'
 // import ToastNotification from '@/components/ToastNotification'
+
+// Mock icons for debugging
+const Package = () => <span>📦</span>
+const Clock = () => <span>🕒</span>
+const CheckCircle = () => <span>✅</span>
+const Search = () => <span>🔍</span>
+const LogOut = () => <span>🚪</span>
+const RefreshCw = () => <span>🔄</span>
 
 // Mock functions for debugging
 const getTurkeyDateString = () => new Date().toISOString().split('T')[0]
@@ -29,7 +37,7 @@ const playNotificationSound = () => {
 }
 
 export default function WorkerPanelContent({ isDashboard = false }) {
-    const { hasPermission, user, signOut } = useAuth()
+    const { hasPermission, user, signOut, loading: authLoading } = useAuth()
     console.log('WorkerPanelContent user:', user)
     const [activeTab, setActiveTab] = useState('pending') // 'pending' or 'ready'
     const [shipments, setShipments] = useState([])
@@ -39,6 +47,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     const [notification, setNotification] = useState(null)
 
     useEffect(() => {
+        if (authLoading) return
         fetchShipments()
 
         // Real-time subscription for new shipments
@@ -75,10 +84,14 @@ export default function WorkerPanelContent({ isDashboard = false }) {
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [])
+    }, [authLoading])
 
     // Permission check is handled by parent or layout in dashboard, 
     // but we keep it here for standalone worker page safety
+    if (authLoading) {
+        return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>
+    }
+
     if (!hasPermission(PERMISSIONS.PREPARE_SHIPMENTS) && !hasPermission(PERMISSIONS.VIEW)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
