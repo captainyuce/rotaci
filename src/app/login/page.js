@@ -38,10 +38,17 @@ export default function LoginPage() {
 
                 console.log('Login Success:', { username: user.username, role: user.role })
 
+                // Determine permissions
+                let permissions = user.permissions || []
+                if (permissions.length === 0 && user.role === 'worker') {
+                    // Default permissions for worker if not in DB
+                    permissions = ['view', 'prepare_shipments']
+                }
+
                 // Store user data in localStorage
                 localStorage.setItem('user', JSON.stringify(user))
                 localStorage.setItem('role', user.role || 'manager')
-                localStorage.setItem('permissions', JSON.stringify(user.permissions || []))
+                localStorage.setItem('permissions', JSON.stringify(permissions))
 
                 // Redirect based on role
                 if (user.role === 'worker') {

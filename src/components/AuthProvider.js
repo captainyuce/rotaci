@@ -43,12 +43,9 @@ export const AuthProvider = ({ children }) => {
     const hasPermission = (permission) => {
         const currentRole = role?.toLowerCase()
         if (currentRole === 'admin') return true
-        if (currentRole === 'manager') {
-            // Managers might have specific permissions or all by default
-            // For now, let's check the permissions array
-            return checkPermission(permissions, permission)
-        }
-        return false
+
+        // For other roles (manager, worker, etc.), check the permissions array
+        return checkPermission(permissions, permission)
     }
 
     const signOut = async () => {
