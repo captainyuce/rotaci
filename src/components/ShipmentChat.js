@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useAuth } from './AuthProvider'
+import { useAuth } from '@/contexts/AuthContext'
 import { Send, MessageCircle } from 'lucide-react'
 
 export default function ShipmentChat({ shipmentId, shipmentName }) {
@@ -172,8 +172,8 @@ export default function ShipmentChat({ shipmentId, shipmentName }) {
                                         </span>
                                     </div>
                                     <div className={`px-4 py-2 rounded-2xl ${isOwnMessage
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-slate-100 text-slate-900'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-100 text-slate-900'
                                         }`}>
                                         <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
                                     </div>

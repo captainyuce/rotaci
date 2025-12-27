@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-// import { useAuth } from '@/components/AuthProvider'
+import { useAuth } from '@/contexts/AuthContext'
 import { PERMISSIONS } from '@/lib/permissions'
 import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
-// import { logShipmentAction } from '@/lib/auditLog'
-// import Toast from '@/components/Toast'
+import { logShipmentAction } from '@/lib/auditLog'
+import Toast from '@/components/Toast'
 
 // Sound for notifications
 const playNotificationSound = () => {
@@ -20,10 +20,7 @@ const playNotificationSound = () => {
 }
 
 export default function WorkerPanelContent({ isDashboard = false }) {
-    // const { hasPermission, user, signOut } = useAuth()
-    const hasPermission = () => true
-    const user = { full_name: 'Test User', id: '123' }
-    const signOut = () => { }
+    const { hasPermission, user, signOut } = useAuth()
     const [activeTab, setActiveTab] = useState('pending') // 'pending' or 'ready'
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -130,13 +127,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
             if (error) throw error
 
             const shipment = shipments.find(s => s.id === id)
-            /* logShipmentAction(
+            logShipmentAction(
                 'mark_ready',
                 id,
                 { ...shipment, status: 'ready' },
                 user?.id,
                 user?.full_name || 'Worker'
-            ) */
+            )
         } catch (error) {
             console.error('Error marking as ready:', error)
             alert('İşlem sırasında bir hata oluştu.')
@@ -171,13 +168,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
             if (error) throw error
 
-            /* logShipmentAction(
+            logShipmentAction(
                 'mark_pending',
                 id,
                 { ...shipment, status: 'pending' },
                 user?.id,
                 user?.full_name || 'Worker'
-            ) */
+            )
         } catch (error) {
             console.error('Error marking as pending:', error)
             alert('İşlem sırasında bir hata oluştu.')
@@ -211,13 +208,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
     return (
         <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
-            {/* toast && (
+            {toast && (
                 <Toast
                     message={toast.message}
                     type={toast.type}
                     onClose={() => setToast(null)}
                 />
-            ) */}
+            )}
 
             {/* Header - Only show if NOT in dashboard (dashboard has its own header) */}
             {!isDashboard && (
