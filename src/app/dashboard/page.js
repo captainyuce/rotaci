@@ -176,6 +176,8 @@ export default function DashboardPage() {
                 }
             }))
             setVehicles(vehiclesWithStats)
+        } else {
+            console.error('Error fetching vehicles')
         }
         setLoading(false)
     }
