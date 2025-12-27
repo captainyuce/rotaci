@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
 import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
-import { logShipmentAction } from '@/lib/auditLog'
+// import { logShipmentAction } from '@/lib/auditLog'
 // import Toast from '@/components/Toast'
 
 // Sound for notifications
@@ -127,13 +127,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
             if (error) throw error
 
             const shipment = shipments.find(s => s.id === id)
-            logShipmentAction(
+            /* logShipmentAction(
                 'mark_ready',
                 id,
                 { ...shipment, status: 'ready' },
                 user?.id,
                 user?.full_name || 'Worker'
-            )
+            ) */
         } catch (error) {
             console.error('Error marking as ready:', error)
             alert('İşlem sırasında bir hata oluştu.')
@@ -168,13 +168,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
             if (error) throw error
 
-            logShipmentAction(
+            /* logShipmentAction(
                 'mark_pending',
                 id,
                 { ...shipment, status: 'pending' },
                 user?.id,
                 user?.full_name || 'Worker'
-            )
+            ) */
         } catch (error) {
             console.error('Error marking as pending:', error)
             alert('İşlem sırasında bir hata oluştu.')
