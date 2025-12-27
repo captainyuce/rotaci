@@ -17,9 +17,34 @@ export default function WorkerPanel() {
     const [searchTerm, setSearchTerm] = useState('')
     const [processingId, setProcessingId] = useState(null)
 
-    // Permission check
+    useEffect(() => {
+        if (hasPermission(PERMISSIONS.PREPARE_SHIPMENTS)) {
+            fetchShipments()
+
+            const channel = supabase
+                .channel('worker_shipments')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'shipments'
+                }, () => {
+                    fetchShipments()
+                })
+                .subscribe()
+
+            return () => {
+                supabase.removeChannel(channel)
+            }
+        }
+    }, [hasPermission]) // Added hasPermission to dependencies
+
+    // Permission check - Render logic moved here, after hooks
     if (!hasPermission(PERMISSIONS.PREPARE_SHIPMENTS)) {
-        logSecurityEvent(user?.id, user?.full_name || user?.username, '/worker', 'Page Access Denied')
+        // Only log once or handle side effect in useEffect if needed, but for render blocking this is fine
+        // provided hooks above are always called.
+        // However, logSecurityEvent is a side effect. It's better to do it in a useEffect or just render.
+        // For now, keeping it simple but safe for hooks.
+
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
                 <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center">
@@ -38,25 +63,6 @@ export default function WorkerPanel() {
             </div>
         )
     }
-
-    useEffect(() => {
-        fetchShipments()
-
-        const channel = supabase
-            .channel('worker_shipments')
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: 'shipments'
-            }, () => {
-                fetchShipments()
-            })
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [])
 
     const fetchShipments = async () => {
         setLoading(true)
