@@ -209,12 +209,12 @@ export default function WorkerPanel() {
             {/* Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-10 safe-top">
                 <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Package className="text-blue-600" size={20} />
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1">
+                            <img src="/akalbatu-logo-new.png" alt="Akalbatu" className="w-full h-full object-contain" />
                         </div>
                         <div>
-                            <h1 className="font-bold text-slate-900">Depo Paneli</h1>
+                            <h1 className="font-bold text-slate-900 text-lg">Depo Paneli</h1>
                             <p className="text-xs text-slate-500">{user?.full_name || user?.username}</p>
                         </div>
                     </div>
