@@ -12,7 +12,8 @@ export const PERMISSIONS = {
     MANAGE_SETTINGS: 'manage_settings',
     MANAGE_CHAT: 'manage_chat',
     CLEAR_LOGS: 'clear_logs',
-    PREPARE_SHIPMENTS: 'prepare_shipments'
+    PREPARE_SHIPMENTS: 'prepare_shipments',
+    OVERRIDE_PREPARATION: 'override_preparation'
 }
 
 // Predefined roles with their permissions
@@ -34,7 +35,8 @@ export const ROLES = {
             PERMISSIONS.MANAGE_VEHICLES,
             PERMISSIONS.MANAGE_SETTINGS,
             PERMISSIONS.MANAGE_CHAT,
-            PERMISSIONS.PREPARE_SHIPMENTS
+            PERMISSIONS.PREPARE_SHIPMENTS,
+            PERMISSIONS.OVERRIDE_PREPARATION
         ]
     },
     DISPATCHER: {

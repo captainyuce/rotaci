@@ -119,7 +119,8 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                 .update({
                     preparation_status: 'ready',
                     prepared_at: new Date().toISOString(),
-                    prepared_by_name: user?.full_name || user?.username || 'Çalışan'
+                    prepared_by_name: user?.full_name || user?.username || 'Çalışan',
+                    prepared_by_user_id: user?.id
                 })
                 .eq('id', id)
 
@@ -142,6 +143,17 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     }
 
     const handleMarkAsPending = async (id) => {
+        const shipment = shipments.find(s => s.id === id)
+
+        // Check if user is allowed to undo
+        const isPreparer = shipment.prepared_by_user_id === user?.id
+        const canOverride = hasPermission(PERMISSIONS.OVERRIDE_PREPARATION)
+
+        if (!isPreparer && !canOverride) {
+            alert('Bu işlemi sadece sevkiyatı hazırlayan kişi veya yetkili yönetici geri alabilir.')
+            return
+        }
+
         setProcessingId(id)
         try {
             const { error } = await supabase
@@ -149,13 +161,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                 .update({
                     preparation_status: 'pending',
                     prepared_at: null,
-                    prepared_by_name: null
+                    prepared_by_name: null,
+                    prepared_by_user_id: null
                 })
                 .eq('id', id)
 
             if (error) throw error
 
-            const shipment = shipments.find(s => s.id === id)
             logShipmentAction(
                 'mark_pending',
                 id,
