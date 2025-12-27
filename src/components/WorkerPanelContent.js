@@ -4,27 +4,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/contexts/AuthContext'
 import { PERMISSIONS } from '@/lib/permissions'
-// import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
-// import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
-// import { logShipmentAction } from '@/lib/auditLog'
-// import ToastNotification from '@/components/ToastNotification'
-
-// Mock icons for debugging
-const Package = () => <span>📦</span>
-const Clock = () => <span>🕒</span>
-const CheckCircle = () => <span>✅</span>
-const Search = () => <span>🔍</span>
-const LogOut = () => <span>🚪</span>
-const RefreshCw = () => <span>🔄</span>
-
-// Mock functions for debugging
-const getTurkeyDateString = () => new Date().toISOString().split('T')[0]
-const getTurkeyTomorrowDateString = () => {
-    const d = new Date()
-    d.setDate(d.getDate() + 1)
-    return d.toISOString().split('T')[0]
-}
-const logShipmentAction = () => { }
+import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
+import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
+import { logShipmentAction } from '@/lib/auditLog'
+import ToastNotification from '@/components/ToastNotification'
 
 // Sound for notifications
 const playNotificationSound = () => {
@@ -231,13 +214,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
     return (
         <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
-            {/* notification && (
+            {notification && (
                 <ToastNotification
                     message={notification.message}
                     type={notification.type}
                     onClose={() => setNotification(null)}
                 />
-            ) */}
+            )}
 
             {/* Header - Only show if NOT in dashboard (dashboard has its own header) */}
             {!isDashboard && (
