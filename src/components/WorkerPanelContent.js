@@ -21,6 +21,7 @@ const playNotificationSound = () => {
 
 export default function WorkerPanelContent({ isDashboard = false }) {
     const { hasPermission, user, signOut } = useAuth()
+    console.log('WorkerPanelContent user:', user)
     const [activeTab, setActiveTab] = useState('pending') // 'pending' or 'ready'
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)
