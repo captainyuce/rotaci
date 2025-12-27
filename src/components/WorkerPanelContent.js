@@ -7,7 +7,7 @@ import { PERMISSIONS } from '@/lib/permissions'
 import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
 import { logShipmentAction } from '@/lib/auditLog'
-import ToastNotification from '@/components/ToastNotification'
+// import ToastNotification from '@/components/ToastNotification'
 
 // Sound for notifications
 const playNotificationSound = () => {
@@ -209,13 +209,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
     return (
         <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
-            {notification && (
+            {/* notification && (
                 <ToastNotification
                     message={notification.message}
                     type={notification.type}
                     onClose={() => setNotification(null)}
                 />
-            )}
+            ) */}
 
             {/* Header - Only show if NOT in dashboard (dashboard has its own header) */}
             {!isDashboard && (

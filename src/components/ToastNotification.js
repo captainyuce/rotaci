@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X, Bell } from 'lucide-react'
 
-export default function Toast({ message, type = 'info', onClose, duration = 5000 }) {
+export default function ToastNotification({ message, type = 'info', onClose, duration = 5000 }) {
     const [isVisible, setIsVisible] = useState(true)
 
     useEffect(() => {
