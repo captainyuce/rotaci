@@ -341,7 +341,14 @@ export default function ShipmentsPage() {
                             <ArrowUpCircle size={16} className="text-blue-600" title="Mal Bırak" />
                         )}
                         <div>
-                            <div className="font-medium text-slate-900">{shipment.customer_name}</div>
+                            <div className="flex items-center gap-2">
+                                <div className="font-medium text-slate-900">{shipment.customer_name}</div>
+                                {shipment.preparation_status === 'ready' && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 border border-green-200">
+                                        📦 Hazır
+                                    </span>
+                                )}
+                            </div>
                             <div className="text-xs text-slate-500">{shipment.delivery_time}</div>
                         </div>
                     </div>

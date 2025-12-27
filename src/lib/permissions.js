@@ -11,7 +11,8 @@ export const PERMISSIONS = {
     VIEW_LOGS: 'view_logs',
     MANAGE_SETTINGS: 'manage_settings',
     MANAGE_CHAT: 'manage_chat',
-    CLEAR_LOGS: 'clear_logs'
+    CLEAR_LOGS: 'clear_logs',
+    PREPARE_SHIPMENTS: 'prepare_shipments'
 }
 
 // Predefined roles with their permissions
@@ -43,6 +44,14 @@ export const ROLES = {
             PERMISSIONS.ASSIGN_VEHICLES
         ]
     },
+    WORKER: {
+        name: 'Worker',
+        label: 'Çalışan (Depo)',
+        permissions: [
+            PERMISSIONS.VIEW,
+            PERMISSIONS.PREPARE_SHIPMENTS
+        ]
+    },
     VIEWER: {
         name: 'Viewer',
         label: 'Görüntüleyici',
@@ -63,7 +72,8 @@ export const PERMISSION_LABELS = {
     [PERMISSIONS.VIEW_LOGS]: 'İşlem Geçmişi Görüntüleme',
     [PERMISSIONS.MANAGE_SETTINGS]: 'Sistem Ayarları',
     [PERMISSIONS.MANAGE_CHAT]: 'Sohbet Yönetimi',
-    [PERMISSIONS.CLEAR_LOGS]: 'Log Temizleme'
+    [PERMISSIONS.CLEAR_LOGS]: 'Log Temizleme',
+    [PERMISSIONS.PREPARE_SHIPMENTS]: 'Sevkiyat Hazırlama'
 }
 
 // Check if user has a specific permission
