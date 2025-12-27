@@ -5,9 +5,18 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/contexts/AuthContext'
 import { PERMISSIONS } from '@/lib/permissions'
 import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
-import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
-import { logShipmentAction } from '@/lib/auditLog'
+// import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
+// import { logShipmentAction } from '@/lib/auditLog'
 // import ToastNotification from '@/components/ToastNotification'
+
+// Mock functions for debugging
+const getTurkeyDateString = () => new Date().toISOString().split('T')[0]
+const getTurkeyTomorrowDateString = () => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.toISOString().split('T')[0]
+}
+const logShipmentAction = () => { }
 
 // Sound for notifications
 const playNotificationSound = () => {
