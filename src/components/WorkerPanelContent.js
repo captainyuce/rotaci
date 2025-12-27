@@ -7,7 +7,7 @@ import { PERMISSIONS } from '@/lib/permissions'
 import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
 import { logShipmentAction } from '@/lib/auditLog'
-import { Toast } from '@/components/Toast'
+import Toast from '@/components/Toast'
 
 // Sound for notifications
 const playNotificationSound = () => {
