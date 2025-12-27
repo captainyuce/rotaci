@@ -8,6 +8,7 @@ import { logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
 import { Package, CheckCircle, Clock, Search, RefreshCw, LogOut } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString, toTurkeyDateString } from '@/lib/dateHelpers'
 import { shouldHideCompletedShipment } from '@/lib/shipmentHelpers'
+import Toast from '@/components/Toast'
 
 export default function WorkerPanel() {
     const { user, hasPermission, signOut } = useAuth()
@@ -16,6 +17,18 @@ export default function WorkerPanel() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [processingId, setProcessingId] = useState(null)
+    const [toast, setToast] = useState(null)
+
+    const playNotificationSound = () => {
+        try {
+            // Simple notification beep
+            const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3')
+            audio.volume = 0.5
+            audio.play().catch(e => console.log('Audio play failed', e))
+        } catch (e) {
+            console.error('Audio error', e)
+        }
+    }
 
     useEffect(() => {
         if (hasPermission(PERMISSIONS.PREPARE_SHIPMENTS)) {
@@ -27,7 +40,22 @@ export default function WorkerPanel() {
                     event: '*',
                     schema: 'public',
                     table: 'shipments'
-                }, () => {
+                }, (payload) => {
+                    // Handle notifications for new shipments
+                    if (payload.eventType === 'INSERT') {
+                        const newShipment = payload.new
+                        const today = getTurkeyDateString()
+                        const tomorrow = getTurkeyTomorrowDateString()
+
+                        // Only notify if it's for today or tomorrow
+                        if (newShipment.delivery_date === today || newShipment.delivery_date === tomorrow) {
+                            setToast({
+                                message: `Yeni Sevkiyat: ${newShipment.customer_name}`,
+                                type: 'info'
+                            })
+                            playNotificationSound()
+                        }
+                    }
                     fetchShipments()
                 })
                 .subscribe()
@@ -36,7 +64,7 @@ export default function WorkerPanel() {
                 supabase.removeChannel(channel)
             }
         }
-    }, [hasPermission]) // Added hasPermission to dependencies
+    }, [hasPermission])
 
     // Permission check - Render logic moved here, after hooks
     if (!hasPermission(PERMISSIONS.PREPARE_SHIPMENTS)) {
@@ -98,11 +126,11 @@ export default function WorkerPanel() {
             if (error) throw error
 
             logShipmentAction(
-                user?.id,
-                user?.full_name || 'Worker',
                 'mark_ready',
                 id,
-                { status: 'ready' }
+                { status: 'ready' },
+                user?.id,
+                user?.full_name || 'Worker'
             )
         } catch (error) {
             console.error('Error marking as ready:', error)
@@ -128,11 +156,11 @@ export default function WorkerPanel() {
             if (error) throw error
 
             logShipmentAction(
-                user?.id,
-                user?.full_name || 'Worker',
                 'mark_pending',
                 id,
-                { status: 'pending' }
+                { status: 'pending' },
+                user?.id,
+                user?.full_name || 'Worker'
             )
         } catch (error) {
             console.error('Error marking as pending:', error)
@@ -167,6 +195,13 @@ export default function WorkerPanel() {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-20">
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
             {/* Header */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-10 safe-top">
                 <div className="px-4 py-3 flex items-center justify-between">
