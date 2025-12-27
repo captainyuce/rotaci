@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }) {
             const currentRole = role?.toLowerCase()
             if (!user) {
                 router.push('/login')
-            } else if (currentRole !== 'manager' && currentRole !== 'admin') {
+            } else if (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher') {
                 router.push('/driver')
             }
         }
@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }) {
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Yükleniyor...</div>
 
     const currentRole = role?.toLowerCase()
-    if (!user || (currentRole !== 'manager' && currentRole !== 'admin')) return null
+    if (!user || (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher')) return null
 
     const allMenuItems = [
         { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW },
