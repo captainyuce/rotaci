@@ -344,8 +344,13 @@ export default function ShipmentsPage() {
                             <div className="flex items-center gap-2">
                                 <div className="font-medium text-slate-900">{shipment.customer_name}</div>
                                 {shipment.preparation_status === 'ready' && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 border border-green-200">
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 border border-green-200" title={`Hazırlayan: ${shipment.prepared_by_name || 'Bilinmiyor'}`}>
                                         📦 Hazır
+                                        {shipment.prepared_by_name && (
+                                            <span className="text-green-600 opacity-75 border-l border-green-300 pl-1 ml-0.5">
+                                                {shipment.prepared_by_name.split(' ')[0]}
+                                            </span>
+                                        )}
                                     </span>
                                 )}
                             </div>

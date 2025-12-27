@@ -299,15 +299,32 @@ export default function CalendarPage() {
                                                             </span>
                                                         )}
                                                     </>
-                                                ) : s.status === 'pending' ? (
-                                                    <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">
-                                                        Bekliyor
-                                                    </span>
-                                                ) : s.status === 'assigned' ? (
-                                                    <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
-                                                        Yolda
-                                                    </span>
-                                                ) : null}
+                                                ) : (
+                                                    <>
+                                                        {/* Show preparation status if ready */}
+                                                        {s.preparation_status === 'ready' && (
+                                                            <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200 flex items-center gap-1">
+                                                                📦 Hazır
+                                                                {s.prepared_by_name && (
+                                                                    <span className="text-green-600 opacity-75 border-l border-green-300 pl-1 ml-0.5">
+                                                                        ({s.prepared_by_name.split(' ')[0]})
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        )}
+
+                                                        {/* Show status badge */}
+                                                        {s.status === 'pending' ? (
+                                                            <span className="bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded border border-yellow-100">
+                                                                Bekliyor
+                                                            </span>
+                                                        ) : s.status === 'assigned' ? (
+                                                            <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100">
+                                                                Yolda
+                                                            </span>
+                                                        ) : null}
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     )
@@ -316,7 +333,8 @@ export default function CalendarPage() {
                         )}
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Search Modal */}
             <SearchModal
@@ -328,7 +346,7 @@ export default function CalendarPage() {
                 results={searchResults}
                 vehicles={vehicles}
             />
-        </div>
+        </div >
     )
 }
 

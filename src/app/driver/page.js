@@ -300,6 +300,16 @@ export default function DriverPage() {
                 <span className="bg-zinc-100 text-zinc-700 text-xs font-bold px-2 py-1 rounded-full mt-8">
                     {job.weight} Palet
                 </span>
+
+                {/* Preparation Status for Deliveries */}
+                {job.type !== 'pickup' && job.status !== 'delivered' && job.status !== 'failed' && (
+                    <span className={`text-xs font-bold px-2 py-1 rounded-full mt-8 ${job.preparation_status === 'ready'
+                            ? 'bg-green-100 text-green-700 border border-green-200'
+                            : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                        }`}>
+                        {job.preparation_status === 'ready' ? 'Hazır' : 'Hazırlanıyor'}
+                    </span>
+                )}
             </div>
 
             {/* Working Hours Warning */}

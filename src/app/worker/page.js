@@ -119,7 +119,8 @@ export default function WorkerPanel() {
                 .from('shipments')
                 .update({
                     preparation_status: 'ready',
-                    prepared_at: new Date().toISOString()
+                    prepared_at: new Date().toISOString(),
+                    prepared_by_name: user?.full_name || user?.username || 'Çalışan'
                 })
                 .eq('id', id)
 
@@ -149,7 +150,8 @@ export default function WorkerPanel() {
                 .from('shipments')
                 .update({
                     preparation_status: 'pending',
-                    prepared_at: null
+                    prepared_at: null,
+                    prepared_by_name: null
                 })
                 .eq('id', id)
 
