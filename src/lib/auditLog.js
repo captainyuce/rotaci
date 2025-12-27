@@ -51,6 +51,8 @@ export function getActionLabel(action) {
         delivered: 'Teslim Edildi',
         delivered: 'Teslim Edildi',
         failed: 'Teslim Edilemedi',
+        mark_ready: 'Hazırlandı',
+        mark_pending: 'Hazırlanacak (Geri Alındı)',
         unauthorized_access: 'Yetkisiz Erişim'
     }
     return labels[action] || action
@@ -67,8 +69,9 @@ export function getActionColor(action) {
         assigned: 'bg-purple-50 text-purple-800 border border-purple-200',
         acknowledged: 'bg-orange-50 text-orange-800 border border-orange-200',
         delivered: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
-        delivered: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
         failed: 'bg-rose-50 text-rose-800 border border-rose-200',
+        mark_ready: 'bg-teal-50 text-teal-800 border border-teal-200',
+        mark_pending: 'bg-yellow-50 text-yellow-800 border border-yellow-200',
         unauthorized_access: 'bg-red-100 text-red-900 border border-red-300 font-bold'
     }
     return colors[action] || 'bg-slate-50 text-slate-800 border border-slate-200'
