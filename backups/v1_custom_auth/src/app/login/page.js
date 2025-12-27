@@ -16,58 +16,85 @@ export default function LoginPage() {
         setError('')
 
         if (loginMode === 'manager' || loginMode === 'worker') {
-            // Manager/Worker login with Email/Password
-            // Assuming username input is now Email
-            const email = username.includes('@') ? username : `${username}@rotaci.app` // Fallback for username-like inputs
+            // Manager/Worker login
+            const { data: users } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
 
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            })
+            if (users && users.length > 0) {
+                const user = users[0]
 
-            if (authError) {
-                setError('Giriş başarısız: ' + authError.message)
-                return
-            }
+                // Role validation
+                if (loginMode === 'manager' && user.role === 'worker') {
+                    setError('Çalışan girişi için lütfen "Çalışan" sekmesini kullanın.')
+                    return
+                }
+                if (loginMode === 'worker' && user.role !== 'worker') {
+                    setError('Yönetici girişi için lütfen "Yönetici" sekmesini kullanın.')
+                    return
+                }
 
-            // Redirect is handled by AuthContext or we can force it here
-            // But we need to wait for AuthContext to update state
-            // Let's just redirect based on profile role which we can fetch here too for speed
+                console.log('Login Success:', { username: user.username, role: user.role })
 
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', data.user.id)
-                .single()
+                // Determine permissions
+                let permissions = user.permissions || []
+                if (permissions.length === 0 && user.role === 'worker') {
+                    // Default permissions for worker if not in DB
+                    permissions = ['view', 'prepare_shipments']
+                }
 
-            const role = profile?.role || 'worker'
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(user))
+                localStorage.setItem('role', user.role || 'manager')
+                localStorage.setItem('permissions', JSON.stringify(permissions))
 
-            if (role === 'worker') {
-                router.push('/worker')
+                // Redirect based on role
+                if (user.role === 'worker') {
+                    window.location.href = '/worker'
+                } else {
+                    window.location.href = '/dashboard'
+                }
             } else {
-                router.push('/dashboard')
+                setError('Kullanıcı adı veya şifre hatalı')
             }
-
         } else {
-            // Driver login - Map Plate to Email
-            // Plate: 34 KL 1234 -> 34KL1234@rotaci.app
-            const cleanPlate = username.replace(/\s/g, '').toUpperCase()
-            const email = `${cleanPlate}@rotaci.app`
+            // Driver login - check vehicle password
+            const { data: vehicles } = await supabase
+                .from('vehicles')
+                .select('*')
+                .eq('plate', username)
 
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            })
+            if (vehicles && vehicles.length > 0) {
+                const vehicle = vehicles[0]
 
-            if (authError) {
-                // Fallback to old custom auth for drivers if migration isn't complete?
-                // No, we want to enforce security.
-                // But maybe we should allow a transition period?
-                // Let's try to login with Supabase Auth first.
-                setError('Giriş başarısız. Lütfen yöneticinizle iletişime geçin.')
-                console.error('Driver login error:', authError)
+                // Check if password matches
+                if (vehicle.driver_password && vehicle.driver_password === password) {
+                    // Store driver data in localStorage
+                    localStorage.setItem('user', JSON.stringify({
+                        id: vehicle.id,
+                        username: vehicle.plate,
+                        full_name: vehicle.driver_name || vehicle.plate,
+                        vehicle_id: vehicle.id
+                    }))
+                    localStorage.setItem('role', 'driver')
+                    window.location.href = '/driver'
+                } else if (!vehicle.driver_password) {
+                    // No password set, allow login (backward compatibility)
+                    localStorage.setItem('user', JSON.stringify({
+                        id: vehicle.id,
+                        username: vehicle.plate,
+                        full_name: vehicle.driver_name || vehicle.plate,
+                        vehicle_id: vehicle.id
+                    }))
+                    localStorage.setItem('role', 'driver')
+                    window.location.href = '/driver'
+                } else {
+                    setError('Şifre hatalı')
+                }
             } else {
-                router.push('/driver')
+                setError('Plaka bulunamadı')
             }
         }
     }
@@ -123,7 +150,7 @@ export default function LoginPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">
-                                {loginMode === 'driver' ? 'Plaka' : 'E-posta veya Kullanıcı Adı'}
+                                {loginMode === 'manager' ? 'Kullanıcı Adı' : 'Plaka'}
                             </label>
                             <input
                                 type="text"

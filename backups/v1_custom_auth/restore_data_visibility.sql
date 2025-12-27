@@ -1,0 +1,17 @@
+-- Disable RLS on all tables to restore visibility
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE vehicles DISABLE ROW LEVEL SECURITY;
+ALTER TABLE shipments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE addresses DISABLE ROW LEVEL SECURITY;
+ALTER TABLE shipment_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE driver_locations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
+
+-- Verify counts
+SELECT 'users' as table_name, COUNT(*) as records FROM users
+UNION ALL SELECT 'vehicles', COUNT(*) FROM vehicles
+UNION ALL SELECT 'shipments', COUNT(*) FROM shipments
+UNION ALL SELECT 'addresses', COUNT(*) FROM addresses
+UNION ALL SELECT 'shipment_logs', COUNT(*) FROM shipment_logs;

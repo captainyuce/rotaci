@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bildirim Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        .result {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔔 Bildirim Test Sayfası</h1>
+    
+    <button onclick="testNotification()">1️⃣ Bildirim İzni İste</button>
+    <button onclick="sendTestNotification()">2️⃣ Test Bildirimi Gönder</button>
+    <button onclick="testPushSubscription()">3️⃣ Push Subscription Test</button>
+    
+    <div id="result" class="result">Sonuçlar burada görünecek...</div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+
+        function log(message) {
+            resultDiv.textContent += message + '\n';
+        }
+
+        async function testNotification() {
+            resultDiv.textContent = '';
+            log('=== BİLDİRİM İZNİ TESTİ ===\n');
+            
+            log('Notification API: ' + ('Notification' in window ? '✅' : '❌'));
+            log('Service Worker: ' + ('serviceWorker' in navigator ? '✅' : '❌'));
+            log('Push Manager: ' + ('PushManager' in window ? '✅' : '❌'));
+            log('Mevcut izin: ' + Notification.permission + '\n');
+            
+            if (!('Notification' in window)) {
+                log('❌ Tarayıcınız bildirimleri desteklemiyor!');
+                return;
+            }
+            
+            try {
+                const permission = await Notification.requestPermission();
+                log('İzin sonucu: ' + permission);
+                
+                if (permission === 'granted') {
+                    log('✅ Bildirim izni verildi!');
+                } else if (permission === 'denied') {
+                    log('❌ Bildirim izni reddedildi!');
+                } else {
+                    log('⚠️ Bildirim izni beklemede...');
+                }
+            } catch (error) {
+                log('❌ Hata: ' + error.message);
+            }
+        }
+
+        async function sendTestNotification() {
+            resultDiv.textContent = '';
+            log('=== TEST BİLDİRİMİ ===\n');
+            
+            if (Notification.permission !== 'granted') {
+                log('❌ Önce bildirim izni verin!');
+                return;
+            }
+            
+            try {
+                const notification = new Notification('Test Bildirimi', {
+                    body: 'Bu bir test bildirimidir!',
+                    icon: 'https://via.placeholder.com/128',
+                    vibrate: [200, 100, 200]
+                });
+                
+                log('✅ Bildirim gönderildi!');
+                log('Bildirim görünüyor mu?');
+                
+                notification.onclick = () => {
+                    log('✅ Bildirime tıklandı!');
+                };
+            } catch (error) {
+                log('❌ Hata: ' + error.message);
+            }
+        }
+
+        async function testPushSubscription() {
+            resultDiv.textContent = '';
+            log('=== PUSH SUBSCRIPTION TESTİ ===\n');
+            
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                log('❌ Push API desteklenmiyor!');
+                return;
+            }
+            
+            try {
+                // Register service worker
+                log('Service Worker kaydediliyor...');
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                log('✅ Service Worker kaydedildi');
+                
+                await navigator.serviceWorker.ready;
+                log('✅ Service Worker hazır\n');
+                
+                // Check existing subscription
+                const existingSubscription = await registration.pushManager.getSubscription();
+                if (existingSubscription) {
+                    log('✅ Mevcut subscription var:');
+                    log(JSON.stringify(existingSubscription.toJSON(), null, 2));
+                } else {
+                    log('⚠️ Subscription yok, oluşturuluyor...\n');
+                    
+                    // Create new subscription
+                    const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                    });
+                    
+                    log('✅ Subscription oluşturuldu:');
+                    log(JSON.stringify(subscription.toJSON(), null, 2));
+                }
+            } catch (error) {
+                log('❌ Hata: ' + error.message);
+                log('Stack: ' + error.stack);
+            }
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\\-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+    </script>
+</body>
+</html>

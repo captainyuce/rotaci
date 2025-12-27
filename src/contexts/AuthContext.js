@@ -3,58 +3,91 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { hasPermission as checkPermission } from '@/lib/permissions'
+import { hasPermission as checkPermission, ROLES } from '@/lib/permissions'
 
 const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
-    const [role, setRole] = useState(null) // 'manager' | 'driver' | null
+    const [role, setRole] = useState(null)
     const [permissions, setPermissions] = useState([])
     const [loading, setLoading] = useState(true)
     const router = useRouter()
     const pathname = usePathname()
 
     useEffect(() => {
-        const checkAuth = async () => {
-            // Check localStorage for user session
-            const userStr = localStorage.getItem('user')
-            const roleStr = localStorage.getItem('role')
-            const permissionsStr = localStorage.getItem('permissions')
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                handleUserSession(session.user)
+            } else {
+                setLoading(false)
+            }
+        })
 
-            if (userStr && roleStr) {
-                const userData = JSON.parse(userStr)
-                const roleData = roleStr.toLowerCase()
-                const permsData = permissionsStr ? JSON.parse(permissionsStr) : []
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (session) {
+                await handleUserSession(session.user)
+            } else {
+                setUser(null)
+                setRole(null)
+                setPermissions([])
+                setLoading(false)
+            }
+        })
 
+        return () => subscription.unsubscribe()
+    }, [])
 
+    const handleUserSession = async (authUser) => {
+        try {
+            // Fetch profile to get role
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authUser.id)
+                .single()
 
-                setUser(userData)
-                setRole(roleData)
-                setPermissions(permsData)
+            if (error) {
+                console.error('Error fetching profile:', error)
+                setRole('worker')
+                setPermissions([])
+            } else {
+                const roleName = profile.role.toLowerCase()
+                setRole(roleName)
+
+                // Map role to permissions
+                let userPermissions = []
+                const roleKey = Object.keys(ROLES).find(key => ROLES[key].name.toLowerCase() === roleName)
+
+                if (roleKey) {
+                    userPermissions = ROLES[roleKey].permissions
+                } else if (roleName === 'admin') {
+                    // Fallback for admin if not found in ROLES (though it should be)
+                    userPermissions = Object.values(ROLES.ADMIN.permissions)
+                }
+
+                setPermissions(userPermissions)
             }
 
+            setUser({ ...authUser, ...profile })
+        } catch (error) {
+            console.error('Auth handling error:', error)
+        } finally {
             setLoading(false)
         }
-
-        checkAuth()
-    }, [pathname])
+    }
 
     const hasPermission = (permission) => {
-        const currentRole = role?.toLowerCase()
-        if (currentRole === 'admin') return true
-
-        // For other roles (manager, worker, etc.), check the permissions array
+        // We need to re-implement this based on the role we fetched
+        // Importing ROLES from permissions.js inside the function or file
+        // Let's assume we set permissions state in handleUserSession
         return checkPermission(permissions, permission)
     }
 
     const signOut = async () => {
-        localStorage.removeItem('user')
-        localStorage.removeItem('role')
-        localStorage.removeItem('permissions')
-        setUser(null)
-        setRole(null)
-        setPermissions([])
+        await supabase.auth.signOut()
         router.push('/login')
     }
 
