@@ -15,8 +15,8 @@ export default function LoginPage() {
         e.preventDefault()
         setError('')
 
-        if (loginMode === 'manager') {
-            // Manager login
+        if (loginMode === 'manager' || loginMode === 'worker') {
+            // Manager/Worker login
             const { data: users } = await supabase
                 .from('users')
                 .select('*')
@@ -25,13 +25,30 @@ export default function LoginPage() {
 
             if (users && users.length > 0) {
                 const user = users[0]
-                console.log('Login Success:', { username: user.username, role: user.role, db_permissions: user.permissions })
+
+                // Role validation
+                if (loginMode === 'manager' && user.role === 'worker') {
+                    setError('Çalışan girişi için lütfen "Çalışan" sekmesini kullanın.')
+                    return
+                }
+                if (loginMode === 'worker' && user.role !== 'worker') {
+                    setError('Yönetici girişi için lütfen "Yönetici" sekmesini kullanın.')
+                    return
+                }
+
+                console.log('Login Success:', { username: user.username, role: user.role })
 
                 // Store user data in localStorage
                 localStorage.setItem('user', JSON.stringify(user))
                 localStorage.setItem('role', user.role || 'manager')
                 localStorage.setItem('permissions', JSON.stringify(user.permissions || []))
-                window.location.href = '/dashboard'
+
+                // Redirect based on role
+                if (user.role === 'worker') {
+                    window.location.href = '/worker'
+                } else {
+                    window.location.href = '/dashboard'
+                }
             } else {
                 setError('Kullanıcı adı veya şifre hatalı')
             }
@@ -90,18 +107,27 @@ export default function LoginPage() {
                     <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-lg">
                         <button
                             onClick={() => setLoginMode('manager')}
-                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${loginMode === 'manager'
-                                ? 'bg-primary text-white shadow-md'
-                                : 'text-slate-700 hover:text-slate-900'
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm ${loginMode === 'manager'
+                                ? 'bg-white text-primary shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Yönetici
                         </button>
                         <button
+                            onClick={() => setLoginMode('worker')}
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm ${loginMode === 'worker'
+                                ? 'bg-white text-blue-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Çalışan
+                        </button>
+                        <button
                             onClick={() => setLoginMode('driver')}
-                            className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${loginMode === 'driver'
-                                ? 'bg-primary text-white shadow-md'
-                                : 'text-slate-700 hover:text-slate-900'
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm ${loginMode === 'driver'
+                                ? 'bg-white text-green-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Sürücü
