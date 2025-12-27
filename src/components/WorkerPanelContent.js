@@ -195,7 +195,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     const readyCount = shipments.filter(s => s.preparation_status === 'ready').length
 
     return (
-        <div className={`min-h-screen bg-slate-50 pb-20 ${isDashboard ? 'pt-4' : ''}`}>
+        <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
             {toast && (
                 <Toast
                     message={toast.message}
@@ -292,7 +292,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
             )}
 
             {/* Search */}
-            <div className="p-4 sticky top-[113px] z-10 bg-slate-50/95 backdrop-blur-sm">
+            <div className={`p-4 sticky z-10 bg-slate-50/95 backdrop-blur-sm ${isDashboard ? 'top-[57px]' : 'top-[113px]'}`}>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                     <input
