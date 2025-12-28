@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/contexts/AuthContext'
 import { PERMISSIONS } from '@/lib/permissions'
-import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw } from 'lucide-react'
+import { Package, Clock, CheckCircle, Search, LogOut, RefreshCw, CheckSquare } from 'lucide-react'
 import { getTurkeyDateString, getTurkeyTomorrowDateString } from '@/lib/dateHelpers'
 import { logShipmentAction } from '@/lib/auditLog'
 import ToastNotification from '@/components/ToastNotification'
@@ -22,7 +22,7 @@ const playNotificationSound = () => {
 export default function WorkerPanelContent({ isDashboard = false }) {
     const { hasPermission, user, signOut, loading: authLoading } = useAuth()
     console.log('WorkerPanelContent user:', user)
-    const [activeTab, setActiveTab] = useState('my_jobs') // 'my_jobs', 'pending', 'ready'
+    const [activeTab, setActiveTab] = useState('my_jobs') // 'my_jobs', 'pending', 'ready', 'completed'
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -103,11 +103,11 @@ export default function WorkerPanelContent({ isDashboard = false }) {
         const tomorrow = getTurkeyTomorrowDateString()
 
         // Fetch shipments for today/tomorrow OR assigned to me
+        // Removed .neq('status', 'delivered') to allow seeing completed jobs
         const { data, error } = await supabase
             .from('shipments')
             .select('*')
             .or(`delivery_date.eq.${today},delivery_date.eq.${tomorrow},assigned_user_id.eq.${user?.id}`)
-            .neq('status', 'delivered') // We might want to see delivered ones in history, but for now hide
             .neq('status', 'unloaded')
             .order('delivery_date', { ascending: true })
 
@@ -244,7 +244,15 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     const filteredShipments = shipments.filter(s => {
         // Tab filter
         if (activeTab === 'my_jobs') {
-            return s.assigned_user_id === user?.id
+            // Only show active (not delivered) jobs assigned to me
+            return s.assigned_user_id === user?.id && s.status !== 'delivered'
+        }
+
+        if (activeTab === 'completed') {
+            // Show jobs I delivered OR jobs I prepared
+            const deliveredByMe = s.assigned_user_id === user?.id && s.status === 'delivered'
+            const preparedByMe = s.prepared_by_user_id === user?.id && s.preparation_status === 'ready'
+            return deliveredByMe || preparedByMe
         }
 
         // For other tabs, exclude my assigned jobs to keep "Warehouse" work separate
@@ -288,7 +296,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
         return true
     })
 
-    const myJobsCount = shipments.filter(s => s.assigned_user_id === user?.id).length
+    const myJobsCount = shipments.filter(s => s.assigned_user_id === user?.id && s.status !== 'delivered').length
     // Update counts to reflect filter logic
     const pendingCount = shipments.filter(s =>
         s.preparation_status !== 'ready' &&
@@ -341,6 +349,16 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                 <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
                     {readyCount}
                 </span>
+            </button>
+            <button
+                onClick={() => setActiveTab('completed')}
+                className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'completed'
+                    ? 'border-purple-600 text-purple-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+            >
+                <CheckSquare size={16} />
+                Yapılanlar
             </button>
         </div>
     )
@@ -461,13 +479,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                             <CheckCircle size={16} />
                                             {shipment.type === 'pickup' ? 'Teslim Aldım' : 'Teslim Et'}
                                         </button>
-                                        <button
-                                            onClick={() => handleUpdateStatus(shipment.id, 'failed')}
-                                            disabled={processingId === shipment.id}
-                                            className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold text-sm hover:bg-red-200 transition-colors disabled:opacity-50"
-                                        >
-                                            Edilemedi
-                                        </button>
+                                        {/* "Edilemedi" button removed as requested */}
                                     </div>
                                 ) : activeTab === 'pending' ? (
                                     <button
@@ -482,7 +494,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                         )}
                                         Hazır Olarak İşaretle
                                     </button>
-                                ) : (
+                                ) : activeTab === 'ready' ? (
                                     <button
                                         onClick={() => handleMarkAsPending(shipment.id)}
                                         disabled={processingId === shipment.id}
@@ -490,6 +502,12 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                     >
                                         Geri Al
                                     </button>
+                                ) : (
+                                    // Completed Tab
+                                    <div className="flex items-center gap-2 text-green-600 font-bold text-sm">
+                                        <CheckCircle size={16} />
+                                        {shipment.status === 'delivered' ? 'Teslim Edildi' : 'Hazırlandı'}
+                                    </div>
                                 )}
                             </div>
                         </div>
