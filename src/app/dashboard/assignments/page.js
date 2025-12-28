@@ -787,6 +787,68 @@ export default function AssignmentsPage() {
                         <p className="text-center text-slate-500 py-8">Atanmış sevkiyat yok</p>
                     )}
                 </div>
+
+                {/* Worker Assignments Section */}
+                <div className="mt-6">
+                    <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span className="text-lg">🏃</span>
+                        Ayaklı Sevkiyatlar
+                    </h3>
+
+                    {workers.map(worker => {
+                        const workerShipments = assignedShipments
+                            .filter(s => s.assigned_user_id === worker.id)
+
+                        if (workerShipments.length === 0) return null
+
+                        return (
+                            <div key={worker.id} className="mb-4 border border-orange-200 rounded-lg overflow-hidden bg-orange-50/30">
+                                {/* Worker Header */}
+                                <div className="bg-orange-100 p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg">🏃</span>
+                                            <span className="font-bold text-slate-900">{worker.full_name}</span>
+                                            <span className="text-xs text-slate-600">({workerShipments.length} sevkiyat)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Worker's Shipments */}
+                                <div className="p-3 space-y-2">
+                                    {workerShipments.map(shipment => (
+                                        <div key={shipment.id} className="bg-white p-3 rounded-lg border border-orange-200">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="font-bold text-slate-900">{shipment.customer_name}</div>
+                                                    <div className="text-xs text-slate-600 mt-1">{shipment.delivery_address}</div>
+                                                    <div className="flex flex-wrap gap-2 mt-2 text-xs">
+                                                        <span className="text-slate-600">📦 {shipment.weight} Palet</span>
+                                                        {shipment.delivery_time && (
+                                                            <span className="text-slate-600">🕐 {shipment.delivery_time}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Remove Assignment Button */}
+                                                <button
+                                                    onClick={() => handleAssign(shipment.id, null)}
+                                                    className="text-xs text-red-600 hover:text-red-700 font-medium flex-shrink-0"
+                                                >
+                                                    Kaldır
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )
+                    })}
+
+                    {assignedShipments.filter(s => s.assigned_user_id).length === 0 && (
+                        <p className="text-center text-slate-500 py-8">Çalışanlara atanmış sevkiyat yok</p>
+                    )}
+                </div>
             </div>
         </div>
     )
