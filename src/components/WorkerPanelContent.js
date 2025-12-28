@@ -251,8 +251,29 @@ export default function WorkerPanelContent({ isDashboard = false }) {
         if (s.assigned_user_id === user?.id) return false
 
         const isReady = s.preparation_status === 'ready'
-        if (activeTab === 'pending' && isReady) return false
-        if (activeTab === 'ready' && !isReady) return false
+
+        // Fix 1: Pickups should NOT appear in "Pending" (Hazırlanacak) tab
+        // because they don't need warehouse preparation.
+        if (activeTab === 'pending') {
+            if (isReady) return false
+            if (s.type === 'pickup') return false // Exclude pickups from pending
+        }
+
+        if (activeTab === 'ready') {
+            if (!isReady) {
+                // Pickups are implicitly "ready" for assignment/action, but maybe they should appear in Ready?
+                // User said "mal alınacaksa zaten hazırdır".
+                // If we want them to appear in "Ready" tab, we allow them here.
+                // But usually "Ready" tab is for "Prepared Shipments" waiting for driver.
+                // Let's include them in Ready if they are NOT assigned yet?
+                // Or just hide them from "Pending".
+                // Let's just hide them from Pending as requested.
+                // If they are type 'pickup', they are effectively "ready" but maybe not marked as such in DB.
+                // Let's show them in Ready tab if type is pickup?
+                if (s.type === 'pickup') return true
+                return false
+            }
+        }
 
         // Search filter
         if (searchTerm) {
@@ -268,8 +289,17 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     })
 
     const myJobsCount = shipments.filter(s => s.assigned_user_id === user?.id).length
-    const pendingCount = shipments.filter(s => s.preparation_status !== 'ready' && s.assigned_user_id !== user?.id).length
-    const readyCount = shipments.filter(s => s.preparation_status === 'ready' && s.assigned_user_id !== user?.id).length
+    // Update counts to reflect filter logic
+    const pendingCount = shipments.filter(s =>
+        s.preparation_status !== 'ready' &&
+        s.assigned_user_id !== user?.id &&
+        s.type !== 'pickup' // Exclude pickups
+    ).length
+
+    const readyCount = shipments.filter(s =>
+        (s.preparation_status === 'ready' || s.type === 'pickup') && // Include pickups
+        s.assigned_user_id !== user?.id
+    ).length
 
     const renderTabs = () => (
         <div className="flex px-4 overflow-x-auto">
@@ -392,7 +422,14 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                         <div key={shipment.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                             <div className="flex justify-between items-start mb-3">
                                 <div>
-                                    <h3 className="font-bold text-slate-900 text-lg">{shipment.customer_name}</h3>
+                                    <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                                        {shipment.customer_name}
+                                        {shipment.type === 'pickup' && (
+                                            <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded font-bold border border-orange-200">
+                                                ALIM
+                                            </span>
+                                        )}
+                                    </h3>
                                     <p className="text-slate-500 text-sm mt-1">{shipment.delivery_address}</p>
                                 </div>
                                 <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
@@ -416,10 +453,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                         <button
                                             onClick={() => handleUpdateStatus(shipment.id, 'delivered')}
                                             disabled={processingId === shipment.id}
-                                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                            className={`flex-1 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${shipment.type === 'pickup'
+                                                    ? 'bg-orange-600 hover:bg-orange-700'
+                                                    : 'bg-green-600 hover:bg-green-700'
+                                                }`}
                                         >
                                             <CheckCircle size={16} />
-                                            Teslim Et
+                                            {shipment.type === 'pickup' ? 'Teslim Aldım' : 'Teslim Et'}
                                         </button>
                                         <button
                                             onClick={() => handleUpdateStatus(shipment.id, 'failed')}
