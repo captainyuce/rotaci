@@ -18,7 +18,9 @@ export async function POST(request) {
 
         // Hash password if provided
         if (body.password) {
-            body.password = await bcrypt.hash(body.password, 10)
+            const hash = await bcrypt.hash(body.password, 10)
+            // Replace $2b$ with $2a$ for pgcrypto compatibility
+            body.password = hash.replace(/^\$2b\$/, '$2a$')
         }
 
         const { data, error } = await supabase
@@ -41,7 +43,9 @@ export async function PUT(request) {
 
         // Hash password if provided
         if (updates.password) {
-            updates.password = await bcrypt.hash(updates.password, 10)
+            const hash = await bcrypt.hash(updates.password, 10)
+            // Replace $2b$ with $2a$ for pgcrypto compatibility
+            updates.password = hash.replace(/^\$2b\$/, '$2a$')
         }
 
         const { data, error } = await supabase
