@@ -22,7 +22,10 @@ const playNotificationSound = () => {
 export default function WorkerPanelContent({ isDashboard = false }) {
     const { hasPermission, user, signOut, loading: authLoading } = useAuth()
     console.log('WorkerPanelContent user:', user)
-    const [activeTab, setActiveTab] = useState('my_jobs') // 'my_jobs', 'pending', 'ready', 'completed'
+
+    // Managers should start with 'pending' tab, workers with 'my_jobs'
+    const isManager = user?.role === 'manager' || user?.role === 'dispatcher'
+    const [activeTab, setActiveTab] = useState(isManager ? 'pending' : 'my_jobs') // 'my_jobs', 'pending', 'ready', 'completed'
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -311,19 +314,22 @@ export default function WorkerPanelContent({ isDashboard = false }) {
 
     const renderTabs = () => (
         <div className="flex px-4 overflow-x-auto">
-            <button
-                onClick={() => setActiveTab('my_jobs')}
-                className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'my_jobs'
-                    ? 'border-orange-600 text-orange-600'
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                    }`}
-            >
-                <span className="text-lg">🏃</span>
-                İşlerim
-                <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs">
-                    {myJobsCount}
-                </span>
-            </button>
+            {/* Only show 'my_jobs' tab for workers, not for managers */}
+            {!isManager && (
+                <button
+                    onClick={() => setActiveTab('my_jobs')}
+                    className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'my_jobs'
+                        ? 'border-orange-600 text-orange-600'
+                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    <span className="text-lg">🏃</span>
+                    İşlerim
+                    <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs">
+                        {myJobsCount}
+                    </span>
+                </button>
+            )}
             <button
                 onClick={() => setActiveTab('pending')}
                 className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'pending'
