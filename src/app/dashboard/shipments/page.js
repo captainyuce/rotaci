@@ -24,6 +24,7 @@ export default function ShipmentsPage() {
     const [shipments, setShipments] = useState([])
     const [vehicles, setVehicles] = useState([])
     const [addresses, setAddresses] = useState([])
+    const [users, setUsers] = useState([])
     const [selectedCategory, setSelectedCategory] = useState('')
     const [loading, setLoading] = useState(true)
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -50,18 +51,20 @@ export default function ShipmentsPage() {
 
     const fetchData = async () => {
         setLoading(true)
-        const [shipmentsRes, vehiclesRes, addressesRes] = await Promise.all([
+        const [shipmentsRes, vehiclesRes, addressesRes, usersRes] = await Promise.all([
             supabase
                 .from('shipments')
                 .select('*')
                 .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate'),
-            supabase.from('addresses').select('*').order('name')
+            supabase.from('addresses').select('*').order('name'),
+            supabase.from('users').select('id, full_name').order('full_name')
         ])
 
         if (shipmentsRes.data) setShipments(shipmentsRes.data)
         if (vehiclesRes.data) setVehicles(vehiclesRes.data)
         if (addressesRes.data) setAddresses(addressesRes.data)
+        if (usersRes.data) setUsers(usersRes.data)
         setLoading(false)
     }
 
@@ -330,6 +333,7 @@ export default function ShipmentsPage() {
 
     const renderShipmentRow = (shipment) => {
         const assignedVehicle = vehicles.find(v => v.id === shipment.assigned_vehicle_id)
+        const assignedWorker = users.find(u => u.id === shipment.assigned_user_id)
 
         return (
             <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group text-sm">
@@ -365,6 +369,11 @@ export default function ShipmentsPage() {
                         <div className="flex items-center gap-1.5 text-slate-700">
                             <Truck size={14} className="text-primary" />
                             <span className="font-medium text-xs">{assignedVehicle.plate}</span>
+                        </div>
+                    ) : assignedWorker ? (
+                        <div className="flex items-center gap-1.5 text-orange-700">
+                            <span className="text-base">🏃</span>
+                            <span className="font-medium text-xs">{assignedWorker.full_name}</span>
                         </div>
                     ) : (
                         <span className="text-slate-400 text-xs">-</span>
