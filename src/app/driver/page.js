@@ -304,8 +304,8 @@ export default function DriverPage() {
                 {/* Preparation Status for Deliveries */}
                 {job.type !== 'pickup' && job.status !== 'delivered' && job.status !== 'failed' && (
                     <span className={`text-xs font-bold px-2 py-1 rounded-full mt-8 ${job.preparation_status === 'ready'
-                            ? 'bg-green-100 text-green-700 border border-green-200'
-                            : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                        ? 'bg-green-100 text-green-700 border border-green-200'
+                        : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
                         }`}>
                         {job.preparation_status === 'ready' ? 'Hazır' : 'Hazırlanıyor'}
                     </span>
@@ -470,16 +470,6 @@ export default function DriverPage() {
                         Son: {lastUpdate.toLocaleTimeString('tr-TR')}
                     </span>
                     <NotificationBell />
-                    {hasLoadedPickups && (
-                        <button
-                            onClick={handleUnload}
-                            className="p-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
-                            title="Yükü Boşalt"
-                        >
-                            <Truck size={16} />
-                            <span className="hidden md:inline">Yükü Boşalt</span>
-                        </button>
-                    )}
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
@@ -489,6 +479,28 @@ export default function DriverPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Cargo Status Banner */}
+            {hasLoadedPickups && (
+                <div className="mb-4 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="bg-orange-100 p-3 rounded-full shrink-0">
+                            <Package className="text-orange-600" size={24} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-orange-800 text-lg">Araçta Yük Var!</h3>
+                            <p className="text-sm text-orange-600">Toplanan yükleri depoya boşaltmanız gerekiyor.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleUnload}
+                        className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-bold shadow-sm transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                        <ArrowDownCircle size={20} />
+                        Yükü Boşalt
+                    </button>
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
