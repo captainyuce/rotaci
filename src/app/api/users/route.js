@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import bcrypt from 'bcryptjs'
 
 export async function GET() {
     const { data, error } = await supabase
@@ -15,6 +16,11 @@ export async function POST(request) {
     try {
         const body = await request.json()
 
+        // Hash password if provided
+        if (body.password) {
+            body.password = await bcrypt.hash(body.password, 10)
+        }
+
         const { data, error } = await supabase
             .from('users')
             .insert([body])
@@ -24,7 +30,7 @@ export async function POST(request) {
         if (error) return NextResponse.json({ error: error.message }, { status: 400 })
         return NextResponse.json(data)
     } catch (error) {
-        return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+        return NextResponse.json({ error: 'Invalid request: ' + error.message }, { status: 400 })
     }
 }
 
@@ -32,6 +38,11 @@ export async function PUT(request) {
     try {
         const body = await request.json()
         const { id, ...updates } = body
+
+        // Hash password if provided
+        if (updates.password) {
+            updates.password = await bcrypt.hash(updates.password, 10)
+        }
 
         const { data, error } = await supabase
             .from('users')

@@ -17,14 +17,28 @@ export default function LoginPage() {
 
         if (loginMode === 'manager' || loginMode === 'worker') {
             // Manager/Worker login
-            const { data: users } = await supabase
-                .from('users')
-                .select('*')
-                .eq('username', username)
-                .eq('password', password)
+            const cleanUsername = username.trim()
+            const cleanPassword = password.trim()
 
-            if (users && users.length > 0) {
-                const user = users[0]
+            console.log('Attempting login with:', cleanUsername)
+
+            // Use the secure RPC function to verify login
+            const { data: result, error: rpcError } = await supabase
+                .rpc('verify_login', {
+                    username_input: cleanUsername,
+                    password_input: cleanPassword
+                })
+
+            console.log('RPC Response:', { result, rpcError })
+
+            if (rpcError) {
+                console.error('Login RPC Error:', rpcError)
+                setError('Giriş işlemi sırasında bir hata oluştu: ' + rpcError.message)
+                return
+            }
+
+            if (result && result.success) {
+                const user = result.user
 
                 // Role validation
                 if (loginMode === 'manager' && user.role === 'worker') {
@@ -57,7 +71,7 @@ export default function LoginPage() {
                     window.location.href = '/dashboard'
                 }
             } else {
-                setError('Kullanıcı adı veya şifre hatalı')
+                setError(result?.message || 'Kullanıcı adı veya şifre hatalı')
             }
         } else {
             // Driver login - check vehicle password
