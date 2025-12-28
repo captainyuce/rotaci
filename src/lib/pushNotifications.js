@@ -67,6 +67,23 @@ export async function subscribeToPushNotifications(userId) {
 
         console.log('Push subscription:', subscription)
 
+        // Save subscription to database
+        // If userId is provided, save to profiles (Manager/Worker)
+        // If not, it might be a driver vehicle update (handled separately usually, but let's support it)
+        if (userId) {
+            const { supabase } = await import('@/lib/supabaseClient')
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ push_subscription: subscription })
+                .eq('id', userId)
+
+            if (error) {
+                console.error('Error saving subscription to profile:', error)
+                // Don't throw, just log. Subscription is valid locally.
+            }
+        }
+
         return subscription
     } catch (error) {
         console.error('Error subscribing to push notifications:', error)

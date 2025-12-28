@@ -15,60 +15,70 @@ export async function POST(request) {
     )
 
     try {
-        const { vehicleId, title, body, data } = await request.json()
+        const { vehicleId, targetRoles, title, body, data } = await request.json()
 
-        if (!vehicleId) {
-            return NextResponse.json({ error: 'Vehicle ID required' }, { status: 400 })
+        const subscriptions = []
+
+        // 1. If vehicleId provided, get driver subscription
+        if (vehicleId) {
+            const { data: vehicle } = await supabase
+                .from('vehicles')
+                .select('push_subscription')
+                .eq('id', vehicleId)
+                .single()
+
+            if (vehicle?.push_subscription) {
+                subscriptions.push(vehicle.push_subscription)
+            }
         }
 
-        // Get vehicle's push subscription
-        const { data: vehicle, error: vehicleError } = await supabase
-            .from('vehicles')
-            .select('push_subscription, plate, driver_name')
-            .eq('id', vehicleId)
-            .single()
+        // 2. If targetRoles provided (e.g. ['manager', 'dispatcher']), get their subscriptions
+        if (targetRoles && targetRoles.length > 0) {
+            // Use supabaseAdmin to bypass RLS if needed, or just supabase if RLS allows reading profiles
+            // Since this is an API route, we should probably use supabaseAdmin for reliability
+            const { supabaseAdmin } = await import('@/lib/supabaseAdmin')
+            const client = supabaseAdmin || supabase
 
-        if (vehicleError || !vehicle) {
-            return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 })
+            const { data: profiles } = await client
+                .from('profiles')
+                .select('push_subscription')
+                .in('role', targetRoles)
+                .not('push_subscription', 'is', null)
+
+            if (profiles) {
+                profiles.forEach(p => {
+                    if (p.push_subscription) subscriptions.push(p.push_subscription)
+                })
+            }
         }
 
-        if (!vehicle.push_subscription) {
-            return NextResponse.json({ error: 'No push subscription for this vehicle' }, { status: 400 })
+        if (subscriptions.length === 0) {
+            return NextResponse.json({ message: 'No subscriptions found to send to' })
         }
 
-        // Prepare notification payload
+        // Prepare payload
         const payload = JSON.stringify({
             title: title || 'Akalbatu',
             body: body || 'Yeni bir bildirim var',
             data: data || {},
-            tag: 'shipment-notification'
+            tag: 'shipment-notification',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png'
         })
 
-        // Send push notification
-        try {
-            await webpush.sendNotification(vehicle.push_subscription, payload)
-            console.log('Push notification sent to', vehicle.plate, vehicle.driver_name)
+        // Send to all
+        const results = await Promise.allSettled(
+            subscriptions.map(sub => webpush.sendNotification(sub, payload))
+        )
 
-            return NextResponse.json({
-                success: true,
-                message: 'Notification sent successfully'
-            })
-        } catch (pushError) {
-            console.error('Push notification error:', pushError)
+        const successCount = results.filter(r => r.status === 'fulfilled').length
+        console.log(`Notifications sent: ${successCount}/${subscriptions.length}`)
 
-            // If subscription is invalid, remove it from database
-            if (pushError.statusCode === 410) {
-                await supabase
-                    .from('vehicles')
-                    .update({ push_subscription: null })
-                    .eq('id', vehicleId)
-            }
-
-            return NextResponse.json({
-                error: 'Failed to send notification',
-                details: pushError.message
-            }, { status: 500 })
-        }
+        return NextResponse.json({
+            success: true,
+            sent: successCount,
+            total: subscriptions.length
+        })
     } catch (error) {
         console.error('Send notification error:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })

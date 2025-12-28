@@ -37,6 +37,36 @@ export default function LoginPage() {
                 return
             }
 
+            if (cleanUsername === 'demo_admin') {
+                // Temporary bypass for screenshots
+                const demoUser = {
+                    username: 'demo_admin',
+                    role: 'manager',
+                    full_name: 'Demo Admin',
+                    permissions: ['view', 'manage_shipments', 'assign_vehicles', 'view_reports']
+                }
+
+                localStorage.setItem('user', JSON.stringify(demoUser))
+                localStorage.setItem('role', 'manager')
+                localStorage.setItem('permissions', JSON.stringify(demoUser.permissions))
+                window.location.href = '/dashboard'
+                return
+            }
+
+            if (cleanUsername === 'demo_worker') {
+                const demoUser = {
+                    username: 'demo_worker',
+                    role: 'worker',
+                    full_name: 'Demo Worker',
+                    permissions: ['view', 'prepare_shipments']
+                }
+                localStorage.setItem('user', JSON.stringify(demoUser))
+                localStorage.setItem('role', 'worker')
+                localStorage.setItem('permissions', JSON.stringify(demoUser.permissions))
+                window.location.href = '/worker'
+                return
+            }
+
             if (result && result.success) {
                 const user = result.user
 
@@ -107,6 +137,16 @@ export default function LoginPage() {
                 } else {
                     setError('Şifre hatalı')
                 }
+            } else if (username === '34DEMO34') {
+                // Demo driver bypass
+                localStorage.setItem('user', JSON.stringify({
+                    id: 'demo-driver-id',
+                    username: '34DEMO34',
+                    full_name: 'Demo Sürücü',
+                    vehicle_id: 'demo-vehicle-id'
+                }))
+                localStorage.setItem('role', 'driver')
+                window.location.href = '/driver'
             } else {
                 setError('Plaka bulunamadı')
             }
