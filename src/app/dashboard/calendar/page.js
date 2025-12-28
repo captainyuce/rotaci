@@ -25,6 +25,7 @@ export default function CalendarPage() {
         status: ''
     })
     const [vehicles, setVehicles] = useState([])
+    const [users, setUsers] = useState([])
 
     // Permission check
     if (!hasPermission(PERMISSIONS.VIEW)) {
@@ -35,6 +36,7 @@ export default function CalendarPage() {
     useEffect(() => {
         fetchShipments()
         fetchVehicles()
+        fetchUsers()
     }, [currentDate])
 
     const fetchShipments = async () => {
@@ -59,6 +61,14 @@ export default function CalendarPage() {
             .order('plate')
 
         if (data) setVehicles(data)
+    }
+
+    const fetchUsers = async () => {
+        const { data, error } = await supabase
+            .from('users')
+            .select('id, full_name')
+
+        if (data) setUsers(data)
     }
 
     const getDaysInMonth = () => {
@@ -288,9 +298,9 @@ export default function CalendarPage() {
                                                         🚐 {s.vehicle.plate}
                                                     </span>
                                                 )}
-                                                {s.assigned_worker?.full_name && !s.vehicle?.plate && (
+                                                {users.find(u => u.id === s.assigned_user_id) && !s.vehicle?.plate && (
                                                     <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded border border-orange-200 flex items-center gap-1">
-                                                        🏃 {s.assigned_worker.full_name}
+                                                        🏃 {users.find(u => u.id === s.assigned_user_id).full_name}
                                                     </span>
                                                 )}
                                                 {s.status === 'delivered' || s.status === 'unloaded' ? (
@@ -467,8 +477,8 @@ function SearchModal({ isOpen, onClose, filters, onFilterChange, onSearch, resul
                                                 {s.vehicle?.plate && (
                                                     <span className="ml-2 text-sm text-gray-600">🚐 {s.vehicle.plate}</span>
                                                 )}
-                                                {s.assigned_worker?.full_name && !s.vehicle?.plate && (
-                                                    <span className="ml-2 text-sm text-orange-600">🏃 {s.assigned_worker.full_name}</span>
+                                                {users.find(u => u.id === s.assigned_user_id) && !s.vehicle?.plate && (
+                                                    <span className="ml-2 text-sm text-orange-600">🏃 {users.find(u => u.id === s.assigned_user_id).full_name}</span>
                                                 )}
                                             </div>
                                             <span className={`px-2 py-1 rounded text-xs font-medium ${s.status === 'delivered' || s.status === 'unloaded' ? 'bg-green-100 text-green-800' :

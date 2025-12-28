@@ -380,7 +380,7 @@ export default function ShipmentsPage() {
                     )}
                 </td>
                 <td className="p-3 text-slate-600 text-xs">
-                    {shipment.creator?.full_name || '-'}
+                    {users.find(u => u.id === shipment.created_by)?.full_name || '-'}
                 </td>
                 <td className="p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' || shipment.status === 'unloaded' ? 'bg-green-100 text-green-700' :
