@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic'
 import ChatButton from '@/components/ChatButton'
 import NotificationBell from '@/components/NotificationBell'
 import { logShipmentAction } from '@/lib/auditLog'
+import { getTurkeyDateString } from '@/lib/dateHelpers'
 import LocationTracker from '@/components/LocationTracker'
 
 const NavigationMap = dynamic(() => import('@/components/NavigationMap'), { ssr: false })
@@ -239,7 +240,13 @@ export default function DriverPage() {
 
     const newJobs = jobs.filter(j => !j.acknowledged_at && j.status !== 'delivered' && j.status !== 'unloaded')
     const acknowledgedJobs = jobs.filter(j => j.acknowledged_at && j.status !== 'delivered' && j.status !== 'unloaded')
-    const completedJobs = jobs.filter(j => j.status === 'delivered' || j.status === 'unloaded')
+
+    // Only show completed jobs for TODAY
+    const today = getTurkeyDateString()
+    const completedJobs = jobs.filter(j =>
+        (j.status === 'delivered' || j.status === 'unloaded') &&
+        j.delivery_date === today
+    )
     const hasLoadedPickups = jobs.some(j => j.type === 'pickup' && j.status === 'delivered')
 
     // Determine active tour: the lowest tour number that has incomplete shipments
