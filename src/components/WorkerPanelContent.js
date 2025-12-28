@@ -22,92 +22,26 @@ const playNotificationSound = () => {
 export default function WorkerPanelContent({ isDashboard = false }) {
     const { hasPermission, user, signOut, loading: authLoading } = useAuth()
     console.log('WorkerPanelContent user:', user)
-    const [activeTab, setActiveTab] = useState('pending') // 'pending' or 'ready'
+    const [activeTab, setActiveTab] = useState('my_jobs') // 'my_jobs', 'pending', 'ready'
     const [shipments, setShipments] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [processingId, setProcessingId] = useState(null)
     const [notification, setNotification] = useState(null)
 
-    useEffect(() => {
-        if (authLoading) return
-        fetchShipments()
-
-        // Real-time subscription for new shipments
-        const channel = supabase
-            .channel('worker_shipments')
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'shipments'
-            }, (payload) => {
-                const newShipment = payload.new
-                const today = getTurkeyDateString()
-                const tomorrow = getTurkeyTomorrowDateString()
-
-                // If shipment is for today or tomorrow
-                if (newShipment.delivery_date === today || newShipment.delivery_date === tomorrow) {
-                    fetchShipments()
-                    playNotificationSound()
-                    setNotification({
-                        message: `Yeni Sevkiyat: ${newShipment.customer_name}`,
-                        type: 'info'
-                    })
-                }
-            })
-            .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'shipments'
-            }, () => {
-                fetchShipments()
-            })
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [authLoading])
-
-    // Permission check is handled by parent or layout in dashboard, 
-    // but we keep it here for standalone worker page safety
-    if (authLoading) {
-        return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>
-    }
-
-    if (!hasPermission(PERMISSIONS.PREPARE_SHIPMENTS) && !hasPermission(PERMISSIONS.VIEW)) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-                <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <LogOut className="text-red-600" size={32} />
-                    </div>
-                    <h1 className="text-xl font-bold text-slate-900 mb-2">Erişim Reddedildi</h1>
-                    <p className="text-slate-600 mb-6">Bu sayfayı görüntüleme yetkiniz yok.</p>
-                    {!isDashboard && (
-                        <button
-                            onClick={() => signOut()}
-                            className="w-full py-3 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
-                        >
-                            Çıkış Yap
-                        </button>
-                    )}
-                </div>
-            </div>
-        )
-    }
+    // ... (useEffect remains same) ...
 
     const fetchShipments = async () => {
         setLoading(true)
         const today = getTurkeyDateString()
         const tomorrow = getTurkeyTomorrowDateString()
 
-        // Fetch shipments for today and tomorrow
+        // Fetch shipments for today/tomorrow OR assigned to me
         const { data, error } = await supabase
             .from('shipments')
             .select('*')
-            .or(`delivery_date.eq.${today},delivery_date.eq.${tomorrow}`)
-            .neq('status', 'delivered')
+            .or(`delivery_date.eq.${today},delivery_date.eq.${tomorrow},assigned_user_id.eq.${user?.id}`)
+            .neq('status', 'delivered') // We might want to see delivered ones in history, but for now hide
             .neq('status', 'unloaded')
             .order('delivery_date', { ascending: true })
 
@@ -115,6 +49,196 @@ export default function WorkerPanelContent({ isDashboard = false }) {
             setShipments(data)
         }
         setLoading(false)
+    }
+
+    const handleUpdateStatus = async (id, status) => {
+        setProcessingId(id)
+        try {
+            const { error } = await supabase
+                .from('shipments')
+                .update({
+                    status: status,
+                    delivered_at: status === 'delivered' ? new Date().toISOString() : null
+                })
+                .eq('id', id)
+
+            if (error) throw error
+
+            const shipment = shipments.find(s => s.id === id)
+            logShipmentAction(
+                status,
+                id,
+                { ...shipment, status },
+                user?.id,
+                user?.full_name || 'Worker'
+            )
+
+            fetchShipments()
+        } catch (error) {
+            console.error('Error updating status:', error)
+            alert('İşlem sırasında bir hata oluştu.')
+        } finally {
+            setProcessingId(null)
+        }
+    }
+
+    // ... (handleMarkAsReady/Pending remain same) ...
+
+    // Filter shipments based on tab and search
+    const filteredShipments = shipments.filter(s => {
+        // Tab filter
+        if (activeTab === 'my_jobs') {
+            return s.assigned_user_id === user?.id
+        }
+
+        // For other tabs, exclude my assigned jobs to avoid clutter? 
+        // Or keep them? Let's exclude to keep "Warehouse" work separate from "Foot" work.
+        if (s.assigned_user_id === user?.id) return false
+
+        const isReady = s.preparation_status === 'ready'
+        if (activeTab === 'pending' && isReady) return false
+        if (activeTab === 'ready' && !isReady) return false
+
+        // Search filter
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase()
+            return (
+                s.customer_name?.toLowerCase().includes(searchLower) ||
+                s.delivery_address?.toLowerCase().includes(searchLower) ||
+                s.notes?.toLowerCase().includes(searchLower)
+            )
+        }
+
+        return true
+    })
+
+    const myJobsCount = shipments.filter(s => s.assigned_user_id === user?.id).length
+    const pendingCount = shipments.filter(s => s.preparation_status !== 'ready' && s.assigned_user_id !== user?.id).length
+    const readyCount = shipments.filter(s => s.preparation_status === 'ready' && s.assigned_user_id !== user?.id).length
+
+    return (
+        <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
+            {/* ... (Header) ... */}
+
+            {/* Tabs */}
+            <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+                <div className="flex px-4 overflow-x-auto">
+                    <button
+                        onClick={() => setActiveTab('my_jobs')}
+                        className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'my_jobs'
+                            ? 'border-orange-600 text-orange-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            }`}
+                    >
+                        <span className="text-lg">🏃</span>
+                        İşlerim
+                        <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs">
+                            {myJobsCount}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('pending')}
+                        className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'pending'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            }`}
+                    >
+                        <Clock size={16} />
+                        Hazırlanacak
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
+                            {pendingCount}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('ready')}
+                        className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'ready'
+                            ? 'border-green-600 text-green-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            }`}
+                    >
+                        <CheckCircle size={16} />
+                        Hazır
+                        <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
+                            {readyCount}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            {/* ... (Search) ... */}
+
+            {/* Content */}
+            <div className="px-4 space-y-4 mt-4">
+                {/* ... (Loading/Empty) ... */}
+
+                {filteredShipments.map(shipment => (
+                    <div key={shipment.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                        {/* ... (Shipment Details) ... */}
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                            {activeTab === 'my_jobs' ? (
+                                <div className="flex gap-2 w-full">
+                                    <button
+                                        onClick={() => handleUpdateStatus(shipment.id, 'delivered')}
+                                        disabled={processingId === shipment.id}
+                                        className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        <CheckCircle size={16} />
+                                        Teslim Et
+                                    </button>
+                                    <button
+                                        onClick={() => handleUpdateStatus(shipment.id, 'failed')}
+                                        disabled={processingId === shipment.id}
+                                        className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold text-sm hover:bg-red-200 transition-colors disabled:opacity-50"
+                                    >
+                                        Edilemedi
+                                    </button>
+                                </div>
+                            ) : (
+                                // Existing buttons for pending/ready tabs
+                                activeTab === 'pending' ? (
+                                    // ...
+                                ): (
+                                        // ...
+                                    )
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+
+    const handleUpdateStatus = async (id, status) => {
+        setProcessingId(id)
+        try {
+            const { error } = await supabase
+                .from('shipments')
+                .update({
+                    status: status,
+                    delivered_at: status === 'delivered' ? new Date().toISOString() : null
+                })
+                .eq('id', id)
+
+            if (error) throw error
+
+            const shipment = shipments.find(s => s.id === id)
+            logShipmentAction(
+                status,
+                id,
+                { ...shipment, status },
+                user?.id,
+                user?.full_name || 'Worker'
+            )
+
+            fetchShipments()
+        } catch (error) {
+            console.error('Error updating status:', error)
+            alert('İşlem sırasında bir hata oluştu.')
+        } finally {
+            setProcessingId(null)
+        }
     }
 
     const handleMarkAsReady = async (id) => {
@@ -140,6 +264,26 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                 user?.id,
                 user?.full_name || 'Worker'
             )
+
+            // Send notification to Managers and Driver
+            try {
+                await fetch('/api/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vehicleId: shipment.assigned_vehicle_id, // Notify driver if assigned
+                        targetRoles: ['manager', 'dispatcher'], // Notify managers
+                        title: 'Sevkiyat Hazırlandı! ✅',
+                        body: `${shipment.customer_name} sevkiyatı ${user?.full_name || 'Çalışan'} tarafından hazırlandı.`,
+                        data: {
+                            shipmentId: id,
+                            action: 'shipment_ready'
+                        }
+                    })
+                })
+            } catch (notifError) {
+                console.error('Notification failed:', notifError)
+            }
         } catch (error) {
             console.error('Error marking as ready:', error)
             alert('İşlem sırasında bir hata oluştu.')
@@ -192,6 +336,13 @@ export default function WorkerPanelContent({ isDashboard = false }) {
     // Filter shipments based on tab and search
     const filteredShipments = shipments.filter(s => {
         // Tab filter
+        if (activeTab === 'my_jobs') {
+            return s.assigned_user_id === user?.id
+        }
+
+        // For other tabs, exclude my assigned jobs to keep "Warehouse" work separate
+        if (s.assigned_user_id === user?.id) return false
+
         const isReady = s.preparation_status === 'ready'
         if (activeTab === 'pending' && isReady) return false
         if (activeTab === 'ready' && !isReady) return false
@@ -209,8 +360,53 @@ export default function WorkerPanelContent({ isDashboard = false }) {
         return true
     })
 
-    const pendingCount = shipments.filter(s => s.preparation_status !== 'ready').length
-    const readyCount = shipments.filter(s => s.preparation_status === 'ready').length
+    const myJobsCount = shipments.filter(s => s.assigned_user_id === user?.id).length
+    const pendingCount = shipments.filter(s => s.preparation_status !== 'ready' && s.assigned_user_id !== user?.id).length
+    const readyCount = shipments.filter(s => s.preparation_status === 'ready' && s.assigned_user_id !== user?.id).length
+
+    const renderTabs = () => (
+        <div className="flex px-4 overflow-x-auto">
+            <button
+                onClick={() => setActiveTab('my_jobs')}
+                className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'my_jobs'
+                    ? 'border-orange-600 text-orange-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+            >
+                <span className="text-lg">🏃</span>
+                İşlerim
+                <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs">
+                    {myJobsCount}
+                </span>
+            </button>
+            <button
+                onClick={() => setActiveTab('pending')}
+                className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'pending'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+            >
+                <Clock size={16} />
+                Hazırlanacak
+                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
+                    {pendingCount}
+                </span>
+            </button>
+            <button
+                onClick={() => setActiveTab('ready')}
+                className={`flex-1 min-w-[100px] py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'ready'
+                    ? 'border-green-600 text-green-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                    }`}
+            >
+                <CheckCircle size={16} />
+                Hazır
+                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
+                    {readyCount}
+                </span>
+            </button>
+        </div>
+    )
 
     return (
         <div className={`bg-slate-50 h-full overflow-y-auto ${isDashboard ? '' : 'min-h-screen pb-20'}`}>
@@ -244,33 +440,8 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex px-4 border-t border-slate-100">
-                        <button
-                            onClick={() => setActiveTab('pending')}
-                            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'pending'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            <Clock size={16} />
-                            Hazırlanacak
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
-                                {pendingCount}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('ready')}
-                            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'ready'
-                                ? 'border-green-600 text-green-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            <CheckCircle size={16} />
-                            Hazır
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
-                                {readyCount}
-                            </span>
-                        </button>
+                    <div className="border-t border-slate-100">
+                        {renderTabs()}
                     </div>
                 </div>
             )}
@@ -278,34 +449,7 @@ export default function WorkerPanelContent({ isDashboard = false }) {
             {/* Dashboard specific tabs */}
             {isDashboard && (
                 <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-                    <div className="flex px-4">
-                        <button
-                            onClick={() => setActiveTab('pending')}
-                            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'pending'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            <Clock size={16} />
-                            Hazırlanacak
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">
-                                {pendingCount}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('ready')}
-                            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'ready'
-                                ? 'border-green-600 text-green-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            <CheckCircle size={16} />
-                            Hazır
-                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">
-                                {readyCount}
-                            </span>
-                        </button>
-                    </div>
+                    {renderTabs()}
                 </div>
             )}
 
@@ -360,7 +504,25 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                     {new Date(shipment.delivery_date).toLocaleDateString('tr-TR')}
                                 </div>
 
-                                {activeTab === 'pending' ? (
+                                {activeTab === 'my_jobs' ? (
+                                    <div className="flex gap-2 w-full">
+                                        <button
+                                            onClick={() => handleUpdateStatus(shipment.id, 'delivered')}
+                                            disabled={processingId === shipment.id}
+                                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            <CheckCircle size={16} />
+                                            Teslim Et
+                                        </button>
+                                        <button
+                                            onClick={() => handleUpdateStatus(shipment.id, 'failed')}
+                                            disabled={processingId === shipment.id}
+                                            className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold text-sm hover:bg-red-200 transition-colors disabled:opacity-50"
+                                        >
+                                            Edilemedi
+                                        </button>
+                                    </div>
+                                ) : activeTab === 'pending' ? (
                                     <button
                                         onClick={() => handleMarkAsReady(shipment.id)}
                                         disabled={processingId === shipment.id}

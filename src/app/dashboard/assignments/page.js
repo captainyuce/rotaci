@@ -16,6 +16,7 @@ export default function AssignmentsPage() {
     const { optimizedRoutes, setOptimizedRoutes } = useDashboard()
     const [shipments, setShipments] = useState([])
     const [vehicles, setVehicles] = useState([])
+    const [workers, setWorkers] = useState([]) // New state for workers
     const [loading, setLoading] = useState(true)
     const [selectedShipments, setSelectedShipments] = useState([])
     const [optimizing, setOptimizing] = useState({})
@@ -36,18 +37,20 @@ export default function AssignmentsPage() {
 
     const fetchData = async () => {
         setLoading(true)
-        const [shipmentsRes, vehiclesRes] = await Promise.all([
+        const [shipmentsRes, vehiclesRes, workersRes] = await Promise.all([
             supabase
                 .from('shipments')
                 .select('*')
                 .in('status', ['pending', 'assigned'])
                 .order('route_order', { ascending: true })
                 .order('created_at', { ascending: false }),
-            supabase.from('vehicles').select('*').order('plate')
+            supabase.from('vehicles').select('*').order('plate'),
+            supabase.from('users').select('*').eq('role', 'worker').order('full_name')
         ])
 
         if (shipmentsRes.data) setShipments(shipmentsRes.data)
         if (vehiclesRes.data) setVehicles(vehiclesRes.data)
+        if (workersRes.data) setWorkers(workersRes.data)
         setLoading(false)
     }
 
@@ -77,9 +80,26 @@ export default function AssignmentsPage() {
         }
     }, [])
 
-    const handleAssign = async (shipmentId, vehicleId, tourNumber = null) => {
-        const status = vehicleId ? 'assigned' : 'pending'
+    const handleAssign = async (shipmentId, targetId, targetType = 'vehicle', tourNumber = null) => {
+        const status = targetId ? 'assigned' : 'pending'
         const tour = tourNumber || selectedAssignTour || 1
+
+        const updates = {
+            status,
+            tour_number: targetId ? tour : 1
+        }
+
+        if (targetType === 'vehicle') {
+            updates.assigned_vehicle_id = targetId || null
+            updates.assigned_user_id = null // Clear user assignment if assigning to vehicle
+        } else if (targetType === 'worker') {
+            updates.assigned_user_id = targetId || null
+            updates.assigned_vehicle_id = null // Clear vehicle assignment if assigning to user
+        } else {
+            // Unassigning
+            updates.assigned_vehicle_id = null
+            updates.assigned_user_id = null
+        }
 
         // Get shipment details for notification and logging
         const { data: shipment } = await supabase
@@ -90,46 +110,42 @@ export default function AssignmentsPage() {
 
         await supabase
             .from('shipments')
-            .update({
-                assigned_vehicle_id: vehicleId || null,
-                status,
-                tour_number: vehicleId ? tour : 1 // Reset to 1 if unassigning
-            })
+            .update(updates)
             .eq('id', shipmentId)
 
         // Log the assignment
-        if (vehicleId && shipment) {
-            console.log('Attempting to log assignment for shipment:', shipmentId)
+        if (targetId && shipment) {
             try {
-                const { data: vehicle } = await supabase
-                    .from('vehicles')
-                    .select('plate, driver_name')
-                    .eq('id', vehicleId)
-                    .single()
+                let assigneeName = 'Bilinmiyor'
+                if (targetType === 'vehicle') {
+                    const { data: vehicle } = await supabase.from('vehicles').select('plate').eq('id', targetId).single()
+                    assigneeName = vehicle?.plate
+                } else {
+                    const { data: worker } = await supabase.from('users').select('full_name').eq('id', targetId).single()
+                    assigneeName = worker?.full_name
+                }
 
-                // Use user from AuthProvider instead of supabase.auth.getUser()
-                // because we are using custom auth
                 await logShipmentAction(
                     'assigned',
                     shipmentId,
-                    { ...shipment, assigned_vehicle_id: vehicleId, status: 'assigned' },
+                    { ...shipment, ...updates },
                     user?.id,
                     user?.full_name || 'Yönetici'
                 )
-                console.log('Assignment logged successfully')
             } catch (err) {
                 console.error('Error logging assignment:', err)
             }
         }
 
-        // Send push notification if assigning to a vehicle
-        if (vehicleId && shipment) {
+        // Send push notification
+        if (targetId && shipment) {
             try {
                 await fetch('/api/send-notification', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        vehicleId,
+                        targetId, // Can be vehicleId or userId
+                        targetType, // 'vehicle' or 'worker'
                         title: 'Yeni Sevkiyat Atandı',
                         body: `${shipment.customer_name} - ${shipment.delivery_address}`,
                         data: { shipmentId }
@@ -516,17 +532,27 @@ export default function AssignmentsPage() {
                                     <div className="flex flex-col gap-2">
                                         <select
                                             className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white"
-                                            value={shipment.assigned_vehicle_id || ''}
+                                            value={shipment.assigned_vehicle_id ? `vehicle:${shipment.assigned_vehicle_id}` : (shipment.assigned_user_id ? `worker:${shipment.assigned_user_id}` : '')}
                                             onChange={(e) => {
-                                                const vehicleId = e.target.value
+                                                const value = e.target.value
+                                                if (!value) return handleAssign(shipment.id, null)
+
+                                                const [type, id] = value.split(':')
                                                 const tourNum = shipmentTourSelection[shipment.id] || 1
-                                                handleAssign(shipment.id, vehicleId, tourNum)
+                                                handleAssign(shipment.id, id, type, tourNum)
                                             }}
                                         >
-                                            <option value="">-- Araç Seç --</option>
-                                            {vehicles.map(v => (
-                                                <option key={v.id} value={v.id}>{v.plate}</option>
-                                            ))}
+                                            <option value="">-- Ata --</option>
+                                            <optgroup label="Araçlar">
+                                                {vehicles.map(v => (
+                                                    <option key={v.id} value={`vehicle:${v.id}`}>{v.plate}</option>
+                                                ))}
+                                            </optgroup>
+                                            <optgroup label="Çalışanlar (Ayaklı)">
+                                                {workers.map(w => (
+                                                    <option key={w.id} value={`worker:${w.id}`}>{w.full_name}</option>
+                                                ))}
+                                            </optgroup>
                                         </select>
                                         <select
                                             className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white"
