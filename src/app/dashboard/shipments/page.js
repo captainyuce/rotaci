@@ -441,7 +441,7 @@ export default function ShipmentsPage() {
                     <div>
                         <h2 className="text-lg font-bold text-slate-900">Sevkiyatlar (Güncel)</h2>
                         <p className="text-xs text-slate-500">
-                            {failedShipments.length + todayShipments.length + tomorrowShipments.length + futureShipments.length + pastShipments.length} sevkiyat
+                            {failedShipments.length + todayShipments.length + tomorrowShipments.length + futureShipments.length} sevkiyat
                         </p>
                     </div>
                     {hasPermission(PERMISSIONS.CREATE_SHIPMENTS) && (
