@@ -44,7 +44,7 @@ export default function CalendarPage() {
 
         const { data, error } = await supabase
             .from('shipments')
-            .select('*, vehicle:vehicles(plate)')
+            .select('*, vehicle:vehicles(plate), assigned_worker:assigned_user_id(full_name)')
             .gte('delivery_date', toTurkeyDateString(startOfMonth))
             .lte('delivery_date', toTurkeyDateString(endOfMonth))
 
@@ -111,7 +111,7 @@ export default function CalendarPage() {
         setLoading(true)
         let query = supabase
             .from('shipments')
-            .select('*, vehicle:vehicles(plate)')
+            .select('*, vehicle:vehicles(plate), assigned_worker:assigned_user_id(full_name)')
             .gte('delivery_date', searchFilters.startDate)
             .lte('delivery_date', searchFilters.endDate)
 
@@ -288,6 +288,11 @@ export default function CalendarPage() {
                                                         🚐 {s.vehicle.plate}
                                                     </span>
                                                 )}
+                                                {s.assigned_worker?.full_name && (
+                                                    <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded border border-orange-200 flex items-center gap-1">
+                                                        🏃 {s.assigned_worker.full_name}
+                                                    </span>
+                                                )}
                                                 {s.status === 'delivered' || s.status === 'unloaded' ? (
                                                     <>
                                                         <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded border border-green-200">
@@ -461,6 +466,9 @@ function SearchModal({ isOpen, onClose, filters, onFilterChange, onSearch, resul
                                                 <span className="font-bold text-gray-800">{s.customer_name}</span>
                                                 {s.vehicle?.plate && (
                                                     <span className="ml-2 text-sm text-gray-600">🚐 {s.vehicle.plate}</span>
+                                                )}
+                                                {s.assigned_worker?.full_name && (
+                                                    <span className="ml-2 text-sm text-orange-600">🏃 {s.assigned_worker.full_name}</span>
                                                 )}
                                             </div>
                                             <span className={`px-2 py-1 rounded text-xs font-medium ${s.status === 'delivered' || s.status === 'unloaded' ? 'bg-green-100 text-green-800' :

@@ -472,8 +472,8 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                             onClick={() => handleUpdateStatus(shipment.id, 'delivered')}
                                             disabled={processingId === shipment.id}
                                             className={`flex-1 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${shipment.type === 'pickup'
-                                                    ? 'bg-orange-600 hover:bg-orange-700'
-                                                    : 'bg-green-600 hover:bg-green-700'
+                                                ? 'bg-orange-600 hover:bg-orange-700'
+                                                : 'bg-green-600 hover:bg-green-700'
                                                 }`}
                                         >
                                             <CheckCircle size={16} />
@@ -506,7 +506,9 @@ export default function WorkerPanelContent({ isDashboard = false }) {
                                     // Completed Tab
                                     <div className="flex items-center gap-2 text-green-600 font-bold text-sm">
                                         <CheckCircle size={16} />
-                                        {shipment.status === 'delivered' ? 'Teslim Edildi' : 'Hazırlandı'}
+                                        {shipment.status === 'delivered'
+                                            ? (shipment.type === 'pickup' ? 'Teslim Alındı' : 'Teslim Edildi')
+                                            : 'Hazırlandı'}
                                     </div>
                                 )}
                             </div>
