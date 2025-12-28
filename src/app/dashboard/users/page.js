@@ -41,7 +41,14 @@ export default function UsersPage() {
 
         const url = '/api/users'
         const method = editId ? 'PUT' : 'POST'
-        const body = editId ? { ...formData, id: editId } : formData
+
+        let body = editId ? { ...formData, id: editId } : formData
+
+        // If editing and password is empty, remove it so we don't overwrite with empty hash
+        if (editId && !body.password) {
+            const { password, ...rest } = body
+            body = rest
+        }
 
         console.log('Sending request:', { method, body })
 
@@ -189,7 +196,7 @@ export default function UsersPage() {
                                             onClick={() => {
                                                 setFormData({
                                                     username: user.username,
-                                                    password: user.password,
+                                                    password: '', // Don't pre-fill password (it's hashed)
                                                     full_name: user.full_name,
                                                     role: user.role,
                                                     permissions: user.permissions || []
