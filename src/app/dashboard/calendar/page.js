@@ -44,7 +44,7 @@ export default function CalendarPage() {
 
         const { data, error } = await supabase
             .from('shipments')
-            .select('*, vehicle:vehicles(plate), assigned_worker:assigned_user_id(full_name)')
+            .select('*, vehicle:vehicles(plate), assigned_worker:users!assigned_user_id(full_name)')
             .gte('delivery_date', toTurkeyDateString(startOfMonth))
             .lte('delivery_date', toTurkeyDateString(endOfMonth))
 
@@ -111,7 +111,7 @@ export default function CalendarPage() {
         setLoading(true)
         let query = supabase
             .from('shipments')
-            .select('*, vehicle:vehicles(plate), assigned_worker:assigned_user_id(full_name)')
+            .select('*, vehicle:vehicles(plate), assigned_worker:users!assigned_user_id(full_name)')
             .gte('delivery_date', searchFilters.startDate)
             .lte('delivery_date', searchFilters.endDate)
 
