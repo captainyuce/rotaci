@@ -440,7 +440,9 @@ export default function ShipmentsPage() {
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-bold text-slate-900">Sevkiyatlar (Güncel)</h2>
-                        <p className="text-xs text-slate-500">{shipments.length} sevkiyat</p>
+                        <p className="text-xs text-slate-500">
+                            {failedShipments.length + todayShipments.length + tomorrowShipments.length + futureShipments.length + pastShipments.length} sevkiyat
+                        </p>
                     </div>
                     {hasPermission(PERMISSIONS.CREATE_SHIPMENTS) && (
                         <button
