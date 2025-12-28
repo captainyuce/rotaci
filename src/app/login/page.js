@@ -164,14 +164,14 @@ export default function LoginPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">
-                                {(loginMode === 'manager' || loginMode === 'worker') ? 'E-posta veya Kullanıcı Adı' : 'Plaka'}
+                                {(loginMode === 'manager' || loginMode === 'worker') ? 'Kullanıcı Adı' : 'Plaka'}
                             </label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
-                                placeholder={(loginMode === 'manager' || loginMode === 'worker') ? 'admin@rotaci.app' : '34 ABC 123'}
+                                placeholder={(loginMode === 'manager' || loginMode === 'worker') ? 'Kullanıcı Adı' : '34 ABC 123'}
                                 required
                             />
                         </div>
