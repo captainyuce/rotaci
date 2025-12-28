@@ -53,7 +53,7 @@ export default function ShipmentsPage() {
         const [shipmentsRes, vehiclesRes, addressesRes] = await Promise.all([
             supabase
                 .from('shipments')
-                .select('*, creator:created_by(full_name)')
+                .select('*, creator:users!created_by(full_name)')
                 .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate'),
             supabase.from('addresses').select('*').order('name')
