@@ -13,7 +13,9 @@ export const PERMISSIONS = {
     MANAGE_CHAT: 'manage_chat',
     CLEAR_LOGS: 'clear_logs',
     PREPARE_SHIPMENTS: 'prepare_shipments',
-    OVERRIDE_PREPARATION: 'override_preparation'
+    OVERRIDE_PREPARATION: 'override_preparation',
+    MANAGE_SUBCONTRACTORS: 'manage_subcontractors',
+    VIEW_SUBCONTRACTOR_PANEL: 'view_subcontractor_panel'
 }
 
 // Predefined roles with their permissions
@@ -36,7 +38,8 @@ export const ROLES = {
             PERMISSIONS.MANAGE_SETTINGS,
             PERMISSIONS.MANAGE_CHAT,
             PERMISSIONS.PREPARE_SHIPMENTS,
-            PERMISSIONS.OVERRIDE_PREPARATION
+            PERMISSIONS.OVERRIDE_PREPARATION,
+            PERMISSIONS.MANAGE_SUBCONTRACTORS
         ]
     },
     DISPATCHER: {
@@ -53,6 +56,13 @@ export const ROLES = {
         permissions: [
             PERMISSIONS.VIEW,
             PERMISSIONS.PREPARE_SHIPMENTS
+        ]
+    },
+    SUBCONTRACTOR: {
+        name: 'Subcontractor',
+        label: 'Fasoncu',
+        permissions: [
+            PERMISSIONS.VIEW_SUBCONTRACTOR_PANEL
         ]
     },
     VIEWER: {

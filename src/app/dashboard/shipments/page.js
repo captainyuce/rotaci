@@ -55,6 +55,7 @@ export default function ShipmentsPage() {
             supabase
                 .from('shipments')
                 .select('*')
+                .neq('status', 'production')
                 .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate'),
             supabase.from('addresses').select('*').order('name'),

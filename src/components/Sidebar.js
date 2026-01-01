@@ -2,20 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Truck, Users, LogOut, Settings, Calendar } from 'lucide-react'
+import { LayoutDashboard, Package, Truck, Users, LogOut, Settings, Calendar, Factory } from 'lucide-react'
 import { useAuth } from './AuthProvider'
+import { PERMISSIONS } from '@/lib/permissions'
 
 const menuItems = [
     { icon: LayoutDashboard, label: 'Genel', href: '/dashboard' },
     { icon: Package, label: 'Sevkiyat', href: '/dashboard/shipments' },
     { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar' },
+    { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS },
     { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles' },
     { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users' },
 ]
 
 export default function Sidebar() {
     const pathname = usePathname()
-    const { signOut } = useAuth()
+    const { signOut, hasPermission } = useAuth()
 
     return (
         <div className="w-20 bg-slate-900 text-white flex flex-col items-center py-6 gap-6 z-20 shadow-xl">
@@ -27,6 +29,11 @@ export default function Sidebar() {
             {/* Nav Items */}
             <nav className="flex-1 flex flex-col gap-4 w-full px-3">
                 {menuItems.map((item) => {
+                    // Check permission if item has one
+                    if (item.permission && !hasPermission(item.permission)) {
+                        return null
+                    }
+
                     const Icon = item.icon
                     const isActive = pathname === item.href
 

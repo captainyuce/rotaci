@@ -47,6 +47,7 @@ export default function CalendarPage() {
         const { data, error } = await supabase
             .from('shipments')
             .select('*, vehicle:vehicles(plate)')
+            .neq('status', 'production')
             .gte('delivery_date', toTurkeyDateString(startOfMonth))
             .lte('delivery_date', toTurkeyDateString(endOfMonth))
 
@@ -122,6 +123,7 @@ export default function CalendarPage() {
         let query = supabase
             .from('shipments')
             .select('*, vehicle:vehicles(plate)')
+            .neq('status', 'production')
             .gte('delivery_date', searchFilters.startDate)
             .lte('delivery_date', searchFilters.endDate)
 
