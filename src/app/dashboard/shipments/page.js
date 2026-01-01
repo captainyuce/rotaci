@@ -106,23 +106,26 @@ export default function ShipmentsPage() {
             console.log('Updating shipment:', editingShipment.id)
 
             // Sanitize formData to exclude joined fields like 'creator'
-            const updates = {
+            const shipmentData = {
                 customer_name: formData.customer_name,
                 delivery_address: formData.delivery_address,
-                weight: formData.weight,
-                delivery_time: formData.delivery_time,
+                delivery_lat: parseFloat(formData.delivery_lat),
+                delivery_lng: parseFloat(formData.delivery_lng),
+                weight: parseInt(formData.weight),
                 delivery_date: formData.delivery_date,
-                notes: formData.notes,
-                delivery_lat: formData.delivery_lat,
-                delivery_lng: formData.delivery_lng,
-                type: formData.type,
+                delivery_time: formData.delivery_time,
                 opening_time: formData.opening_time,
-                closing_time: formData.closing_time
+                closing_time: formData.closing_time,
+                notes: formData.notes,
+                type: formData.type || 'delivery',
+                status: editingShipment ? editingShipment.status : 'pending',
+                target_subcontractor_id: formData.is_subcontractor ? formData.target_subcontractor_id : null,
+                product_info: formData.is_subcontractor ? formData.product_info : null
             }
 
             const { error } = await supabase
                 .from('shipments')
-                .update(updates)
+                .update(shipmentData)
                 .eq('id', editingShipment.id)
 
             if (error) {
@@ -646,7 +649,7 @@ export default function ShipmentsPage() {
                                 {/* Shipment Type */}
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium text-slate-700 mb-1">İşlem Türü</label>
-                                    <div className="flex gap-4">
+                                    <div className="flex gap-4 mb-4">
                                         <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.type === 'delivery'
                                             ? 'bg-blue-50 border-blue-500 text-blue-700'
                                             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -678,6 +681,53 @@ export default function ShipmentsPage() {
                                             <span className="font-medium">Mal Al (Toplama)</span>
                                         </label>
                                     </div>
+
+                                    {/* Subcontractor Toggle */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <input
+                                            type="checkbox"
+                                            id="isSubcontractor"
+                                            className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                            checked={formData.is_subcontractor || false}
+                                            onChange={e => setFormData({ ...formData, is_subcontractor: e.target.checked })}
+                                        />
+                                        <label htmlFor="isSubcontractor" className="text-sm font-medium text-slate-700">
+                                            Fasona Sevk (Üretim İçin Gönderim)
+                                        </label>
+                                    </div>
+
+                                    {formData.is_subcontractor && (
+                                        <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-amber-800 mb-1">Fasoncu Seçin</label>
+                                                <select
+                                                    className="w-full p-2 border border-amber-300 rounded-lg bg-white"
+                                                    value={formData.target_subcontractor_id || ''}
+                                                    onChange={e => setFormData({ ...formData, target_subcontractor_id: e.target.value })}
+                                                    required={formData.is_subcontractor}
+                                                >
+                                                    <option value="">-- Seçiniz --</option>
+                                                    {users
+                                                        .filter(u => u.role === 'subcontractor')
+                                                        .map(u => (
+                                                            <option key={u.id} value={u.id}>{u.full_name}</option>
+                                                        ))
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-amber-800 mb-1">Ürün Bilgisi</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full p-2 border border-amber-300 rounded-lg"
+                                                    value={formData.product_info || ''}
+                                                    onChange={e => setFormData({ ...formData, product_info: e.target.value })}
+                                                    placeholder="Örn: X Kumaş, Y İplik..."
+                                                    required={formData.is_subcontractor}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Customer Name */}

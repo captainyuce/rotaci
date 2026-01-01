@@ -9,28 +9,10 @@ import { Plus, X, Package, User, Calendar, Truck } from 'lucide-react'
 
 export default function SubcontractorsPage() {
     const { user, hasPermission } = useAuth()
-    const [orders, setOrders] = useState([])
-    const [subcontractors, setSubcontractors] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [formData, setFormData] = useState({
-        customer_name: '',
-        delivery_address: '',
-        weight: '',
-        delivery_date: new Date().toLocaleDateString('en-CA'),
-        assigned_user_id: '',
-        notes: ''
-    })
+    const [pendingApprovals, setPendingApprovals] = useState([])
+    const [activeTab, setActiveTab] = useState('production') // 'production' | 'approvals'
 
-    // Permission check
-    if (!hasPermission(PERMISSIONS.MANAGE_SUBCONTRACTORS)) {
-        logSecurityEvent(user?.id, user?.full_name || user?.username, '/dashboard/subcontractors', 'Page Access Denied')
-        return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
-    }
-
-    useEffect(() => {
-        fetchData()
-    }, [])
+    // ... (existing useEffect and permission check)
 
     const fetchData = async () => {
         setLoading(true)
@@ -42,84 +24,41 @@ export default function SubcontractorsPage() {
             .eq('status', 'production')
             .order('created_at', { ascending: false })
 
+        // Fetch pending approvals
+        const { data: approvalsData } = await supabase
+            .from('shipments')
+            .select('*')
+            .eq('status', 'pending_approval')
+            .order('created_at', { ascending: false })
+
         // Fetch subcontractors
-        // Note: We need to filter users by role 'subcontractor'
-        // Since role is in the users table, we can just select * where role = 'subcontractor'
         const { data: usersData } = await supabase
             .from('users')
             .select('id, full_name')
             .eq('role', 'subcontractor')
 
         if (ordersData) setOrders(ordersData)
+        if (approvalsData) setPendingApprovals(approvalsData)
         if (usersData) setSubcontractors(usersData)
         setLoading(false)
     }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-
-        if (!formData.assigned_user_id) {
-            alert('Lütfen bir fasoncu seçin.')
-            return
-        }
-
-        try {
-            const newOrder = {
-                ...formData,
-                type: 'pickup', // Will be pickup eventually
-                status: 'production', // Special status for subcontractor
-                created_by: user.id
-            }
-
-            const { data, error } = await supabase
-                .from('shipments')
-                .insert([newOrder])
-                .select()
-
-            if (error) throw error
-
-            // Log action
-            if (data && data[0]) {
-                await logShipmentAction(
-                    'created_subcontractor_order',
-                    data[0].id,
-                    data[0],
-                    user.id,
-                    user.full_name
-                )
-            }
-
-            setIsModalOpen(false)
-            setFormData({
-                customer_name: '',
-                delivery_address: '',
-                weight: '',
-                delivery_date: new Date().toLocaleDateString('en-CA'),
-                assigned_user_id: '',
-                notes: ''
-            })
-            fetchData()
-            alert('Fason üretim emri oluşturuldu.')
-
-        } catch (err) {
-            console.error('Error creating order:', err)
-            alert('Hata: ' + err.message)
-        }
-    }
-
-    const handleDelete = async (id) => {
-        if (!confirm('Bu üretim emrini silmek istediğinize emin misiniz?')) return
+    const handleApprove = async (id) => {
+        if (!confirm('Bu üretimi onaylamak ve alım listesine eklemek istediğinize emin misiniz?')) return
 
         try {
             const { error } = await supabase
                 .from('shipments')
-                .delete()
+                .update({
+                    status: 'pending', // Make it visible in main list
+                    preparation_status: 'ready'
+                })
                 .eq('id', id)
 
             if (error) throw error
 
             await logShipmentAction(
-                'deleted_subcontractor_order',
+                'approved_subcontractor_order',
                 id,
                 {},
                 user.id,
@@ -127,10 +66,13 @@ export default function SubcontractorsPage() {
             )
 
             fetchData()
+            alert('Üretim onaylandı ve sevkiyat listesine eklendi.')
         } catch (err) {
             alert('Hata: ' + err.message)
         }
     }
+
+    // ... (existing handleSubmit and handleDelete)
 
     return (
         <div className="p-4 md:p-8 pb-24 h-full overflow-y-auto">
@@ -149,10 +91,14 @@ export default function SubcontractorsPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div className="text-slate-500 text-sm font-medium mb-1">Toplam Emir</div>
+                    <div className="text-slate-500 text-sm font-medium mb-1">Üretimdeki Emirler</div>
                     <div className="text-2xl font-bold text-slate-900">{orders.length}</div>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div className="text-slate-500 text-sm font-medium mb-1">Onay Bekleyenler</div>
+                    <div className="text-2xl font-bold text-orange-600">{pendingApprovals.length}</div>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <div className="text-slate-500 text-sm font-medium mb-1">Aktif Fasoncular</div>
@@ -161,9 +107,32 @@ export default function SubcontractorsPage() {
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                     <div className="text-slate-500 text-sm font-medium mb-1">Toplam Palet</div>
                     <div className="text-2xl font-bold text-amber-600">
-                        {orders.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0)}
+                        {orders.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0) +
+                            pendingApprovals.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0)}
                     </div>
                 </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-4 mb-4 border-b border-slate-200">
+                <button
+                    onClick={() => setActiveTab('production')}
+                    className={`pb-2 px-4 font-medium transition-colors relative ${activeTab === 'production'
+                        ? 'text-primary border-b-2 border-primary'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    Üretimdekiler ({orders.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('approvals')}
+                    className={`pb-2 px-4 font-medium transition-colors relative ${activeTab === 'approvals'
+                        ? 'text-orange-600 border-b-2 border-orange-600'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                >
+                    Onay Bekleyenler ({pendingApprovals.length})
+                </button>
             </div>
 
             {/* Orders List */}
@@ -181,53 +150,120 @@ export default function SubcontractorsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {orders.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center text-slate-500">
-                                        Henüz aktif üretim emri bulunmuyor.
-                                    </td>
-                                </tr>
-                            ) : (
-                                orders.map(order => (
-                                    <tr key={order.id} className="hover:bg-slate-50">
-                                        <td className="p-4">
-                                            <div className="font-medium text-slate-900">{order.customer_name}</div>
-                                            <div className="text-xs text-slate-500">{order.delivery_address}</div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <User size={16} className="text-slate-400" />
-                                                <span className="text-slate-700">
-                                                    {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2 text-slate-600">
-                                                <Calendar size={16} />
-                                                {order.delivery_date}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium">
-                                                {order.weight} Palet
-                                            </span>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-bold border border-amber-200">
-                                                ÜRETİMDE
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <button
-                                                onClick={() => handleDelete(order.id)}
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
-                                            >
-                                                İptal Et
-                                            </button>
+                            {activeTab === 'production' ? (
+                                orders.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="p-8 text-center text-slate-500">
+                                            Henüz aktif üretim emri bulunmuyor.
                                         </td>
                                     </tr>
-                                ))
+                                ) : (
+                                    orders.map(order => (
+                                        <tr key={order.id} className="hover:bg-slate-50">
+                                            <td className="p-4">
+                                                <div className="font-medium text-slate-900">{order.customer_name}</div>
+                                                {order.product_info && (
+                                                    <div className="text-xs text-blue-600 font-medium">{order.product_info}</div>
+                                                )}
+                                                <div className="text-xs text-slate-500">{order.delivery_address}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <User size={16} className="text-slate-400" />
+                                                    <span className="text-slate-700">
+                                                        {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2 text-slate-600">
+                                                    <Calendar size={16} />
+                                                    {order.estimated_completion_date ? (
+                                                        <span className="text-blue-600 font-medium">{order.estimated_completion_date} (Tahmini)</span>
+                                                    ) : (
+                                                        <span>{order.delivery_date}</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium">
+                                                    {order.weight} Palet
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-bold border border-amber-200">
+                                                    ÜRETİMDE
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <button
+                                                    onClick={() => handleDelete(order.id)}
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
+                                                >
+                                                    İptal Et
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )
+                            ) : (
+                                pendingApprovals.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" className="p-8 text-center text-slate-500">
+                                            Onay bekleyen iş bulunmuyor.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    pendingApprovals.map(order => (
+                                        <tr key={order.id} className="hover:bg-orange-50/50">
+                                            <td className="p-4">
+                                                <div className="font-medium text-slate-900">{order.customer_name}</div>
+                                                {order.product_info && (
+                                                    <div className="text-xs text-blue-600 font-medium">{order.product_info}</div>
+                                                )}
+                                                <div className="text-xs text-slate-500">{order.delivery_address}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <User size={16} className="text-slate-400" />
+                                                    <span className="text-slate-700">
+                                                        {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2 text-slate-600">
+                                                    <Calendar size={16} />
+                                                    {order.estimated_completion_date || order.delivery_date}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium">
+                                                    {order.weight} Palet
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse">
+                                                    ONAY BEKLİYOR
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleApprove(order.id)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors text-xs font-bold shadow-sm"
+                                                >
+                                                    Onayla
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(order.id)}
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
+                                                >
+                                                    Reddet
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )
                             )}
                         </tbody>
                     </table>

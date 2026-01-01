@@ -54,14 +54,14 @@ export default function SubcontractorPage() {
         if (!confirm('Bu siparişi "Hazır" olarak işaretlemek istediğinize emin misiniz? Sistemde otomatik olarak alım talebi oluşturulacaktır.')) return
 
         try {
-            // Update shipment to be a pending pickup
+            // Update shipment to be pending approval
             const updates = {
-                status: 'pending',
+                status: 'pending_approval',
                 type: 'pickup',
                 preparation_status: 'ready',
                 prepared_by_user_id: user.id,
                 prepared_by_name: user.full_name,
-                notes: shipment.notes ? `${shipment.notes}\n[Fason] Üretim tamamlandı.` : '[Fason] Üretim tamamlandı.'
+                notes: shipment.notes ? `${shipment.notes}\n[Fason] Üretim tamamlandı, onay bekleniyor.` : '[Fason] Üretim tamamlandı, onay bekleniyor.'
             }
 
             const { error } = await supabase
@@ -151,6 +151,9 @@ export default function SubcontractorPage() {
                                             <span className="text-xs text-slate-400">#{shipment.id.slice(0, 8)}</span>
                                         </div>
                                         <h3 className="text-lg font-bold text-slate-900 mb-1">{shipment.customer_name}</h3>
+                                        {shipment.product_info && (
+                                            <p className="text-sm font-medium text-blue-700 mb-1">📦 {shipment.product_info}</p>
+                                        )}
                                         <p className="text-slate-600 text-sm mb-2">{shipment.delivery_address}</p>
                                         <div className="flex flex-wrap gap-3 text-sm text-slate-500">
                                             <span className="bg-slate-100 px-2 py-1 rounded">📦 {shipment.weight} Palet</span>
@@ -158,6 +161,39 @@ export default function SubcontractorPage() {
                                                 <span className="bg-slate-100 px-2 py-1 rounded">📅 Teslim: {shipment.delivery_date}</span>
                                             )}
                                         </div>
+
+                                        {/* Estimated Date Input */}
+                                        <div className="mt-3 flex items-center gap-2">
+                                            <label className="text-xs font-medium text-slate-600">Tahmini Bitiş:</label>
+                                            <input
+                                                type="date"
+                                                className="text-sm border rounded px-2 py-1"
+                                                defaultValue={shipment.estimated_completion_date || ''}
+                                                onChange={async (e) => {
+                                                    const date = e.target.value
+                                                    if (!date) return
+
+                                                    try {
+                                                        const { error } = await supabase
+                                                            .from('shipments')
+                                                            .update({ estimated_completion_date: date })
+                                                            .eq('id', shipment.id)
+
+                                                        if (error) throw error
+                                                        // Optionally, update the local state to reflect the change immediately
+                                                        setShipments(prevShipments =>
+                                                            prevShipments.map(s =>
+                                                                s.id === shipment.id ? { ...s, estimated_completion_date: date } : s
+                                                            )
+                                                        );
+                                                    } catch (err) {
+                                                        console.error('Error updating date:', err)
+                                                        alert('Tarih güncellenemedi')
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+
                                         {shipment.notes && (
                                             <div className="mt-3 text-sm bg-yellow-50 text-yellow-800 p-2 rounded border border-yellow-100">
                                                 <strong>Not:</strong> {shipment.notes}
@@ -170,7 +206,7 @@ export default function SubcontractorPage() {
                                         className="w-full md:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-sm shadow-green-200 transition-all transform active:scale-95 flex items-center justify-center gap-2"
                                     >
                                         <CheckCircle size={20} />
-                                        Hazır & Gönder
+                                        Hazır (Onaya Gönder)
                                     </button>
                                 </div>
                             ))}

@@ -134,49 +134,52 @@ export default function DriverPage() {
     }
 
     const updateStatus = async (id, status) => {
-        const { data, error } = await supabase
-            .from('shipments')
-            .update({
-                status,
-                delivered_at: status === 'delivered' ? new Date().toISOString() : null,
-                // STRICT RULE: If delivered, update delivery_date to TODAY regardless of original schedule
-                delivery_date: status === 'delivered' ? new Date().toLocaleDateString('en-CA') : undefined
-            })
-            .eq('id', id)
-            .select()
+        try {
+            // Get current location if available
+            let lat = null
+            let lng = null
 
-        if (!error) {
-            try {
-                // Get driver name
-                const { data: driverData } = await supabase
-                    .from('vehicles')
-                    .select('driver_name')
-                    .eq('id', user.id)
-                    .single()
-
-                const driverName = driverData?.driver_name || 'Sürücü'
-
-                // Fetch full shipment data
-                const { data: fullShipment } = await supabase
-                    .from('shipments')
-                    .select('*')
-                    .eq('id', id)
-                    .single()
-
-                await logShipmentAction(
-                    status,
-                    id,
-                    fullShipment,
-                    user.id,
-                    driverName
-                )
-            } catch (err) {
-                console.error('Error logging status change:', err)
+            if (navigator.geolocation) {
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+                    })
+                    lat = position.coords.latitude
+                    lng = position.coords.longitude
+                } catch (e) {
+                    console.warn('Could not get location for status update:', e)
+                }
             }
-        }
 
-        if (status === 'delivered') {
-            // Logic to decrease load would go here
+            const response = await fetch('/api/shipments/update-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    shipmentId: id,
+                    status,
+                    userId: user.id,
+                    lat,
+                    lng
+                }),
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Güncelleme başarısız')
+            }
+
+            // Log action (Client side logging is redundant if API does it, but keeping for now or removing if API handles it)
+            // Ideally API should handle logging to ensure consistency. 
+            // For now, we'll trust the API and just refresh.
+
+            fetchJobs()
+
+        } catch (err) {
+            console.error('Error updating status:', err)
+            alert('Hata: ' + err.message)
         }
     }
 
