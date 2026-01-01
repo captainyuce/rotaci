@@ -3,10 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { ROLES } from '@/lib/permissions'
 
 export default function LoginPage() {
     const router = useRouter()
-    const [loginMode, setLoginMode] = useState('manager') // 'manager' | 'driver'
+    const [loginMode, setLoginMode] = useState('manager') // 'manager' | 'worker' | 'subcontractor' | 'driver'
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -15,8 +16,8 @@ export default function LoginPage() {
         e.preventDefault()
         setError('')
 
-        if (loginMode === 'manager' || loginMode === 'worker') {
-            // Manager/Worker login
+        if (loginMode === 'manager' || loginMode === 'worker' || loginMode === 'subcontractor') {
+            // Manager/Worker/Subcontractor login
             const cleanUsername = username.trim()
             const cleanPassword = password.trim()
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
                     username: 'demo_admin',
                     role: 'manager',
                     full_name: 'Demo Admin',
-                    permissions: ['view', 'manage_shipments', 'assign_vehicles', 'view_reports']
+                    permissions: ROLES.MANAGER.permissions
                 }
 
                 localStorage.setItem('user', JSON.stringify(demoUser))
@@ -58,7 +59,7 @@ export default function LoginPage() {
                     username: 'demo_worker',
                     role: 'worker',
                     full_name: 'Demo Worker',
-                    permissions: ['view', 'prepare_shipments']
+                    permissions: ROLES.WORKER.permissions
                 }
                 localStorage.setItem('user', JSON.stringify(demoUser))
                 localStorage.setItem('role', 'worker')
@@ -71,22 +72,30 @@ export default function LoginPage() {
                 const user = result.user
 
                 // Role validation
-                if (loginMode === 'manager' && user.role === 'worker') {
-                    setError('Çalışan girişi için lütfen "Çalışan" sekmesini kullanın.')
+                if (loginMode === 'manager' && user.role !== 'manager' && user.role !== 'admin') {
+                    setError('Bu hesaba yönetici girişi yapılamaz.')
                     return
                 }
                 if (loginMode === 'worker' && user.role !== 'worker') {
-                    setError('Yönetici girişi için lütfen "Yönetici" sekmesini kullanın.')
+                    setError('Bu hesaba çalışan girişi yapılamaz.')
+                    return
+                }
+                if (loginMode === 'subcontractor' && user.role !== 'subcontractor') {
+                    setError('Bu hesaba fasoncu girişi yapılamaz.')
                     return
                 }
 
                 console.log('Login Success:', { username: user.username, role: user.role })
 
-                // Determine permissions
-                let permissions = user.permissions || []
-                if (permissions.length === 0 && user.role === 'worker') {
-                    // Default permissions for worker if not in DB
-                    permissions = ['view', 'prepare_shipments']
+                // Determine permissions from predefined ROLES to ensure they are up to date
+                let permissions = []
+                const roleKey = user.role ? user.role.toUpperCase() : 'VIEWER'
+
+                if (ROLES[roleKey]) {
+                    permissions = ROLES[roleKey].permissions
+                } else {
+                    // Fallback to DB permissions or empty
+                    permissions = user.permissions || []
                 }
 
                 // Store user data in localStorage
@@ -97,6 +106,8 @@ export default function LoginPage() {
                 // Redirect based on role
                 if (user.role === 'worker') {
                     window.location.href = '/worker'
+                } else if (user.role === 'subcontractor') {
+                    window.location.href = '/subcontractor'
                 } else {
                     window.location.href = '/dashboard'
                 }
@@ -165,10 +176,10 @@ export default function LoginPage() {
 
                 <div className="bg-white rounded-2xl shadow-xl p-8">
                     {/* Tab Switcher */}
-                    <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-lg">
+                    <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-lg overflow-x-auto">
                         <button
                             onClick={() => setLoginMode('manager')}
-                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm ${loginMode === 'manager'
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm whitespace-nowrap ${loginMode === 'manager'
                                 ? 'bg-white text-primary shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
@@ -177,7 +188,7 @@ export default function LoginPage() {
                         </button>
                         <button
                             onClick={() => setLoginMode('worker')}
-                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm ${loginMode === 'worker'
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm whitespace-nowrap ${loginMode === 'worker'
                                 ? 'bg-white text-blue-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
@@ -185,8 +196,17 @@ export default function LoginPage() {
                             Çalışan
                         </button>
                         <button
+                            onClick={() => setLoginMode('subcontractor')}
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm whitespace-nowrap ${loginMode === 'subcontractor'
+                                ? 'bg-white text-amber-600 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            Fasoncu
+                        </button>
+                        <button
                             onClick={() => setLoginMode('driver')}
-                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm ${loginMode === 'driver'
+                            className={`flex-1 py-2 px-2 rounded-md font-medium transition-all text-sm whitespace-nowrap ${loginMode === 'driver'
                                 ? 'bg-white text-green-600 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                                 }`}
@@ -204,14 +224,14 @@ export default function LoginPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">
-                                {(loginMode === 'manager' || loginMode === 'worker') ? 'Kullanıcı Adı' : 'Plaka'}
+                                {(loginMode === 'driver') ? 'Plaka' : 'Kullanıcı Adı'}
                             </label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 placeholder:text-slate-400"
-                                placeholder={(loginMode === 'manager' || loginMode === 'worker') ? 'Kullanıcı Adı' : '34 ABC 123'}
+                                placeholder={(loginMode === 'driver') ? '34 ABC 123' : 'Kullanıcı Adı'}
                                 required
                             />
                         </div>
