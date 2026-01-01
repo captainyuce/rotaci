@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Initialize Supabase client with service role key for admin privileges
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
 export async function POST(request) {
+    // Initialize Supabase client with service role key for admin privileges
+    // We do this inside the handler to avoid build-time errors if the key is missing
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+
     try {
         const { shipmentId, status, userId, notes, lat, lng } = await request.json()
 
