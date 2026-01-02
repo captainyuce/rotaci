@@ -161,9 +161,27 @@ export default function ShipmentsPage() {
             console.log('Update logged successfully')
         } else {
             // Create new shipment
+            const shipmentData = {
+                customer_name: formData.customer_name,
+                delivery_address: formData.delivery_address,
+                delivery_lat: parseFloat(formData.delivery_lat),
+                delivery_lng: parseFloat(formData.delivery_lng),
+                weight: parseInt(formData.weight),
+                delivery_date: formData.delivery_date,
+                delivery_time: formData.delivery_time,
+                opening_time: formData.opening_time,
+                closing_time: formData.closing_time,
+                notes: formData.notes,
+                type: formData.type || 'delivery',
+                status: 'pending',
+                target_subcontractor_id: formData.is_subcontractor ? formData.target_subcontractor_id : null,
+                product_info: formData.is_subcontractor ? formData.product_info : null,
+                created_by: user?.id
+            }
+
             const { data, error } = await supabase
                 .from('shipments')
-                .insert([{ ...formData, created_by: user?.id }])
+                .insert([shipmentData])
                 .select()
 
             if (error) {
