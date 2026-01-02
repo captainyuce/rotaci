@@ -36,18 +36,21 @@ export default function DashboardLayout({ children }) {
     const currentRole = role?.toLowerCase()
     if (!user || (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher')) return null
 
+    const { startTutorial } = useTutorial()
+
     const allMenuItems = [
-        { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW },
+        { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW, id: 'sidebar-dashboard' },
         {
             icon: Package,
             label: 'Sevkiyatlar',
             href: '/dashboard/shipments',
             permissions: [PERMISSIONS.CREATE_SHIPMENTS, PERMISSIONS.EDIT_SHIPMENTS, PERMISSIONS.DELETE_SHIPMENTS],
-            checkAny: true
+            checkAny: true,
+            id: 'sidebar-shipments'
         },
         { icon: Package, label: 'Depo / Hazırlık', href: '/dashboard/prepare', permission: PERMISSIONS.PREPARE_SHIPMENTS },
         { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar', permission: PERMISSIONS.VIEW },
-        { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS },
+        { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS, id: 'sidebar-subcontractors' },
         { icon: ClipboardList, label: 'Atamalar', href: '/dashboard/assignments', permission: PERMISSIONS.ASSIGN_VEHICLES },
         { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles', permission: PERMISSIONS.MANAGE_VEHICLES },
         { icon: MapPin, label: 'Adresler', href: '/dashboard/addresses', permission: PERMISSIONS.MANAGE_ADDRESSES },
@@ -79,7 +82,6 @@ export default function DashboardLayout({ children }) {
         <DashboardProvider>
             <TutorialProvider>
                 <div className="relative h-screen w-screen overflow-hidden">
-                    {/* ... existing content ... */}
                     {/* Full Screen Map Background */}
                     <div className="absolute inset-0 z-0">
                         <MapComponent />
@@ -87,6 +89,7 @@ export default function DashboardLayout({ children }) {
 
                     {/* Hamburger Menu Button */}
                     <button
+                        id="hamburger-menu"
                         onClick={() => setMenuOpen(!menuOpen)}
                         className="fixed top-4 left-4 z-50 bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200"
                     >
@@ -127,6 +130,7 @@ export default function DashboardLayout({ children }) {
                                     return (
                                         <Link
                                             key={item.href}
+                                            id={item.id}
                                             href={item.href}
                                             onClick={() => setMenuOpen(false)}
                                             className={`flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all ${isActive
@@ -142,6 +146,18 @@ export default function DashboardLayout({ children }) {
                             </nav>
 
                             <div className="flex flex-col items-center gap-4 py-4 border-t border-slate-100">
+                                <button
+                                    onClick={() => {
+                                        setMenuOpen(false)
+                                        startTutorial()
+                                    }}
+                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                    title="Yardım / Turu Başlat"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <HelpCircle size={24} />
+                                    </div>
+                                </button>
                                 <button
                                     onClick={signOut}
                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"

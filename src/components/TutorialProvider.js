@@ -153,13 +153,144 @@ export function TutorialProvider({ children }) {
     const startTutorial = () => {
         if (!driverObj || !role) return
 
-        const roleSteps = steps[role] || steps['manager'] // Fallback to manager if role not found
+        // Helper to ensure sidebar is open
+        const ensureSidebarOpen = () => {
+            const sidebar = document.getElementById('sidebar-dashboard')
+            const hamburger = document.getElementById('hamburger-menu')
+            // If sidebar link is not visible/present, try clicking hamburger
+            if (!sidebar || sidebar.offsetParent === null) {
+                if (hamburger) hamburger.click()
+            }
+        }
 
-        // Filter steps to only include elements that exist in DOM
-        // This prevents the tutorial from breaking if an element is missing
-        // But driver.js handles missing elements gracefully usually, let's just pass them.
-        // Actually, for better UX, let's try to find them.
+        // Helper to switch tabs for driver
+        const switchDriverTab = (tabId) => {
+            const tabBtn = document.getElementById(tabId)
+            if (tabBtn) tabBtn.click()
+        }
 
+        const steps = {
+            manager: [
+                {
+                    element: '#hamburger-menu',
+                    popover: {
+                        title: 'Menü',
+                        description: 'Menüyü açıp kapatmak için burayı kullanabilirsiniz.',
+                        side: 'bottom',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '#sidebar-dashboard',
+                    popover: {
+                        title: 'Genel Bakış',
+                        description: 'İşletmenizin genel durumunu buradan takip edebilirsiniz.',
+                        side: 'right',
+                        align: 'start'
+                    },
+                    onHighlightStarted: ensureSidebarOpen
+                },
+                {
+                    element: '#sidebar-shipments',
+                    popover: {
+                        title: 'Sevkiyat Yönetimi',
+                        description: 'Tüm sevkiyatları buradan planlayın.',
+                        side: 'right',
+                        align: 'start'
+                    },
+                    onHighlightStarted: ensureSidebarOpen
+                },
+                {
+                    element: '#new-shipment-btn',
+                    popover: {
+                        title: 'Yeni Sevkiyat',
+                        description: 'Hızlıca yeni bir sevkiyat oluşturun.',
+                        side: 'bottom',
+                        align: 'center'
+                    },
+                    // Ensure we are on shipments page? Or just let it fail gracefully if not?
+                    // Ideally we'd navigate, but that's complex. 
+                    // For now, we assume user starts on dashboard or follows flow.
+                },
+                {
+                    element: '#sidebar-subcontractors',
+                    popover: {
+                        title: 'Fason Takibi',
+                        description: 'Fason işleri buradan yönetin.',
+                        side: 'right',
+                        align: 'start'
+                    },
+                    onHighlightStarted: ensureSidebarOpen
+                },
+                {
+                    element: '#sidebar-help', // This might be hidden if menu closed
+                    popover: {
+                        title: 'Yardım',
+                        description: 'Turu tekrar başlatmak için.',
+                        side: 'right',
+                        align: 'start'
+                    },
+                    onHighlightStarted: ensureSidebarOpen
+                }
+            ],
+            driver: [
+                {
+                    element: '#sidebar-dashboard', // "İşlerim" header in driver page
+                    popover: {
+                        title: 'İş Listesi',
+                        description: 'Size atanan işleri burada görürsünüz.',
+                        side: 'bottom',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '#driver-map-view',
+                    popover: {
+                        title: 'Harita',
+                        description: 'Harita görünümüne geçmek için tıklayın.',
+                        side: 'top',
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#driver-status-btn',
+                    popover: {
+                        title: 'Durum Bildir',
+                        description: 'İşi tamamladığınızda buradan bildirin.',
+                        side: 'top',
+                        align: 'center'
+                    },
+                    onHighlightStarted: () => {
+                        // Ensure we are on a tab where this might be visible? 
+                        // Actually status btn is in the card list, so 'new' or 'acknowledged' tab.
+                        // We can force click the 'new' tab if needed.
+                        // But let's just let it be for now as it's complex to find a specific job card.
+                    }
+                }
+            ],
+            subcontractor: [
+                {
+                    element: '#subcontractor-orders',
+                    popover: {
+                        title: 'Siparişler',
+                        description: 'Size gelen üretim emirleri burada listelenir.',
+                        side: 'top',
+                        align: 'center'
+                    }
+                },
+                {
+                    element: '#subcontractor-ready-btn',
+                    popover: {
+                        title: 'Hazırla',
+                        description: 'Üretim bittiğinde "Hazır" diyerek bildirin.',
+                        side: 'left',
+                        align: 'center'
+                    }
+                }
+            ]
+        }
+
+        const roleSteps = steps[role] || steps['manager']
         driverObj.setSteps(roleSteps)
         driverObj.drive()
     }
