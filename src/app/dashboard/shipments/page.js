@@ -504,6 +504,34 @@ export default function ShipmentsPage() {
                             </table>
                         </div>
                     )}
+
+                    {/* Past / Overdue Shipments */}
+                    {pastShipments.length > 0 && (
+                        <div className="mb-4">
+                            <div className="sticky top-0 bg-orange-100 px-4 py-2 border-b border-orange-200 z-10">
+                                <h3 className="font-bold text-orange-900 text-sm flex items-center gap-2">
+                                    ⚠️ Geçmiş / Bekleyen ({pastShipments.length})
+                                </h3>
+                            </div>
+                            <table className="w-full">
+                                <thead className="bg-slate-50">
+                                    <tr className="text-left text-xs text-slate-600">
+                                        <th className="p-3 font-medium">Müşteri</th>
+                                        <th className="p-3 font-medium">Adres</th>
+                                        <th className="p-3 font-medium">Palet</th>
+                                        <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
+                                        <th className="p-3 font-medium">Durum</th>
+                                        <th className="p-3 font-medium"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {pastShipments.map(renderShipmentRow)}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
                     {/* Today's Shipments */}
                     {todayShipments.length > 0 && (
                         <div className="mb-4">
