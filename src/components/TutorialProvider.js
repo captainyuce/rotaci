@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { useAuth } from './AuthProvider'
@@ -16,6 +16,7 @@ export function useTutorial() {
 export function TutorialProvider({ children }) {
     const { user, role, hasPermission } = useAuth()
     const router = useRouter()
+    const pathname = usePathname()
     // Remove driverObj state
     // const [driverObj, setDriverObj] = useState(null) 
 
@@ -47,7 +48,7 @@ export function TutorialProvider({ children }) {
         // Create driver instance on demand
         const driverObj = driver({
             showProgress: true,
-            animate: true,
+            animate: false, // Disable animation to prevent issues
             allowClose: true,
             doneBtnText: 'Tamamla',
             closeBtnText: 'Kapat',
@@ -60,6 +61,10 @@ export function TutorialProvider({ children }) {
                     localStorage.setItem('hasSeenTutorial_v1', 'true')
                 }
             },
+            onNextClick: () => {
+                console.log('TutorialProvider: Next button clicked')
+                driverObj.moveNext()
+            }
         })
 
         // Helper to ensure sidebar is open
@@ -81,6 +86,8 @@ export function TutorialProvider({ children }) {
         }
 
         const handleHighlightStarted = (element, step, options) => {
+            console.log('TutorialProvider: Highlight started', { element, step })
+
             if (!element) return // For steps with no element (modal)
 
             const isSidebarItem = element.startsWith('#sidebar-')
@@ -93,7 +100,12 @@ export function TutorialProvider({ children }) {
             }
 
             if (step.route) {
-                router.push(step.route)
+                if (pathname !== step.route) {
+                    console.log('TutorialProvider: Navigating to', step.route)
+                    router.push(step.route)
+                } else {
+                    console.log('TutorialProvider: Already on route', step.route)
+                }
             }
         }
 
@@ -102,8 +114,7 @@ export function TutorialProvider({ children }) {
                 popover: {
                     title: 'Rota Optimizasyon Paneline Hoşgeldiniz',
                     description: 'Bu kısa tur ile yönetim panelini ve özelliklerini hızlıca keşfedebilirsiniz.',
-                    side: 'center',
-                    align: 'center'
+                    // Removed side/align center as it might be invalid for modal steps
                 }
             },
             {
