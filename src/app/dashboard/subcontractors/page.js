@@ -153,7 +153,9 @@ export default function SubcontractorsPage() {
                 .from('shipments')
                 .update({
                     status: 'pending', // Make it visible in main list
-                    preparation_status: 'ready'
+                    preparation_status: 'ready',
+                    prepared_by: user.id,
+                    prepared_by_name: user.full_name
                 })
                 .eq('id', id)
 

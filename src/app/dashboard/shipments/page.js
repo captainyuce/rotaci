@@ -430,7 +430,13 @@ export default function ShipmentsPage() {
                     )}
                 </td>
                 <td className="p-3 text-slate-600 text-xs">
-                    {users.find(u => u.id === shipment.created_by)?.full_name || '-'}
+                    {shipment.preparation_status === 'ready' && shipment.prepared_by_name ? (
+                        <span className="text-green-700 font-medium" title="Onaylayan">
+                            {shipment.prepared_by_name}
+                        </span>
+                    ) : (
+                        users.find(u => u.id === shipment.created_by)?.full_name || '-'
+                    )}
                 </td>
                 <td className="p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' || shipment.status === 'unloaded' ? 'bg-green-100 text-green-700' :
