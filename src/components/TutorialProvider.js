@@ -48,7 +48,7 @@ export function TutorialProvider({ children }) {
         // Create driver instance on demand
         const driverObj = driver({
             showProgress: true,
-            animate: false, // Disable animation to prevent issues
+            animate: true,
             allowClose: true,
             doneBtnText: 'Tamamla',
             closeBtnText: 'Kapat',
