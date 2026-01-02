@@ -340,6 +340,10 @@ export default function ShipmentsPage() {
                 // Convert UTC timestamp to Turkey date string
                 return toTurkeyDateString(shipment.delivered_at)
             }
+            // Ensure delivery_date is just the date part YYYY-MM-DD
+            if (shipment.delivery_date && shipment.delivery_date.includes('T')) {
+                return shipment.delivery_date.split('T')[0]
+            }
             return shipment.delivery_date
         }
 
@@ -348,10 +352,16 @@ export default function ShipmentsPage() {
         const futureShipments = activeShipments.filter(s => getEffectiveDate(s) > tomorrow)
         const pastShipments = activeShipments.filter(s => getEffectiveDate(s) < today)
 
-        return { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments }
+        // Catch-all for any date issues (e.g. null date or mismatch)
+        const otherShipments = activeShipments.filter(s => {
+            const d = getEffectiveDate(s)
+            return d !== today && d !== tomorrow && !(d > tomorrow) && !(d < today)
+        })
+
+        return { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments, otherShipments }
     }
 
-    const { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments } = groupShipmentsByDate()
+    const { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments, otherShipments } = groupShipmentsByDate()
 
     const renderShipmentRow = (shipment) => {
         const assignedVehicle = vehicles.find(v => v.id === shipment.assigned_vehicle_id)
@@ -602,6 +612,31 @@ export default function ShipmentsPage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {futureShipments.map(renderShipmentRow)}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Other / Uncategorized Shipments */}
+                    {otherShipments && otherShipments.length > 0 && (
+                        <div className="mb-4">
+                            <div className="sticky top-0 bg-purple-50 px-4 py-2 border-b border-purple-200 z-10">
+                                <h3 className="font-bold text-purple-900 text-sm">⚠️ Diğer / Tarihsiz ({otherShipments.length})</h3>
+                            </div>
+                            <table className="w-full">
+                                <thead className="bg-slate-50">
+                                    <tr className="text-left text-xs text-slate-600">
+                                        <th className="p-3 font-medium">Müşteri</th>
+                                        <th className="p-3 font-medium">Adres</th>
+                                        <th className="p-3 font-medium">Palet</th>
+                                        <th className="p-3 font-medium">Araç</th>
+                                        <th className="p-3 font-medium">Oluşturan</th>
+                                        <th className="p-3 font-medium">Durum</th>
+                                        <th className="p-3 font-medium"></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {otherShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
                         </div>
