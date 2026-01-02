@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
 import MapComponent from '@/components/Map'
-import { Menu, X, Package, Truck, Users, LogOut, LayoutDashboard, MapPin, ClipboardList, FileText, Calendar, Settings, Factory } from 'lucide-react'
+import { Menu, X, Package, Truck, Users, LogOut, LayoutDashboard, MapPin, ClipboardList, FileText, Calendar, Settings, Factory, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PERMISSIONS, hasAnyPermission } from '@/lib/permissions'
@@ -12,13 +12,14 @@ import { DashboardProvider } from '@/contexts/DashboardContext'
 import NotificationBell from '@/components/NotificationBell'
 import ChatBox from '@/components/ChatBox'
 
-import { TutorialProvider } from '@/components/TutorialProvider'
+import { TutorialProvider, useTutorial } from '@/components/TutorialProvider'
 
-export default function DashboardLayout({ children }) {
+function DashboardContent({ children }) {
     const { user, role, permissions, hasPermission, loading, signOut } = useAuth()
     const router = useRouter()
     const pathname = usePathname()
     const [menuOpen, setMenuOpen] = useState(false)
+    const { startTutorial } = useTutorial()
 
     useEffect(() => {
         if (!loading) {
@@ -35,8 +36,6 @@ export default function DashboardLayout({ children }) {
 
     const currentRole = role?.toLowerCase()
     if (!user || (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher')) return null
-
-    const { startTutorial } = useTutorial()
 
     const allMenuItems = [
         { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW, id: 'sidebar-dashboard' },
@@ -79,109 +78,117 @@ export default function DashboardLayout({ children }) {
 
     console.log('Filtered menu items:', menuItems.map(i => i.label))
     return (
-        <DashboardProvider>
-            <TutorialProvider>
-                <div className="relative h-screen w-screen overflow-hidden">
-                    {/* Full Screen Map Background */}
-                    <div className="absolute inset-0 z-0">
-                        <MapComponent />
+        <div className="relative h-screen w-screen overflow-hidden">
+            {/* Full Screen Map Background */}
+            <div className="absolute inset-0 z-0">
+                <MapComponent />
+            </div>
+
+            {/* Hamburger Menu Button */}
+            <button
+                id="hamburger-menu"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="fixed top-4 left-4 z-50 bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200"
+            >
+                {menuOpen ? <X size={24} className="text-slate-700" /> : <Menu size={24} className="text-slate-700" />}
+            </button>
+
+            {/* Notification Bell & Chat */}
+            <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+                <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
+                    <ChatBox />
+                </div>
+                <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
+                    <NotificationBell />
+                </div>
+            </div>
+
+            {/* Sliding Menu */}
+            {menuOpen && (
+                <div className="fixed left-4 top-20 w-64 md:w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 z-40 max-h-[calc(100vh-104px)] flex flex-col">
+                    <div className="p-4 md:p-6 border-b border-slate-200">
+                        <h2 className="text-lg md:text-xl font-bold text-slate-900">Rota Optimizasyon</h2>
+                        <p className="text-xs md:text-sm text-slate-500">Yönetim Paneli</p>
+                        <p className="text-xs md:text-sm text-primary font-medium mt-1">{user?.full_name || user?.username}</p>
                     </div>
 
-                    {/* Hamburger Menu Button */}
-                    <button
-                        id="hamburger-menu"
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        className="fixed top-4 left-4 z-50 bg-white/95 backdrop-blur-sm p-3 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200"
-                    >
-                        {menuOpen ? <X size={24} className="text-slate-700" /> : <Menu size={24} className="text-slate-700" />}
-                    </button>
-
-                    {/* Notification Bell & Chat */}
-                    <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-                        <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
-                            <ChatBox />
-                        </div>
-                        <div className="bg-white/95 backdrop-blur-sm p-2 rounded-xl shadow-lg hover:shadow-xl transition-all border border-slate-200">
-                            <NotificationBell />
-                        </div>
-                    </div>
-
-                    {/* Sliding Menu */}
-                    {menuOpen && (
-                        <div className="fixed left-4 top-20 w-64 md:w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 z-40 max-h-[calc(100vh-104px)] flex flex-col">
-                            <div className="p-4 md:p-6 border-b border-slate-200">
-                                <h2 className="text-lg md:text-xl font-bold text-slate-900">Rota Optimizasyon</h2>
-                                <p className="text-xs md:text-sm text-slate-500">Yönetim Paneli</p>
-                                <p className="text-xs md:text-sm text-primary font-medium mt-1">{user?.full_name || user?.username}</p>
+                    <nav className="p-3 md:p-4 space-y-2 flex-1 overflow-y-auto">
+                        {menuItems.length === 0 && (
+                            <div className="p-4 text-center text-slate-500 text-sm">
+                                Menü öğesi bulunamadı. Yetkilerinizi kontrol edin.
+                                <br />
+                                (Rol: {role}, İzinler: {permissions?.length || 0})
                             </div>
+                        )}
+                        {menuItems.map((item) => {
+                            const Icon = item.icon
+                            const isActive = pathname === item.href
 
-                            <nav className="p-3 md:p-4 space-y-2 flex-1 overflow-y-auto">
-                                {menuItems.length === 0 && (
-                                    <div className="p-4 text-center text-slate-500 text-sm">
-                                        Menü öğesi bulunamadı. Yetkilerinizi kontrol edin.
-                                        <br />
-                                        (Rol: {role}, İzinler: {permissions?.length || 0})
-                                    </div>
-                                )}
-                                {menuItems.map((item) => {
-                                    const Icon = item.icon
-                                    const isActive = pathname === item.href
-
-                                    return (
-                                        <Link
-                                            key={item.href}
-                                            id={item.id}
-                                            href={item.href}
-                                            onClick={() => setMenuOpen(false)}
-                                            className={`flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all ${isActive
-                                                ? 'bg-primary text-white shadow-md'
-                                                : 'text-slate-900 hover:bg-slate-100'
-                                                }`}
-                                        >
-                                            <Icon size={20} />
-                                            <span className="font-medium text-sm md:text-base">{item.label}</span>
-                                        </Link>
-                                    )
-                                })}
-                            </nav>
-
-                            <div className="flex flex-col items-center gap-4 py-4 border-t border-slate-100">
-                                <button
-                                    onClick={() => {
-                                        setMenuOpen(false)
-                                        startTutorial()
-                                    }}
-                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                    title="Yardım / Turu Başlat"
+                            return (
+                                <Link
+                                    key={item.href}
+                                    id={item.id}
+                                    href={item.href}
+                                    onClick={() => setMenuOpen(false)}
+                                    className={`flex items-center gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-lg transition-all ${isActive
+                                        ? 'bg-primary text-white shadow-md'
+                                        : 'text-slate-900 hover:bg-slate-100'
+                                        }`}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <HelpCircle size={24} />
-                                    </div>
-                                </button>
-                                <button
-                                    onClick={signOut}
-                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                    title="Çıkış Yap"
-                                >
-                                    <LogOut size={24} />
-                                </button>
-                                <div className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">
-                                    v1.3 - SYSTEM READY
-                                </div>
+                                    <Icon size={20} />
+                                    <span className="font-medium text-sm md:text-base">{item.label}</span>
+                                </Link>
+                            )
+                        })}
+                    </nav>
+
+                    <div className="flex flex-col items-center gap-4 py-4 border-t border-slate-100">
+                        <button
+                            onClick={() => {
+                                setMenuOpen(false)
+                                startTutorial()
+                            }}
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="Yardım / Turu Başlat"
+                        >
+                            <div className="flex items-center gap-2">
+                                <HelpCircle size={24} />
                             </div>
+                        </button>
+                        <button
+                            onClick={signOut}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="Çıkış Yap"
+                        >
+                            <LogOut size={24} />
+                        </button>
+                        <div className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">
+                            v1.3 - SYSTEM READY
                         </div>
-                    )}
-
-                    {/* Main Content Area */}
-                    <div className="relative z-10 h-full pointer-events-none">
-                        {children}
-                    </div>
-
-                    {/* Branding Logo - Bottom Right */}
-                    <div className="fixed bottom-6 right-6 z-50 pointer-events-none opacity-90">
-                        <img src="/logo.png" alt="Akalbatu Logo" className="h-12 w-auto drop-shadow-lg" />
                     </div>
                 </div>
+            )}
+
+            {/* Main Content Area */}
+            <div className="relative z-10 h-full pointer-events-none">
+                {children}
+            </div>
+
+            {/* Branding Logo - Bottom Right */}
+            <div className="fixed bottom-6 right-6 z-50 pointer-events-none opacity-90">
+                <img src="/logo.png" alt="Akalbatu Logo" className="h-12 w-auto drop-shadow-lg" />
+            </div>
+        </div>
+    )
+}
+
+export default function DashboardLayout({ children }) {
+    return (
+        <DashboardProvider>
+            <TutorialProvider>
+                <DashboardContent>
+                    {children}
+                </DashboardContent>
             </TutorialProvider>
         </DashboardProvider>
     )
