@@ -59,7 +59,7 @@ export default function ShipmentsPage() {
                 .order('created_at', { ascending: false }),
             supabase.from('vehicles').select('*').order('plate'),
             supabase.from('addresses').select('*').order('name'),
-            supabase.from('users').select('id, full_name').order('full_name')
+            supabase.from('users').select('id, full_name, role').order('full_name')
         ])
 
         if (shipmentsRes.data) setShipments(shipmentsRes.data)
