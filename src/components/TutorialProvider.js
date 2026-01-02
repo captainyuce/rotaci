@@ -50,6 +50,7 @@ export function TutorialProvider({ children }) {
             showProgress: true,
             animate: true,
             allowClose: true,
+            stagePadding: 4,
             doneBtnText: 'Tamamla',
             closeBtnText: 'Kapat',
             nextBtnText: 'İleri',
@@ -61,10 +62,6 @@ export function TutorialProvider({ children }) {
                     localStorage.setItem('hasSeenTutorial_v1', 'true')
                 }
             },
-            onNextClick: () => {
-                console.log('TutorialProvider: Next button clicked')
-                driverObj.moveNext()
-            }
         })
 
         // Helper to ensure sidebar is open
