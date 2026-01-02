@@ -35,11 +35,12 @@ export function TutorialProvider({ children }) {
     }, [user, role])
 
     const startTutorial = () => {
-        console.log('TutorialProvider: startTutorial called', { role })
+        const currentRole = role?.toLowerCase()
+        console.log('TutorialProvider: startTutorial called', { role: currentRole })
 
         // Only for managers/admins/dispatchers
-        if (role !== 'manager' && role !== 'admin' && role !== 'dispatcher') {
-            console.log('TutorialProvider: Role not allowed', role)
+        if (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher') {
+            console.log('TutorialProvider: Role not allowed', currentRole)
             return
         }
 
@@ -80,6 +81,8 @@ export function TutorialProvider({ children }) {
         }
 
         const handleHighlightStarted = (element, step, options) => {
+            if (!element) return // For steps with no element (modal)
+
             const isSidebarItem = element.startsWith('#sidebar-')
             const isHamburger = element === '#hamburger-menu'
 
@@ -95,6 +98,14 @@ export function TutorialProvider({ children }) {
         }
 
         const allSteps = [
+            {
+                popover: {
+                    title: 'Rota Optimizasyon Paneline Hoşgeldiniz',
+                    description: 'Bu kısa tur ile yönetim panelini ve özelliklerini hızlıca keşfedebilirsiniz.',
+                    side: 'center',
+                    align: 'center'
+                }
+            },
             {
                 element: '#hamburger-menu',
                 popover: {
@@ -290,6 +301,13 @@ export function TutorialProvider({ children }) {
         }))
 
         console.log('TutorialProvider: Filtered steps', filteredSteps)
+
+        if (filteredSteps.length === 0) {
+            console.error('TutorialProvider: No steps available after filtering')
+            alert('Tur başlatılamadı: Gösterilecek adım bulunamadı.')
+            return
+        }
+
         driverObj.setSteps(filteredSteps)
         driverObj.drive()
     }

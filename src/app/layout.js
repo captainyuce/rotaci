@@ -1,4 +1,5 @@
 import './globals.css'
+import 'driver.js/dist/driver.css'
 import { Inter } from 'next/font/google'
 import { AuthProvider } from '@/components/AuthProvider'
 
