@@ -83,12 +83,15 @@ export function TutorialProvider({ children }) {
         }
 
         const handleHighlightStarted = (element, step, options) => {
-            console.log('TutorialProvider: Highlight started', { element, step })
+            console.log('TutorialProvider: Highlight started', { step })
 
-            if (!element) return // For steps with no element (modal)
+            // element is the DOM element, step.element is the selector string
+            const selector = step.element
 
-            const isSidebarItem = element.startsWith('#sidebar-')
-            const isHamburger = element === '#hamburger-menu'
+            if (!selector) return // For steps with no element (modal)
+
+            const isSidebarItem = typeof selector === 'string' && selector.startsWith('#sidebar-')
+            const isHamburger = selector === '#hamburger-menu'
 
             if (isSidebarItem) {
                 ensureSidebarOpen()
