@@ -510,7 +510,7 @@ export default function ShipmentsPage() {
                         <div className="mb-4">
                             <div className="sticky top-0 bg-orange-100 px-4 py-2 border-b border-orange-200 z-10">
                                 <h3 className="font-bold text-orange-900 text-sm flex items-center gap-2">
-                                    ⚠️ Geçmiş / Bekleyen ({pastShipments.length})
+                                    ⚠️ Bekleyenler (Gecikmiş) ({pastShipments.length})
                                 </h3>
                             </div>
                             <table className="w-full">
