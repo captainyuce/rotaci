@@ -25,13 +25,29 @@ export const AuthProvider = ({ children }) => {
             if (userStr && roleStr) {
                 const userData = JSON.parse(userStr)
                 const roleData = roleStr.toLowerCase()
-                const permsData = permissionsStr ? JSON.parse(permissionsStr) : []
 
-
+                // Refresh permissions from ROLES constant to ensure they are up to date
+                // This fixes issues where new permissions aren't applied to existing sessions
+                let currentPermissions = []
+                try {
+                    // Dynamic import to avoid circular dependencies if any
+                    const { ROLES } = await import('@/lib/permissions')
+                    const roleKey = roleData.toUpperCase()
+                    if (ROLES[roleKey]) {
+                        currentPermissions = ROLES[roleKey].permissions
+                        // Update localStorage with fresh permissions
+                        localStorage.setItem('permissions', JSON.stringify(currentPermissions))
+                    } else {
+                        currentPermissions = permissionsStr ? JSON.parse(permissionsStr) : []
+                    }
+                } catch (e) {
+                    console.error('Error refreshing permissions:', e)
+                    currentPermissions = permissionsStr ? JSON.parse(permissionsStr) : []
+                }
 
                 setUser(userData)
                 setRole(roleData)
-                setPermissions(permsData)
+                setPermissions(currentPermissions)
             }
 
             setLoading(false)

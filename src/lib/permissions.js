@@ -86,7 +86,9 @@ export const PERMISSION_LABELS = {
     [PERMISSIONS.MANAGE_SETTINGS]: 'Sistem Ayarları',
     [PERMISSIONS.MANAGE_CHAT]: 'Sohbet Yönetimi',
     [PERMISSIONS.CLEAR_LOGS]: 'Log Temizleme',
-    [PERMISSIONS.PREPARE_SHIPMENTS]: 'Sevkiyat Hazırlama'
+    [PERMISSIONS.PREPARE_SHIPMENTS]: 'Sevkiyat Hazırlama',
+    [PERMISSIONS.MANAGE_SUBCONTRACTORS]: 'Fason Yönetimi',
+    [PERMISSIONS.VIEW_SUBCONTRACTOR_PANEL]: 'Fason Paneli Erişimi'
 }
 
 // Check if user has a specific permission
