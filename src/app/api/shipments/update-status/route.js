@@ -18,8 +18,7 @@ export async function POST(request) {
 
         // 1. Update the shipment status
         const updateData = {
-            status,
-            updated_at: new Date().toISOString()
+            status
         }
 
         // Add delivery details if provided
