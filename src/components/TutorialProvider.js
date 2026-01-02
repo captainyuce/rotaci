@@ -1,7 +1,17 @@
+'use client'
+
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { driver } from 'driver.js'
+import 'driver.js/dist/driver.css'
+import { useAuth } from './AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
 
-// ... existing imports ...
+const TutorialContext = createContext()
+
+export function useTutorial() {
+    return useContext(TutorialContext)
+}
 
 export function TutorialProvider({ children }) {
     const { user, role, hasPermission } = useAuth()
