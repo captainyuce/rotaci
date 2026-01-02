@@ -47,15 +47,15 @@ function DashboardContent({ children }) {
             checkAny: true,
             id: 'sidebar-shipments'
         },
-        { icon: Package, label: 'Depo / Hazırlık', href: '/dashboard/prepare', permission: PERMISSIONS.PREPARE_SHIPMENTS },
-        { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar', permission: PERMISSIONS.VIEW },
+        { icon: Package, label: 'Depo / Hazırlık', href: '/dashboard/prepare', permission: PERMISSIONS.PREPARE_SHIPMENTS, id: 'sidebar-prepare' },
+        { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar', permission: PERMISSIONS.VIEW, id: 'sidebar-calendar' },
         { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS, id: 'sidebar-subcontractors' },
-        { icon: ClipboardList, label: 'Atamalar', href: '/dashboard/assignments', permission: PERMISSIONS.ASSIGN_VEHICLES },
-        { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles', permission: PERMISSIONS.MANAGE_VEHICLES },
-        { icon: MapPin, label: 'Adresler', href: '/dashboard/addresses', permission: PERMISSIONS.MANAGE_ADDRESSES },
-        { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users', permission: PERMISSIONS.MANAGE_USERS },
-        { icon: FileText, label: 'İşlem Geçmişi', href: '/dashboard/logs', permission: PERMISSIONS.VIEW_LOGS },
-        { icon: Settings, label: 'Ayarlar', href: '/dashboard/settings', permission: PERMISSIONS.MANAGE_SETTINGS },
+        { icon: ClipboardList, label: 'Atamalar', href: '/dashboard/assignments', permission: PERMISSIONS.ASSIGN_VEHICLES, id: 'sidebar-assignments' },
+        { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles', permission: PERMISSIONS.MANAGE_VEHICLES, id: 'sidebar-vehicles' },
+        { icon: MapPin, label: 'Adresler', href: '/dashboard/addresses', permission: PERMISSIONS.MANAGE_ADDRESSES, id: 'sidebar-addresses' },
+        { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users', permission: PERMISSIONS.MANAGE_USERS, id: 'sidebar-users' },
+        { icon: FileText, label: 'İşlem Geçmişi', href: '/dashboard/logs', permission: PERMISSIONS.VIEW_LOGS, id: 'sidebar-logs' },
+        { icon: Settings, label: 'Ayarlar', href: '/dashboard/settings', permission: PERMISSIONS.MANAGE_SETTINGS, id: 'sidebar-settings' },
     ]
 
     // Debug: Log user permissions
