@@ -502,6 +502,7 @@ export default function ShipmentsPage() {
                     </div>
                     {hasPermission(PERMISSIONS.CREATE_SHIPMENTS) && (
                         <button
+                            id="new-shipment-btn"
                             onClick={() => handleOpenModal()}
                             className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
                         >

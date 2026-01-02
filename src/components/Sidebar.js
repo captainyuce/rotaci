@@ -3,14 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Package, Truck, Users, LogOut, Settings, Calendar, Factory } from 'lucide-react'
-import { useAuth } from './AuthProvider'
-import { PERMISSIONS } from '@/lib/permissions'
+import { useTutorial } from './TutorialProvider'
+import { HelpCircle } from 'lucide-react'
 
 const menuItems = [
-    { icon: LayoutDashboard, label: 'Genel', href: '/dashboard' },
-    { icon: Package, label: 'Sevkiyat', href: '/dashboard/shipments' },
+    { icon: LayoutDashboard, label: 'Genel', href: '/dashboard', id: 'sidebar-dashboard' },
+    { icon: Package, label: 'Sevkiyat', href: '/dashboard/shipments', id: 'sidebar-shipments' },
     { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar' },
-    { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS },
+    { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS, id: 'sidebar-subcontractors' },
     { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles' },
     { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users' },
 ]
@@ -18,6 +18,7 @@ const menuItems = [
 export default function Sidebar() {
     const pathname = usePathname()
     const { signOut, hasPermission } = useAuth()
+    const { startTutorial } = useTutorial()
 
     return (
         <div className="w-20 bg-slate-900 text-white flex flex-col items-center py-6 gap-6 z-20 shadow-xl">
@@ -40,6 +41,7 @@ export default function Sidebar() {
                     return (
                         <Link
                             key={item.href}
+                            id={item.id}
                             href={item.href}
                             className={`group relative flex items-center justify-center w-full aspect-square rounded-xl transition-all duration-200 ${isActive
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
@@ -59,6 +61,14 @@ export default function Sidebar() {
 
             {/* Bottom Actions */}
             <div className="flex flex-col gap-4 w-full px-3">
+                <button
+                    id="sidebar-help"
+                    onClick={startTutorial}
+                    className="flex items-center justify-center w-full aspect-square rounded-xl text-slate-400 hover:bg-blue-500/10 hover:text-blue-500 transition-colors"
+                    title="Yardım / Turu Başlat"
+                >
+                    <HelpCircle size={20} />
+                </button>
                 <button
                     onClick={signOut}
                     className="flex items-center justify-center w-full aspect-square rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"

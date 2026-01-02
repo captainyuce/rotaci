@@ -430,6 +430,7 @@ export default function DriverPage() {
 
                             {job.status === 'assigned' ? (
                                 <button
+                                    id="driver-status-btn"
                                     onClick={() => updateStatus(job.id, 'delivered')}
                                     className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium transition-colors text-sm"
                                 >
@@ -541,6 +542,7 @@ export default function DriverPage() {
                     Aktif ({acknowledgedJobs.length})
                 </button>
                 <button
+                    id="driver-map-view"
                     onClick={() => setActiveTab('map')}
                     className={`flex-1 min-w-[80px] py-3 px-2 rounded-lg font-medium transition-colors text-sm ${activeTab === 'map'
                         ? 'bg-blue-600 text-white shadow-md'

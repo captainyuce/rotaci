@@ -142,7 +142,7 @@ export default function SubcontractorPage() {
                             <p className="text-slate-500">Bekleyen üretim siparişiniz bulunmuyor.</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-100">
+                        <div id="subcontractor-orders" className="divide-y divide-slate-100">
                             {shipments.map(shipment => (
                                 <div key={shipment.id} className="p-4 md:p-6 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                                     <div className="flex-1">
@@ -202,6 +202,7 @@ export default function SubcontractorPage() {
                                     </div>
 
                                     <button
+                                        id="subcontractor-ready-btn"
                                         onClick={() => handleMarkAsReady(shipment)}
                                         className="w-full md:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-sm shadow-green-200 transition-all transform active:scale-95 flex items-center justify-center gap-2"
                                     >
