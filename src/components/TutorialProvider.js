@@ -16,35 +16,13 @@ export function useTutorial() {
 export function TutorialProvider({ children }) {
     const { user, role, hasPermission } = useAuth()
     const router = useRouter()
-    const [driverObj, setDriverObj] = useState(null)
+    // Remove driverObj state
+    // const [driverObj, setDriverObj] = useState(null) 
 
     useEffect(() => {
-        console.log('TutorialProvider: Initializing driver')
-        // Initialize driver
-        const driverInstance = driver({
-            showProgress: true,
-            animate: true,
-            allowClose: true,
-            doneBtnText: 'Tamamla',
-            closeBtnText: 'Kapat',
-            nextBtnText: 'İleri',
-            prevBtnText: 'Geri',
-            onDestroyStarted: () => {
-                if (!driverInstance.hasNextStep() || confirm('Turu sonlandırmak istiyor musunuz?')) {
-                    driverInstance.destroy();
-                    // Mark as seen
-                    localStorage.setItem('hasSeenTutorial_v1', 'true')
-                }
-            },
-        })
-
-        setDriverObj(driverInstance)
-    }, [])
-
-    useEffect(() => {
-        console.log('TutorialProvider: Checking auto-start', { user: !!user, driverObj: !!driverObj, role })
+        console.log('TutorialProvider: Checking auto-start', { user: !!user, role })
         // Auto-start if not seen and user is logged in
-        if (user && driverObj && role) {
+        if (user && role) {
             const hasSeen = localStorage.getItem('hasSeenTutorial_v1')
             if (!hasSeen) {
                 console.log('TutorialProvider: Auto-starting tutorial')
@@ -54,17 +32,34 @@ export function TutorialProvider({ children }) {
                 }, 1500)
             }
         }
-    }, [user, driverObj, role])
+    }, [user, role])
 
     const startTutorial = () => {
-        console.log('TutorialProvider: startTutorial called', { driverObj: !!driverObj, role })
-        if (!driverObj || !role) return
+        console.log('TutorialProvider: startTutorial called', { role })
 
         // Only for managers/admins/dispatchers
         if (role !== 'manager' && role !== 'admin' && role !== 'dispatcher') {
             console.log('TutorialProvider: Role not allowed', role)
             return
         }
+
+        // Create driver instance on demand
+        const driverObj = driver({
+            showProgress: true,
+            animate: true,
+            allowClose: true,
+            doneBtnText: 'Tamamla',
+            closeBtnText: 'Kapat',
+            nextBtnText: 'İleri',
+            prevBtnText: 'Geri',
+            onDestroyStarted: () => {
+                if (!driverObj.hasNextStep() || confirm('Turu sonlandırmak istiyor musunuz?')) {
+                    driverObj.destroy();
+                    // Mark as seen
+                    localStorage.setItem('hasSeenTutorial_v1', 'true')
+                }
+            },
+        })
 
         // Helper to ensure sidebar is open
         const ensureSidebarOpen = () => {
@@ -79,14 +74,6 @@ export function TutorialProvider({ children }) {
         const ensureSidebarClosed = () => {
             const sidebar = document.getElementById('sidebar-dashboard')
             const hamburger = document.getElementById('hamburger-menu')
-            // If sidebar is visible (offsetParent not null) AND we are on mobile (check if hamburger is visible or window width)
-            // Actually, checking if sidebar is visible is enough. If it's visible, we might want to close it if it's the sliding menu.
-            // The sliding menu in DashboardLayout has a close button but also toggles via hamburger.
-            // If we click hamburger when it's open, it closes.
-
-            // Better check: The sliding menu in DashboardLayout is conditionally rendered with `menuOpen`.
-            // If `sidebar-dashboard` is present, it means the menu is open (because it's inside the conditional block).
-            // So if we find `sidebar-dashboard`, we should click hamburger to close it.
             if (sidebar && sidebar.offsetParent !== null) {
                 if (hamburger) hamburger.click()
             }
@@ -99,7 +86,6 @@ export function TutorialProvider({ children }) {
             if (isSidebarItem) {
                 ensureSidebarOpen()
             } else if (!isHamburger) {
-                // If it's not a sidebar item and not the hamburger itself, close the sidebar so it doesn't block view
                 ensureSidebarClosed()
             }
 
