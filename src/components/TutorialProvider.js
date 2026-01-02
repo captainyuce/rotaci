@@ -75,8 +75,33 @@ export function TutorialProvider({ children }) {
             }
         }
 
+        // Helper to ensure sidebar is closed
+        const ensureSidebarClosed = () => {
+            const sidebar = document.getElementById('sidebar-dashboard')
+            const hamburger = document.getElementById('hamburger-menu')
+            // If sidebar is visible (offsetParent not null) AND we are on mobile (check if hamburger is visible or window width)
+            // Actually, checking if sidebar is visible is enough. If it's visible, we might want to close it if it's the sliding menu.
+            // The sliding menu in DashboardLayout has a close button but also toggles via hamburger.
+            // If we click hamburger when it's open, it closes.
+
+            // Better check: The sliding menu in DashboardLayout is conditionally rendered with `menuOpen`.
+            // If `sidebar-dashboard` is present, it means the menu is open (because it's inside the conditional block).
+            // So if we find `sidebar-dashboard`, we should click hamburger to close it.
+            if (sidebar && sidebar.offsetParent !== null) {
+                if (hamburger) hamburger.click()
+            }
+        }
+
         const handleHighlightStarted = (element, step, options) => {
-            ensureSidebarOpen()
+            const isSidebarItem = element.startsWith('#sidebar-')
+            const isHamburger = element === '#hamburger-menu'
+
+            if (isSidebarItem) {
+                ensureSidebarOpen()
+            } else if (!isHamburger) {
+                // If it's not a sidebar item and not the hamburger itself, close the sidebar so it doesn't block view
+                ensureSidebarClosed()
+            }
 
             if (step.route) {
                 router.push(step.route)
@@ -102,6 +127,39 @@ export function TutorialProvider({ children }) {
                     description: 'İşletmenizin genel durumunu, özet istatistikleri ve harita görünümünü takip edebilirsiniz.',
                     side: 'right',
                     align: 'start'
+                }
+            },
+            {
+                element: '#header-notification',
+                route: '/dashboard',
+                permission: PERMISSIONS.VIEW,
+                popover: {
+                    title: 'Bildirimler',
+                    description: 'Önemli güncellemeleri ve uyarıları buradan takip edebilirsiniz.',
+                    side: 'left',
+                    align: 'start'
+                }
+            },
+            {
+                element: '#header-chat',
+                route: '/dashboard',
+                permission: PERMISSIONS.VIEW,
+                popover: {
+                    title: 'Mesajlaşma',
+                    description: 'Ekip içi iletişim ve duyurular için burayı kullanabilirsiniz.',
+                    side: 'left',
+                    align: 'start'
+                }
+            },
+            {
+                element: '#dashboard-vehicle-cards',
+                route: '/dashboard',
+                permission: PERMISSIONS.VIEW,
+                popover: {
+                    title: 'Araç Durumları',
+                    description: 'Araçların anlık konumlarını, yük durumlarını ve günlük performanslarını buradan izleyebilirsiniz.',
+                    side: 'top',
+                    align: 'center'
                 }
             },
             {

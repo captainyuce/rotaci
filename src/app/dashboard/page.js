@@ -267,7 +267,7 @@ export default function DashboardPage() {
             )}
 
             {/* Vehicle Status Cards - Fixed at Bottom */}
-            <div className="fixed bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white to-transparent pb-safe pointer-events-none">
+            <div id="dashboard-vehicle-cards" className="fixed bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white to-transparent pb-safe pointer-events-none">
                 <div className="px-2 md:px-4 py-3 md:py-4 overflow-x-auto pointer-events-auto">
                     <div className="flex gap-2 md:gap-3 min-w-max pb-2">
                         {vehicles.map((vehicle) => (
