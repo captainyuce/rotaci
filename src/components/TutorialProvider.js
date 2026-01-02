@@ -18,13 +18,53 @@ export function TutorialProvider({ children }) {
     const router = useRouter()
     const [driverObj, setDriverObj] = useState(null)
 
-    // ... existing useEffects ...
+    useEffect(() => {
+        console.log('TutorialProvider: Initializing driver')
+        // Initialize driver
+        const driverInstance = driver({
+            showProgress: true,
+            animate: true,
+            allowClose: true,
+            doneBtnText: 'Tamamla',
+            closeBtnText: 'Kapat',
+            nextBtnText: 'İleri',
+            prevBtnText: 'Geri',
+            onDestroyStarted: () => {
+                if (!driverInstance.hasNextStep() || confirm('Turu sonlandırmak istiyor musunuz?')) {
+                    driverInstance.destroy();
+                    // Mark as seen
+                    localStorage.setItem('hasSeenTutorial_v1', 'true')
+                }
+            },
+        })
+
+        setDriverObj(driverInstance)
+    }, [])
+
+    useEffect(() => {
+        console.log('TutorialProvider: Checking auto-start', { user: !!user, driverObj: !!driverObj, role })
+        // Auto-start if not seen and user is logged in
+        if (user && driverObj && role) {
+            const hasSeen = localStorage.getItem('hasSeenTutorial_v1')
+            if (!hasSeen) {
+                console.log('TutorialProvider: Auto-starting tutorial')
+                // Small delay to ensure UI is rendered
+                setTimeout(() => {
+                    startTutorial()
+                }, 1500)
+            }
+        }
+    }, [user, driverObj, role])
 
     const startTutorial = () => {
+        console.log('TutorialProvider: startTutorial called', { driverObj: !!driverObj, role })
         if (!driverObj || !role) return
 
         // Only for managers/admins/dispatchers
-        if (role !== 'manager' && role !== 'admin' && role !== 'dispatcher') return
+        if (role !== 'manager' && role !== 'admin' && role !== 'dispatcher') {
+            console.log('TutorialProvider: Role not allowed', role)
+            return
+        }
 
         // Helper to ensure sidebar is open
         const ensureSidebarOpen = () => {
@@ -205,6 +245,7 @@ export function TutorialProvider({ children }) {
             onHighlightStarted: (element, stepObj, options) => handleHighlightStarted(element, step, options)
         }))
 
+        console.log('TutorialProvider: Filtered steps', filteredSteps)
         driverObj.setSteps(filteredSteps)
         driverObj.drive()
     }
