@@ -5,12 +5,11 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/components/AuthProvider'
 import { PERMISSIONS } from '@/lib/permissions'
 import { logSecurityEvent, logShipmentAction } from '@/lib/auditLog'
-import { Plus, X, Package, User, Calendar, Truck } from 'lucide-react'
+import { Plus, X, User, Calendar } from 'lucide-react'
 
 export default function SubcontractorsPage() {
     const { user, hasPermission } = useAuth()
     const [pendingApprovals, setPendingApprovals] = useState([])
-    const [activeTab, setActiveTab] = useState('production') // 'production' | 'approvals'
     const [orders, setOrders] = useState([])
     const [subcontractors, setSubcontractors] = useState([])
     const [loading, setLoading] = useState(true)
@@ -183,137 +182,138 @@ export default function SubcontractorsPage() {
         return <div className="p-8 text-center text-slate-500">Bu sayfayı görüntüleme yetkiniz yok.</div>
     }
 
+    const allOrders = [...pendingApprovals, ...orders]
+
     return (
-        <div className="relative z-30 p-4 md:p-8 pb-24 h-full overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Fason Takibi</h1>
-                    <p className="text-slate-500">Fason üretim emirlerini yönetin ve takip edin.</p>
-                </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium"
-                >
-                    <Plus size={20} />
-                    Yeni Emir
-                </button>
-            </div>
+        <>
+            {/* Main Content Container - Mimicking ShipmentsPage layout */}
+            <div className="fixed left-4 right-4 md:left-20 md:right-auto top-20 md:top-4 bottom-20 md:bottom-4 md:w-[750px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden pointer-events-auto z-10">
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div className="text-slate-500 text-sm font-medium mb-1">Üretimdeki Emirler</div>
-                    <div className="text-2xl font-bold text-slate-900">{orders.length}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div className="text-slate-500 text-sm font-medium mb-1">Onay Bekleyenler</div>
-                    <div className="text-2xl font-bold text-orange-600">{pendingApprovals.length}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div className="text-slate-500 text-sm font-medium mb-1">Aktif Fasoncular</div>
-                    <div className="text-2xl font-bold text-blue-600">{subcontractors.length}</div>
-                </div>
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                    <div className="text-slate-500 text-sm font-medium mb-1">Toplam Palet</div>
-                    <div className="text-2xl font-bold text-amber-600">
-                        {(orders?.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0) || 0) +
-                            (pendingApprovals?.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0) || 0)}
+                {/* Header */}
+                <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white/50">
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-900">Fason Takibi</h2>
+                        <p className="text-xs text-slate-500">
+                            {pendingApprovals.length} onay bekleyen, {orders.length} üretimde
+                        </p>
                     </div>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="bg-primary hover:bg-zinc-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium shadow-sm"
+                    >
+                        <Plus size={16} />
+                        Yeni Emir
+                    </button>
                 </div>
-            </div>
 
-            {/* Unified Orders List */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h2 className="font-bold text-slate-800">Üretim ve Onay Listesi</h2>
-                    <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
-                        Toplam {[...pendingApprovals, ...orders].length} Kayıt
-                    </span>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
-                            <tr>
-                                <th className="p-4">Müşteri / Ürün</th>
-                                <th className="p-4">Fasoncu</th>
-                                <th className="p-4">Teslim Tarihi</th>
-                                <th className="p-4">Miktar</th>
-                                <th className="p-4">Durum</th>
-                                <th className="p-4 text-right">İşlemler</th>
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto">
+
+                    {/* Stats Summary (Optional, kept compact) */}
+                    <div className="grid grid-cols-3 gap-2 p-4 bg-slate-50/50 border-b border-slate-100">
+                        <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                            <div className="text-xs text-slate-500">Bekleyen</div>
+                            <div className="font-bold text-orange-600">{pendingApprovals.length}</div>
+                        </div>
+                        <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                            <div className="text-xs text-slate-500">Üretimde</div>
+                            <div className="font-bold text-blue-600">{orders.length}</div>
+                        </div>
+                        <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                            <div className="text-xs text-slate-500">Toplam Palet</div>
+                            <div className="font-bold text-slate-700">
+                                {(orders?.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0) || 0) +
+                                    (pendingApprovals?.reduce((acc, curr) => acc + (parseInt(curr.weight) || 0), 0) || 0)}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Unified List */}
+                    <table className="w-full">
+                        <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                            <tr className="text-left text-xs text-slate-600">
+                                <th className="p-3 font-medium">Müşteri / Ürün</th>
+                                <th className="p-3 font-medium">Fasoncu</th>
+                                <th className="p-3 font-medium">Tarih</th>
+                                <th className="p-3 font-medium">Miktar</th>
+                                <th className="p-3 font-medium">Durum</th>
+                                <th className="p-3 font-medium text-right">İşlemler</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {[...pendingApprovals, ...orders].length === 0 ? (
+                            {allOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="p-8 text-center text-slate-500">
+                                    <td colSpan="6" className="p-8 text-center text-slate-500 text-sm">
                                         Henüz kayıtlı bir işlem bulunmuyor.
                                     </td>
                                 </tr>
                             ) : (
-                                [...pendingApprovals, ...orders].map(order => {
+                                allOrders.map(order => {
                                     const isPending = order.status === 'pending_approval';
                                     return (
-                                        <tr key={order.id} className={`transition-colors ${isPending ? 'bg-orange-50/30 hover:bg-orange-50' : 'hover:bg-slate-50'}`}>
-                                            <td className="p-4">
+                                        <tr key={order.id} className={`transition-colors text-sm group ${isPending ? 'bg-orange-50/40 hover:bg-orange-50' : 'hover:bg-slate-50'}`}>
+                                            <td className="p-3">
                                                 <div className="font-medium text-slate-900">{order.customer_name}</div>
                                                 {order.product_info && (
                                                     <div className="text-xs text-blue-600 font-medium">{order.product_info}</div>
                                                 )}
-                                                <div className="text-xs text-slate-500">{order.delivery_address}</div>
+                                                <div className="text-xs text-slate-500 truncate max-w-[150px]">{order.delivery_address}</div>
                                             </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <User size={16} className="text-slate-400" />
-                                                    <span className="text-slate-700">
+                                            <td className="p-3">
+                                                <div className="flex items-center gap-1.5">
+                                                    <User size={14} className="text-slate-400" />
+                                                    <span className="text-slate-700 text-xs">
                                                         {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2 text-slate-600">
-                                                    <Calendar size={16} />
+                                            <td className="p-3">
+                                                <div className="flex items-center gap-1.5 text-slate-600 text-xs">
+                                                    <Calendar size={14} />
                                                     {order.estimated_completion_date ? (
                                                         <span className={isPending ? "text-orange-700 font-medium" : "text-blue-600 font-medium"}>
-                                                            {order.estimated_completion_date} {isPending ? '(Tamamlandı)' : '(Tahmini)'}
+                                                            {order.estimated_completion_date}
                                                         </span>
                                                     ) : (
                                                         <span>{order.delivery_date}</span>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="p-4">
-                                                <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium border border-slate-200">
-                                                    {order.weight} Palet
+                                            <td className="p-3">
+                                                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-medium text-xs border border-slate-200">
+                                                    {order.weight} P.
                                                 </span>
                                             </td>
-                                            <td className="p-4">
+                                            <td className="p-3">
                                                 {isPending ? (
-                                                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse inline-flex items-center gap-1">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
-                                                        ONAY BEKLİYOR
+                                                    <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-[10px] font-bold border border-orange-200 animate-pulse inline-flex items-center gap-1">
+                                                        <span className="w-1 h-1 rounded-full bg-orange-600"></span>
+                                                        ONAY BEK.
                                                     </span>
                                                 ) : (
-                                                    <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-bold border border-amber-200 inline-flex items-center gap-1">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                                                    <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-[10px] font-bold border border-amber-200 inline-flex items-center gap-1">
+                                                        <span className="w-1 h-1 rounded-full bg-amber-600 animate-pulse"></span>
                                                         ÜRETİMDE
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="p-4 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <td className="p-3 text-right">
+                                                <div className="flex justify-end gap-1">
                                                     {isPending && (
                                                         <button
                                                             onClick={() => handleApprove(order.id)}
-                                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors text-xs font-bold shadow-sm flex items-center gap-1"
+                                                            className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors text-xs font-bold shadow-sm"
+                                                            title="Onayla"
                                                         >
                                                             Onayla
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => handleDelete(order.id)}
-                                                        className={`${isPending ? 'text-red-500 hover:bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'} px-3 py-1.5 rounded-lg transition-colors text-xs font-medium`}
+                                                        className={`${isPending ? 'text-red-500 hover:bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'} px-2 py-1 rounded transition-colors text-xs font-medium`}
+                                                        title="Sil / İptal Et"
                                                     >
-                                                        {isPending ? 'Reddet' : 'İptal Et'}
+                                                        {isPending ? 'Red' : 'İptal'}
                                                     </button>
                                                 </div>
                                             </td>
@@ -328,7 +328,7 @@ export default function SubcontractorsPage() {
 
             {/* Create Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pointer-events-auto">
                     <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-slate-900">Yeni Fason Emri</h3>
@@ -432,6 +432,6 @@ export default function SubcontractorsPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     )
 }
