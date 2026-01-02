@@ -420,7 +420,7 @@ export default function ShipmentsPage() {
                             <Truck size={14} className="text-primary" />
                             <span className="font-medium text-xs">{assignedVehicle.plate}</span>
                         </div>
-                    ) : assignedWorker ? (
+                    ) : (assignedWorker && assignedWorker.role !== 'subcontractor') ? (
                         <div className="flex items-center gap-1.5 text-orange-700">
                             <span className="text-base">🏃</span>
                             <span className="font-medium text-xs">{assignedWorker.full_name}</span>
