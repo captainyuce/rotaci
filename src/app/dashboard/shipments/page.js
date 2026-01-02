@@ -350,12 +350,30 @@ export default function ShipmentsPage() {
         const todayShipments = activeShipments.filter(s => getEffectiveDate(s) === today)
         const tomorrowShipments = activeShipments.filter(s => getEffectiveDate(s) === tomorrow)
         const futureShipments = activeShipments.filter(s => getEffectiveDate(s) > tomorrow)
-        const pastShipments = activeShipments.filter(s => getEffectiveDate(s) < today)
+
+        // Only show truly pending (not completed) items in "Past/Overdue"
+        const pastShipments = activeShipments.filter(s =>
+            getEffectiveDate(s) < today &&
+            s.status !== 'delivered' &&
+            s.status !== 'unloaded'
+        )
 
         // Catch-all for any date issues (e.g. null date or mismatch)
         const otherShipments = activeShipments.filter(s => {
             const d = getEffectiveDate(s)
-            return d !== today && d !== tomorrow && !(d > tomorrow) && !(d < today)
+            // Exclude if it's already in one of the other lists
+            if (d === today || d === tomorrow || d > tomorrow) return false
+            // If it's past, only include if it was excluded from pastShipments (meaning it IS completed)
+            // BUT wait, if it's completed and past, we probably want to hide it?
+            // The user said "Eski tamamlanmış sevkiyatlar görünüyor, onların gözükmemesi gerekiyor".
+            // So we should probably hide past completed items from "Other" too.
+            if (d < today && (s.status === 'delivered' || s.status === 'unloaded')) return false
+
+            // If it's past and NOT completed, it's already in pastShipments.
+            if (d < today) return false
+
+            // So "Other" is basically for null dates or invalid dates.
+            return true
         })
 
         return { failedShipments, todayShipments, tomorrowShipments, futureShipments, pastShipments, otherShipments }
@@ -621,7 +639,7 @@ export default function ShipmentsPage() {
                     {otherShipments && otherShipments.length > 0 && (
                         <div className="mb-4">
                             <div className="sticky top-0 bg-purple-50 px-4 py-2 border-b border-purple-200 z-10">
-                                <h3 className="font-bold text-purple-900 text-sm">⚠️ Diğer / Tarihsiz ({otherShipments.length})</h3>
+                                <h3 className="font-bold text-purple-900 text-sm">📦 Fason Hazır ({otherShipments.length})</h3>
                             </div>
                             <table className="w-full">
                                 <thead className="bg-slate-50">
