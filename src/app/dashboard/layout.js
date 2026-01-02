@@ -15,9 +15,66 @@ import ChatBox from '@/components/ChatBox'
 import { TutorialProvider } from '@/components/TutorialProvider'
 
 export default function DashboardLayout({ children }) {
-    // ... existing hooks ...
+    const { user, role, permissions, hasPermission, loading, signOut } = useAuth()
+    const router = useRouter()
+    const pathname = usePathname()
+    const [menuOpen, setMenuOpen] = useState(false)
 
-    // ... existing return ...
+    useEffect(() => {
+        if (!loading) {
+            const currentRole = role?.toLowerCase()
+            if (!user) {
+                router.push('/login')
+            } else if (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher') {
+                router.push('/driver')
+            }
+        }
+    }, [user, role, loading, router])
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50">Yükleniyor...</div>
+
+    const currentRole = role?.toLowerCase()
+    if (!user || (currentRole !== 'manager' && currentRole !== 'admin' && currentRole !== 'dispatcher')) return null
+
+    const allMenuItems = [
+        { icon: LayoutDashboard, label: 'Genel Bakış', href: '/dashboard', permission: PERMISSIONS.VIEW },
+        {
+            icon: Package,
+            label: 'Sevkiyatlar',
+            href: '/dashboard/shipments',
+            permissions: [PERMISSIONS.CREATE_SHIPMENTS, PERMISSIONS.EDIT_SHIPMENTS, PERMISSIONS.DELETE_SHIPMENTS],
+            checkAny: true
+        },
+        { icon: Package, label: 'Depo / Hazırlık', href: '/dashboard/prepare', permission: PERMISSIONS.PREPARE_SHIPMENTS },
+        { icon: Calendar, label: 'Takvim', href: '/dashboard/calendar', permission: PERMISSIONS.VIEW },
+        { icon: Factory, label: 'Fason Takibi', href: '/dashboard/subcontractors', permission: PERMISSIONS.MANAGE_SUBCONTRACTORS },
+        { icon: ClipboardList, label: 'Atamalar', href: '/dashboard/assignments', permission: PERMISSIONS.ASSIGN_VEHICLES },
+        { icon: Truck, label: 'Araçlar', href: '/dashboard/vehicles', permission: PERMISSIONS.MANAGE_VEHICLES },
+        { icon: MapPin, label: 'Adresler', href: '/dashboard/addresses', permission: PERMISSIONS.MANAGE_ADDRESSES },
+        { icon: Users, label: 'Kullanıcılar', href: '/dashboard/users', permission: PERMISSIONS.MANAGE_USERS },
+        { icon: FileText, label: 'İşlem Geçmişi', href: '/dashboard/logs', permission: PERMISSIONS.VIEW_LOGS },
+        { icon: Settings, label: 'Ayarlar', href: '/dashboard/settings', permission: PERMISSIONS.MANAGE_SETTINGS },
+    ]
+
+    // Debug: Log user permissions
+    console.log('User permissions:', permissions)
+    console.log('User role:', role)
+
+    // Filter menu items based on user permissions
+    const menuItems = allMenuItems.filter(item => {
+        if (item.checkAny && item.permissions) {
+            // Check if user has ANY of the required permissions
+            const hasAny = item.permissions.some(perm => hasPermission(perm))
+            console.log(`Checking ${item.label} (checkAny):`, item.permissions, '=> hasAny:', hasAny)
+            return hasAny
+        }
+        // Check if user has the single required permission
+        const hasPerm = hasPermission(item.permission)
+        console.log(`Checking ${item.label}:`, item.permission, '=> hasPerm:', hasPerm)
+        return hasPerm
+    })
+
+    console.log('Filtered menu items:', menuItems.map(i => i.label))
     return (
         <DashboardProvider>
             <TutorialProvider>
