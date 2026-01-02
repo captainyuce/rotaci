@@ -184,7 +184,7 @@ export default function SubcontractorsPage() {
     }
 
     return (
-        <div className="relative z-10 p-4 md:p-8 pb-24 h-full overflow-y-auto">
+        <div className="relative z-30 p-4 md:p-8 pb-24 h-full overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Fason Takibi</h1>
@@ -222,114 +222,38 @@ export default function SubcontractorsPage() {
                 </div>
             </div>
 
-            {/* Pending Approvals Section */}
-            {pendingApprovals.length > 0 && (
-                <div className="mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-8 w-1 bg-orange-500 rounded-full"></div>
-                        <h2 className="text-lg font-bold text-slate-900">Onay Bekleyenler ({pendingApprovals.length})</h2>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-sm border border-orange-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-orange-50 text-orange-900 font-medium border-b border-orange-100">
-                                    <tr>
-                                        <th className="p-4">Müşteri / Ürün</th>
-                                        <th className="p-4">Fasoncu</th>
-                                        <th className="p-4">Teslim Tarihi</th>
-                                        <th className="p-4">Miktar</th>
-                                        <th className="p-4">Durum</th>
-                                        <th className="p-4 text-right">İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-orange-50">
-                                    {pendingApprovals.map(order => (
-                                        <tr key={order.id} className="hover:bg-orange-50/50 transition-colors">
-                                            <td className="p-4">
-                                                <div className="font-medium text-slate-900">{order.customer_name}</div>
-                                                {order.product_info && (
-                                                    <div className="text-xs text-blue-600 font-medium">{order.product_info}</div>
-                                                )}
-                                                <div className="text-xs text-slate-500">{order.delivery_address}</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <User size={16} className="text-slate-400" />
-                                                    <span className="text-slate-700">
-                                                        {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2 text-slate-600">
-                                                    <Calendar size={16} />
-                                                    {order.estimated_completion_date || order.delivery_date}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="bg-white border border-orange-200 px-2 py-1 rounded text-slate-700 font-medium shadow-sm">
-                                                    {order.weight} Palet
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse">
-                                                    ONAY BEKLİYOR
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleApprove(order.id)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors text-xs font-bold shadow-sm flex items-center gap-1"
-                                                >
-                                                    Onayla
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(order.id)}
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
-                                                >
-                                                    Reddet
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            {/* Unified Orders List */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <h2 className="font-bold text-slate-800">Üretim ve Onay Listesi</h2>
+                    <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">
+                        Toplam {[...pendingApprovals, ...orders].length} Kayıt
+                    </span>
                 </div>
-            )}
-
-            {/* Production Orders Section */}
-            <div>
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="h-8 w-1 bg-blue-500 rounded-full"></div>
-                    <h2 className="text-lg font-bold text-slate-900">Üretimdeki Emirler ({orders.length})</h2>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                            <tr>
+                                <th className="p-4">Müşteri / Ürün</th>
+                                <th className="p-4">Fasoncu</th>
+                                <th className="p-4">Teslim Tarihi</th>
+                                <th className="p-4">Miktar</th>
+                                <th className="p-4">Durum</th>
+                                <th className="p-4 text-right">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {[...pendingApprovals, ...orders].length === 0 ? (
                                 <tr>
-                                    <th className="p-4">Müşteri / Ürün</th>
-                                    <th className="p-4">Fasoncu</th>
-                                    <th className="p-4">Teslim Tarihi</th>
-                                    <th className="p-4">Miktar</th>
-                                    <th className="p-4">Durum</th>
-                                    <th className="p-4 text-right">İşlemler</th>
+                                    <td colSpan="6" className="p-8 text-center text-slate-500">
+                                        Henüz kayıtlı bir işlem bulunmuyor.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {orders.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-500">
-                                            Henüz aktif üretim emri bulunmuyor.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    orders.map(order => (
-                                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                            ) : (
+                                [...pendingApprovals, ...orders].map(order => {
+                                    const isPending = order.status === 'pending_approval';
+                                    return (
+                                        <tr key={order.id} className={`transition-colors ${isPending ? 'bg-orange-50/30 hover:bg-orange-50' : 'hover:bg-slate-50'}`}>
                                             <td className="p-4">
                                                 <div className="font-medium text-slate-900">{order.customer_name}</div>
                                                 {order.product_info && (
@@ -349,36 +273,56 @@ export default function SubcontractorsPage() {
                                                 <div className="flex items-center gap-2 text-slate-600">
                                                     <Calendar size={16} />
                                                     {order.estimated_completion_date ? (
-                                                        <span className="text-blue-600 font-medium">{order.estimated_completion_date} (Tahmini)</span>
+                                                        <span className={isPending ? "text-orange-700 font-medium" : "text-blue-600 font-medium"}>
+                                                            {order.estimated_completion_date} {isPending ? '(Tamamlandı)' : '(Tahmini)'}
+                                                        </span>
                                                     ) : (
                                                         <span>{order.delivery_date}</span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium">
+                                                <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium border border-slate-200">
                                                     {order.weight} Palet
                                                 </span>
                                             </td>
                                             <td className="p-4">
-                                                <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-bold border border-amber-200">
-                                                    ÜRETİMDE
-                                                </span>
+                                                {isPending ? (
+                                                    <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse inline-flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
+                                                        ONAY BEKLİYOR
+                                                    </span>
+                                                ) : (
+                                                    <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-bold border border-amber-200 inline-flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                                                        ÜRETİMDE
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="p-4 text-right">
-                                                <button
-                                                    onClick={() => handleDelete(order.id)}
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
-                                                >
-                                                    İptal Et
-                                                </button>
+                                                <div className="flex justify-end gap-2">
+                                                    {isPending && (
+                                                        <button
+                                                            onClick={() => handleApprove(order.id)}
+                                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors text-xs font-bold shadow-sm flex items-center gap-1"
+                                                        >
+                                                            Onayla
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleDelete(order.id)}
+                                                        className={`${isPending ? 'text-red-500 hover:bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'} px-3 py-1.5 rounded-lg transition-colors text-xs font-medium`}
+                                                    >
+                                                        {isPending ? 'Reddet' : 'İptal Et'}
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    )
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
