@@ -222,45 +222,106 @@ export default function SubcontractorsPage() {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-4 mb-4 border-b border-slate-200">
-                <button
-                    onClick={() => setActiveTab('production')}
-                    className={`pb-2 px-4 font-medium transition-colors relative ${activeTab === 'production'
-                        ? 'text-primary border-b-2 border-primary'
-                        : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                >
-                    Üretimdekiler ({orders.length})
-                </button>
-                <button
-                    onClick={() => setActiveTab('approvals')}
-                    className={`pb-2 px-4 font-medium transition-colors relative ${activeTab === 'approvals'
-                        ? 'text-orange-600 border-b-2 border-orange-600'
-                        : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                >
-                    Onay Bekleyenler ({pendingApprovals.length})
-                </button>
-            </div>
+            {/* Pending Approvals Section */}
+            {pendingApprovals.length > 0 && (
+                <div className="mb-8">
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="h-8 w-1 bg-orange-500 rounded-full"></div>
+                        <h2 className="text-lg font-bold text-slate-900">Onay Bekleyenler ({pendingApprovals.length})</h2>
+                    </div>
 
-            {/* Orders List */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
-                            <tr>
-                                <th className="p-4">Müşteri / Ürün</th>
-                                <th className="p-4">Fasoncu</th>
-                                <th className="p-4">Teslim Tarihi</th>
-                                <th className="p-4">Miktar</th>
-                                <th className="p-4">Durum</th>
-                                <th className="p-4 text-right">İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {activeTab === 'production' ? (
-                                orders.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-sm border border-orange-200 overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-orange-50 text-orange-900 font-medium border-b border-orange-100">
+                                    <tr>
+                                        <th className="p-4">Müşteri / Ürün</th>
+                                        <th className="p-4">Fasoncu</th>
+                                        <th className="p-4">Teslim Tarihi</th>
+                                        <th className="p-4">Miktar</th>
+                                        <th className="p-4">Durum</th>
+                                        <th className="p-4 text-right">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-orange-50">
+                                    {pendingApprovals.map(order => (
+                                        <tr key={order.id} className="hover:bg-orange-50/50 transition-colors">
+                                            <td className="p-4">
+                                                <div className="font-medium text-slate-900">{order.customer_name}</div>
+                                                {order.product_info && (
+                                                    <div className="text-xs text-blue-600 font-medium">{order.product_info}</div>
+                                                )}
+                                                <div className="text-xs text-slate-500">{order.delivery_address}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <User size={16} className="text-slate-400" />
+                                                    <span className="text-slate-700">
+                                                        {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2 text-slate-600">
+                                                    <Calendar size={16} />
+                                                    {order.estimated_completion_date || order.delivery_date}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="bg-white border border-orange-200 px-2 py-1 rounded text-slate-700 font-medium shadow-sm">
+                                                    {order.weight} Palet
+                                                </span>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse">
+                                                    ONAY BEKLİYOR
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleApprove(order.id)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors text-xs font-bold shadow-sm flex items-center gap-1"
+                                                >
+                                                    Onayla
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(order.id)}
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
+                                                >
+                                                    Reddet
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Production Orders Section */}
+            <div>
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="h-8 w-1 bg-blue-500 rounded-full"></div>
+                    <h2 className="text-lg font-bold text-slate-900">Üretimdeki Emirler ({orders.length})</h2>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th className="p-4">Müşteri / Ürün</th>
+                                    <th className="p-4">Fasoncu</th>
+                                    <th className="p-4">Teslim Tarihi</th>
+                                    <th className="p-4">Miktar</th>
+                                    <th className="p-4">Durum</th>
+                                    <th className="p-4 text-right">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {orders.length === 0 ? (
                                     <tr>
                                         <td colSpan="6" className="p-8 text-center text-slate-500">
                                             Henüz aktif üretim emri bulunmuyor.
@@ -268,7 +329,7 @@ export default function SubcontractorsPage() {
                                     </tr>
                                 ) : (
                                     orders.map(order => (
-                                        <tr key={order.id} className="hover:bg-slate-50">
+                                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                                             <td className="p-4">
                                                 <div className="font-medium text-slate-900">{order.customer_name}</div>
                                                 {order.product_info && (
@@ -314,68 +375,10 @@ export default function SubcontractorsPage() {
                                             </td>
                                         </tr>
                                     ))
-                                )
-                            ) : (
-                                pendingApprovals.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="p-8 text-center text-slate-500">
-                                            Onay bekleyen iş bulunmuyor.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    pendingApprovals.map(order => (
-                                        <tr key={order.id} className="hover:bg-orange-50/50">
-                                            <td className="p-4">
-                                                <div className="font-medium text-slate-900">{order.customer_name}</div>
-                                                {order.product_info && (
-                                                    <div className="text-xs text-blue-600 font-medium">{order.product_info}</div>
-                                                )}
-                                                <div className="text-xs text-slate-500">{order.delivery_address}</div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <User size={16} className="text-slate-400" />
-                                                    <span className="text-slate-700">
-                                                        {subcontractors.find(s => s.id === order.assigned_user_id)?.full_name || 'Bilinmiyor'}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2 text-slate-600">
-                                                    <Calendar size={16} />
-                                                    {order.estimated_completion_date || order.delivery_date}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="bg-slate-100 px-2 py-1 rounded text-slate-700 font-medium">
-                                                    {order.weight} Palet
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-bold border border-orange-200 animate-pulse">
-                                                    ONAY BEKLİYOR
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleApprove(order.id)}
-                                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded transition-colors text-xs font-bold shadow-sm"
-                                                >
-                                                    Onayla
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(order.id)}
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors text-xs font-medium"
-                                                >
-                                                    Reddet
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )
-                            )}
-                        </tbody>
-                    </table>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
