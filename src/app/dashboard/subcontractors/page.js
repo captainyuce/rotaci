@@ -184,7 +184,7 @@ export default function SubcontractorsPage() {
     }
 
     return (
-        <div className="p-4 md:p-8 pb-24 h-full overflow-y-auto">
+        <div className="relative z-10 p-4 md:p-8 pb-24 h-full overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Fason Takibi</h1>
