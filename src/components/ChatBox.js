@@ -195,9 +195,9 @@ export default function ChatBox() {
             />
 
             {/* Window */}
-            <div className="relative w-full max-w-md h-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-md h-[600px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="p-4 bg-primary text-white flex items-center justify-between">
+                <div className="p-4 bg-primary dark:bg-slate-800 text-white flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <MessageSquare size={20} />
                         <h3 className="font-bold">Yönetici Sohbeti</h3>
@@ -208,9 +208,9 @@ export default function ChatBox() {
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950">
                     {messages.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm italic">
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 text-sm italic">
                             <MessageSquare size={48} className="mb-2 opacity-20" />
                             Henüz mesaj yok. İlk mesajı siz yazın!
                         </div>
@@ -221,24 +221,24 @@ export default function ChatBox() {
                                 className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'} group relative`}
                             >
                                 <div className="flex items-center gap-1 mb-1 px-1">
-                                    <span className="text-[10px] font-bold text-slate-500">
+                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                                         {msg.user?.full_name || 'Bilinmeyen Kullanıcı'}
                                     </span>
-                                    <span className="text-[10px] text-slate-400">
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
                                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                                 <div
                                     className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${msg.user_id === user?.id
                                         ? 'bg-primary text-white rounded-tr-none'
-                                        : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none'
+                                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none'
                                         }`}
                                 >
                                     {msg.message}
                                     {hasPermission(PERMISSIONS.MANAGE_CHAT) && (
                                         <button
                                             onClick={() => deleteMessage(msg.id)}
-                                            className={`absolute -top-2 -right-2 p-1 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${msg.user_id === user?.id ? 'bg-red-500 text-white' : 'bg-white text-red-500 border border-red-100'}`}
+                                            className={`absolute -top-2 -right-2 p-1 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity ${msg.user_id === user?.id ? 'bg-red-500 text-white' : 'bg-white dark:bg-slate-700 text-red-500 border border-red-100 dark:border-red-900/30'}`}
                                             title="Mesajı Sil"
                                         >
                                             <Trash2 size={12} />
@@ -252,13 +252,13 @@ export default function ChatBox() {
                 </div>
 
                 {/* Input Area */}
-                <form onSubmit={sendMessage} className="p-4 bg-white border-t border-slate-100 flex gap-2">
+                <form onSubmit={sendMessage} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex gap-2">
                     <input
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Mesajınızı yazın..."
-                        className="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none text-slate-900"
+                        className="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none text-slate-900 dark:text-white dark:placeholder-slate-500"
                     />
                     <button
                         type="submit"
@@ -278,12 +278,12 @@ export default function ChatBox() {
             {/* Chat Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
+                className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative"
                 title="Yönetici Sohbeti"
             >
                 <MessageSquare size={24} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white px-1">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 px-1">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}

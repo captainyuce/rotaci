@@ -386,52 +386,52 @@ export default function ShipmentsPage() {
         const assignedWorker = users.find(u => u.id === shipment.assigned_user_id)
 
         return (
-            <tr key={shipment.id} className="hover:bg-slate-50 transition-colors group text-sm">
+            <tr key={shipment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group text-sm">
                 <td className="p-3">
                     <div className="flex items-center gap-2">
                         {shipment.type === 'pickup' ? (
-                            <ArrowDownCircle size={16} className="text-orange-600" title="Mal Al" />
+                            <ArrowDownCircle size={16} className="text-orange-600 dark:text-orange-400" title="Mal Al" />
                         ) : (
-                            <ArrowUpCircle size={16} className="text-blue-600" title="Mal Bırak" />
+                            <ArrowUpCircle size={16} className="text-blue-600 dark:text-blue-400" title="Mal Bırak" />
                         )}
                         <div>
                             <div className="flex items-center gap-2">
-                                <div className="font-medium text-slate-900">{shipment.customer_name}</div>
+                                <div className="font-medium text-slate-900 dark:text-white">{shipment.customer_name}</div>
                                 {shipment.preparation_status === 'ready' && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 border border-green-200" title={`Hazırlayan: ${shipment.prepared_by_name || 'Bilinmiyor'}`}>
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800" title={`Hazırlayan: ${shipment.prepared_by_name || 'Bilinmiyor'}`}>
                                         📦 Hazır
                                         {shipment.prepared_by_name && (
-                                            <span className="text-green-600 opacity-75 border-l border-green-300 pl-1 ml-0.5">
+                                            <span className="text-green-600 dark:text-green-400 opacity-75 border-l border-green-300 dark:border-green-700 pl-1 ml-0.5">
                                                 {shipment.prepared_by_name.split(' ')[0]}
                                             </span>
                                         )}
                                     </span>
                                 )}
                             </div>
-                            <div className="text-xs text-slate-500">{shipment.delivery_time}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{shipment.delivery_time}</div>
                         </div>
                     </div>
                 </td>
-                <td className="p-3 max-w-xs truncate text-slate-600">{shipment.delivery_address}</td>
-                <td className="p-3 text-slate-700">{shipment.weight} Palet</td>
+                <td className="p-3 max-w-xs truncate text-slate-600 dark:text-slate-400">{shipment.delivery_address}</td>
+                <td className="p-3 text-slate-700 dark:text-slate-300">{shipment.weight} Palet</td>
                 <td className="p-3">
                     {assignedVehicle ? (
-                        <div className="flex items-center gap-1.5 text-slate-700">
-                            <Truck size={14} className="text-primary" />
+                        <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                            <Truck size={14} className="text-primary dark:text-slate-400" />
                             <span className="font-medium text-xs">{assignedVehicle.plate}</span>
                         </div>
                     ) : (assignedWorker && assignedWorker.role !== 'subcontractor') ? (
-                        <div className="flex items-center gap-1.5 text-orange-700">
+                        <div className="flex items-center gap-1.5 text-orange-700 dark:text-orange-400">
                             <span className="text-base">🏃</span>
                             <span className="font-medium text-xs">{assignedWorker.full_name}</span>
                         </div>
                     ) : (
-                        <span className="text-slate-400 text-xs">-</span>
+                        <span className="text-slate-400 dark:text-slate-600 text-xs">-</span>
                     )}
                 </td>
-                <td className="p-3 text-slate-600 text-xs">
+                <td className="p-3 text-slate-600 dark:text-slate-400 text-xs">
                     {shipment.preparation_status === 'ready' && shipment.prepared_by_name ? (
-                        <span className="text-green-700 font-medium" title="Onaylayan">
+                        <span className="text-green-700 dark:text-green-400 font-medium" title="Onaylayan">
                             {shipment.prepared_by_name}
                         </span>
                     ) : (
@@ -439,10 +439,10 @@ export default function ShipmentsPage() {
                     )}
                 </td>
                 <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' || shipment.status === 'unloaded' ? 'bg-green-100 text-green-700' :
-                        shipment.status === 'assigned' ? 'bg-zinc-100 text-zinc-700' :
-                            shipment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                                'bg-amber-100 text-amber-700'
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${shipment.status === 'delivered' || shipment.status === 'unloaded' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                        shipment.status === 'assigned' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300' :
+                            shipment.status === 'failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                                'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
                         }`}>
                         {(shipment.status === 'delivered' || shipment.status === 'unloaded')
                             ? (shipment.type === 'pickup' ? 'Teslim Alındı' : 'Teslim Edildi')
@@ -469,7 +469,7 @@ export default function ShipmentsPage() {
                         {hasPermission(PERMISSIONS.EDIT_SHIPMENTS) && (
                             <button
                                 onClick={() => handleOpenModal(shipment)}
-                                className="p-1.5 text-slate-500 hover:text-primary hover:bg-zinc-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             >
                                 <Edit size={16} />
                             </button>
@@ -477,7 +477,7 @@ export default function ShipmentsPage() {
                         {hasPermission(PERMISSIONS.DELETE_SHIPMENTS) && (
                             <button
                                 onClick={() => handleDelete(shipment.id)}
-                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                                 <Trash2 size={16} />
                             </button>
@@ -492,11 +492,11 @@ export default function ShipmentsPage() {
     return (
         <>
             {/* Content Panel */}
-            <div className="fixed left-4 right-4 md:left-20 md:right-auto top-20 md:top-4 bottom-20 md:bottom-4 md:w-[750px] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden pointer-events-auto z-10">
-                <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="fixed left-4 right-4 md:left-20 md:right-auto top-20 md:top-4 bottom-20 md:bottom-4 md:w-[750px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden pointer-events-auto z-10">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-900">Sevkiyatlar (Güncel)</h2>
-                        <p className="text-xs text-slate-500">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Sevkiyatlar (Güncel)</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                             {failedShipments.length + todayShipments.length + tomorrowShipments.length + futureShipments.length} sevkiyat
                         </p>
                     </div>
@@ -512,18 +512,18 @@ export default function ShipmentsPage() {
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900">
                     {/* Failed Shipments - High Priority */}
                     {failedShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-red-100 px-4 py-2 border-b border-red-200 z-10">
-                                <h3 className="font-bold text-red-900 text-sm flex items-center gap-2">
+                            <div className="sticky top-0 bg-red-100 dark:bg-red-900/40 px-4 py-2 border-b border-red-200 dark:border-red-800 z-10">
+                                <h3 className="font-bold text-red-900 dark:text-red-200 text-sm flex items-center gap-2">
                                     ⚠️ Teslim Edilemeyenler ({failedShipments.length})
                                 </h3>
                             </div>
                             <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 dark:bg-slate-950">
+                                    <tr className="text-left text-xs text-slate-600 dark:text-slate-400">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Palet</th>
@@ -533,7 +533,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {failedShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
@@ -543,14 +543,14 @@ export default function ShipmentsPage() {
                     {/* Past / Overdue Shipments */}
                     {pastShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-orange-100 px-4 py-2 border-b border-orange-200 z-10">
-                                <h3 className="font-bold text-orange-900 text-sm flex items-center gap-2">
+                            <div className="sticky top-0 bg-orange-100 dark:bg-orange-900/40 px-4 py-2 border-b border-orange-200 dark:border-orange-800 z-10">
+                                <h3 className="font-bold text-orange-900 dark:text-orange-200 text-sm flex items-center gap-2">
                                     ⚠️ Bekleyenler (Gecikmiş) ({pastShipments.length})
                                 </h3>
                             </div>
                             <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 dark:bg-slate-950">
+                                    <tr className="text-left text-xs text-slate-600 dark:text-slate-400">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Palet</th>
@@ -560,7 +560,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {pastShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
@@ -570,12 +570,12 @@ export default function ShipmentsPage() {
                     {/* Today's Shipments */}
                     {todayShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-zinc-50 px-4 py-2 border-b border-blue-100 z-10">
-                                <h3 className="font-bold text-zinc-900 text-sm">Bugün ({todayShipments.length})</h3>
+                            <div className="sticky top-0 bg-zinc-50 dark:bg-slate-800 px-4 py-2 border-b border-blue-100 dark:border-slate-700 z-10">
+                                <h3 className="font-bold text-zinc-900 dark:text-white text-sm">Bugün ({todayShipments.length})</h3>
                             </div>
                             <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 dark:bg-slate-950">
+                                    <tr className="text-left text-xs text-slate-600 dark:text-slate-400">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Palet</th>
@@ -585,7 +585,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {todayShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
@@ -595,12 +595,12 @@ export default function ShipmentsPage() {
                     {/* Tomorrow's Shipments */}
                     {tomorrowShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-amber-50 px-4 py-2 border-b border-amber-100 z-10">
-                                <h3 className="font-bold text-amber-900 text-sm">Yarın ({tomorrowShipments.length})</h3>
+                            <div className="sticky top-0 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 border-b border-amber-100 dark:border-amber-900/30 z-10">
+                                <h3 className="font-bold text-amber-900 dark:text-amber-200 text-sm">Yarın ({tomorrowShipments.length})</h3>
                             </div>
                             <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 dark:bg-slate-950">
+                                    <tr className="text-left text-xs text-slate-600 dark:text-slate-400">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Palet</th>
@@ -610,7 +610,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {tomorrowShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
@@ -620,12 +620,12 @@ export default function ShipmentsPage() {
                     {/* Future Shipments */}
                     {futureShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-slate-50 px-4 py-2 border-b border-slate-200 z-10">
-                                <h3 className="font-bold text-slate-900 text-sm">İleri Tarihler ({futureShipments.length})</h3>
+                            <div className="sticky top-0 bg-slate-50 dark:bg-slate-900 px-4 py-2 border-b border-slate-200 dark:border-slate-800 z-10">
+                                <h3 className="font-bold text-slate-900 dark:text-white text-sm">İleri Tarihler ({futureShipments.length})</h3>
                             </div>
                             <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 dark:bg-slate-950">
+                                    <tr className="text-left text-xs text-slate-600 dark:text-slate-400">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Palet</th>
@@ -635,7 +635,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {futureShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
@@ -645,12 +645,12 @@ export default function ShipmentsPage() {
                     {/* Other / Uncategorized Shipments */}
                     {otherShipments && otherShipments.length > 0 && (
                         <div className="mb-4">
-                            <div className="sticky top-0 bg-purple-50 px-4 py-2 border-b border-purple-200 z-10">
-                                <h3 className="font-bold text-purple-900 text-sm">📦 Fason Hazır ({otherShipments.length})</h3>
+                            <div className="sticky top-0 bg-purple-50 dark:bg-purple-900/20 px-4 py-2 border-b border-purple-200 dark:border-purple-800 z-10">
+                                <h3 className="font-bold text-purple-900 dark:text-purple-300 text-sm">📦 Fason Hazır ({otherShipments.length})</h3>
                             </div>
                             <table className="w-full">
-                                <thead className="bg-slate-50">
-                                    <tr className="text-left text-xs text-slate-600">
+                                <thead className="bg-slate-50 dark:bg-slate-950">
+                                    <tr className="text-left text-xs text-slate-600 dark:text-slate-400">
                                         <th className="p-3 font-medium">Müşteri</th>
                                         <th className="p-3 font-medium">Adres</th>
                                         <th className="p-3 font-medium">Palet</th>
@@ -660,7 +660,7 @@ export default function ShipmentsPage() {
                                         <th className="p-3 font-medium"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {otherShipments.map(renderShipmentRow)}
                                 </tbody>
                             </table>
@@ -674,22 +674,22 @@ export default function ShipmentsPage() {
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 pointer-events-auto">
-                    <div className="bg-white rounded-xl w-full max-w-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-lg">{editingShipment ? 'Sevkiyatı Düzenle' : 'Yeni Sevkiyat'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-slate-100 rounded">
+                            <h3 className="font-bold text-lg dark:text-white">{editingShipment ? 'Sevkiyatı Düzenle' : 'Yeni Sevkiyat'}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-slate-400">
                                 <X size={20} />
                             </button>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Address Selector */}
-                            <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-200">
-                                <p className="text-xs font-medium text-zinc-900 mb-2">📍 Kayıtlı Adres Seç (Opsiyonel)</p>
+                            <div className="bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                                <p className="text-xs font-medium text-zinc-900 dark:text-zinc-300 mb-2">📍 Kayıtlı Adres Seç (Opsiyonel)</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="block text-xs font-medium text-blue-800 mb-1">1. Kategori</label>
+                                        <label className="block text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">1. Kategori</label>
                                         <select
-                                            className="w-full p-2 border border-zinc-200 rounded-lg text-sm bg-white text-slate-900"
+                                            className="w-full p-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                                             value={selectedCategory}
                                             onChange={(e) => setSelectedCategory(e.target.value)}
                                         >
@@ -700,9 +700,9 @@ export default function ShipmentsPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-blue-800 mb-1">2. Adres</label>
+                                        <label className="block text-xs font-medium text-blue-800 dark:text-blue-300 mb-1">2. Adres</label>
                                         <select
-                                            className="w-full p-2 border border-zinc-200 rounded-lg text-sm bg-white text-slate-900"
+                                            className="w-full p-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white disabled:opacity-50"
                                             disabled={!selectedCategory}
                                             onChange={(e) => {
                                                 const selectedAddress = addresses.find(a => a.id === e.target.value)
@@ -738,27 +738,27 @@ export default function ShipmentsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 {/* Map Picker */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                         Haritadan Konum Seç (Haritaya tıklayın)
                                     </label>
-                                    <div className="h-64 rounded-lg overflow-hidden border border-slate-200">
+                                    <div className="h-64 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                                         <MapPicker
                                             center={[formData.delivery_lat, formData.delivery_lng]}
                                             onLocationSelect={(lat, lng) => setFormData({ ...formData, delivery_lat: lat, delivery_lng: lng })}
                                         />
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-1">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                         Seçili Konum: {formData.delivery_lat.toFixed(6)}, {formData.delivery_lng.toFixed(6)}
                                     </p>
                                 </div>
 
                                 {/* Shipment Type */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">İşlem Türü</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">İşlem Türü</label>
                                     <div className="flex gap-4 mb-4">
                                         <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.type === 'delivery'
-                                            ? 'bg-blue-50 border-blue-500 text-blue-700'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}>
                                             <input
                                                 type="radio"
@@ -772,8 +772,8 @@ export default function ShipmentsPage() {
                                             <span className="font-medium">Mal Bırak (Teslimat)</span>
                                         </label>
                                         <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${formData.type === 'pickup'
-                                            ? 'bg-orange-50 border-orange-500 text-orange-700'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-500 dark:border-orange-700 text-orange-700 dark:text-orange-300'
+                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}>
                                             <input
                                                 type="radio"
@@ -797,17 +797,17 @@ export default function ShipmentsPage() {
                                             checked={formData.is_subcontractor || false}
                                             onChange={e => setFormData({ ...formData, is_subcontractor: e.target.checked })}
                                         />
-                                        <label htmlFor="isSubcontractor" className="text-sm font-medium text-slate-700">
+                                        <label htmlFor="isSubcontractor" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                             Fasona Sevk (Üretim İçin Gönderim)
                                         </label>
                                     </div>
 
                                     {formData.is_subcontractor && (
-                                        <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
+                                        <div className="bg-amber-50 dark:bg-purple-900/20 p-4 rounded-lg border border-amber-200 dark:border-purple-800 space-y-3">
                                             <div>
-                                                <label className="block text-sm font-medium text-amber-800 mb-1">Fasoncu Seçin</label>
+                                                <label className="block text-sm font-medium text-amber-800 dark:text-purple-300 mb-1">Fasoncu Seçin</label>
                                                 <select
-                                                    className="w-full p-2 border border-amber-300 rounded-lg bg-white"
+                                                    className="w-full p-2 border border-amber-300 rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                                     value={formData.target_subcontractor_id || ''}
                                                     onChange={e => setFormData({ ...formData, target_subcontractor_id: e.target.value })}
                                                     required={formData.is_subcontractor}
@@ -822,10 +822,10 @@ export default function ShipmentsPage() {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-amber-800 mb-1">Ürün Bilgisi</label>
+                                                <label className="block text-sm font-medium text-amber-800 dark:text-purple-300 mb-1">Ürün Bilgisi</label>
                                                 <input
                                                     type="text"
-                                                    className="w-full p-2 border border-amber-300 rounded-lg"
+                                                    className="w-full p-2 border border-amber-300 rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                                     value={formData.product_info || ''}
                                                     onChange={e => setFormData({ ...formData, product_info: e.target.value })}
                                                     placeholder="Örn: X Kumaş, Y İplik..."
@@ -838,11 +838,11 @@ export default function ShipmentsPage() {
 
                                 {/* Customer Name */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Müşteri / Firma Adı</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Müşteri / Firma Adı</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={formData.customer_name}
                                         onChange={e => setFormData({ ...formData, customer_name: e.target.value })}
                                         placeholder="Örn: ABC Market"
@@ -851,10 +851,10 @@ export default function ShipmentsPage() {
 
                                 {/* Delivery Address */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Teslimat Adresi</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teslimat Adresi</label>
                                     <textarea
                                         required
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         rows="2"
                                         value={formData.delivery_address}
                                         onChange={e => setFormData({ ...formData, delivery_address: e.target.value })}
@@ -864,11 +864,11 @@ export default function ShipmentsPage() {
 
                                 {/* Weight */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Palet Sayısı</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Palet Sayısı</label>
                                     <input
                                         type="number"
                                         required
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={formData.weight}
                                         onChange={e => setFormData({ ...formData, weight: e.target.value })}
                                         placeholder="0"
@@ -877,10 +877,10 @@ export default function ShipmentsPage() {
 
                                 {/* Delivery Time */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Teslimat Saati</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teslimat Saati</label>
                                     <input
                                         type="text"
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={formData.delivery_time}
                                         onChange={e => setFormData({ ...formData, delivery_time: e.target.value })}
                                         placeholder="Örn: 14:00"
@@ -889,19 +889,19 @@ export default function ShipmentsPage() {
 
                                 {/* Working Hours */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Açılış Saati</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Açılış Saati</label>
                                     <input
                                         type="time"
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={formData.opening_time || ''}
                                         onChange={e => setFormData({ ...formData, opening_time: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Kapanış Saati</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kapanış Saati</label>
                                     <input
                                         type="time"
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={formData.closing_time || ''}
                                         onChange={e => setFormData({ ...formData, closing_time: e.target.value })}
                                     />
@@ -909,11 +909,11 @@ export default function ShipmentsPage() {
 
                                 {/* Delivery Date */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Teslimat Tarihi</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teslimat Tarihi</label>
                                     <input
                                         type="date"
                                         required
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         value={formData.delivery_date}
                                         onChange={e => setFormData({ ...formData, delivery_date: e.target.value })}
                                     />
@@ -921,9 +921,9 @@ export default function ShipmentsPage() {
 
                                 {/* Notes */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Notlar</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notlar</label>
                                     <textarea
-                                        className="w-full p-2 border rounded-lg text-sm text-slate-900"
+                                        className="w-full p-2 border rounded-lg text-sm text-slate-900 bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                                         rows="2"
                                         value={formData.notes}
                                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
