@@ -140,24 +140,24 @@ export default function NotificationBell() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
+                className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative"
             >
                 <Bell size={24} />
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] flex items-center justify-center border-2 border-white">
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] flex items-center justify-center border-2 border-white dark:border-slate-900">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-                    <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                        <h3 className="font-bold text-sm text-slate-800">Bildirimler</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50">
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+                        <h3 className="font-bold text-sm text-slate-800 dark:text-white">Bildirimler</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllAsRead}
-                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                             >
                                 Tümünü Okundu İşaretle
                             </button>
@@ -166,36 +166,36 @@ export default function NotificationBell() {
 
                     <div className="max-h-[400px] overflow-y-auto">
                         {notifications.length === 0 ? (
-                            <div className="p-8 text-center text-slate-400">
+                            <div className="p-8 text-center text-slate-400 dark:text-slate-500">
                                 <Bell size={32} className="mx-auto mb-2 opacity-20" />
                                 <p className="text-sm">Bildiriminiz yok</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-slate-100">
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {notifications.map(notification => (
                                     <div
                                         key={notification.id}
                                         onClick={() => !notification.is_read && markAsRead(notification.id)}
-                                        className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer relative group ${!notification.is_read ? 'bg-blue-50/50' : ''
+                                        className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer relative group ${!notification.is_read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                                             }`}
                                     >
                                         <div className="flex items-start gap-3">
                                             <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${!notification.is_read ? 'bg-blue-500' : 'bg-transparent'
                                                 }`} />
                                             <div className="flex-1">
-                                                <h4 className={`text-sm ${!notification.is_read ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
+                                                <h4 className={`text-sm ${!notification.is_read ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
                                                     {notification.title}
                                                 </h4>
-                                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                                                     {notification.message}
                                                 </p>
-                                                <span className="text-[10px] text-slate-400 mt-2 block">
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block">
                                                     {new Date(notification.created_at).toLocaleString('tr-TR')}
                                                 </span>
                                             </div>
                                             <button
                                                 onClick={(e) => deleteNotification(e, notification.id)}
-                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 text-slate-400 hover:text-red-600 rounded transition-all"
+                                                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-all"
                                                 title="Sil"
                                             >
                                                 <X size={14} />
