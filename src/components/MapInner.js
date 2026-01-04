@@ -430,6 +430,11 @@ export default function MapInner() {
                                                         </span>
                                                     )}
                                                 </div>
+                                                {vehicle.location_updated_at && (
+                                                    <p className="text-[10px] text-slate-500 mt-1">
+                                                        📍 Son Güncelleme: {new Date(vehicle.location_updated_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })} {new Date(vehicle.location_updated_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="space-y-3">

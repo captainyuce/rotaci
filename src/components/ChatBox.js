@@ -220,12 +220,12 @@ export default function ChatBox() {
                                 key={msg.id}
                                 className={`flex flex-col ${msg.user_id === user?.id ? 'items-end' : 'items-start'} group relative`}
                             >
-                                <div className="flex items-center gap-1 mb-1 px-1">
-                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                <div className="flex items-center gap-2 mb-1 px-1">
+                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
                                         {msg.user?.full_name || 'Bilinmeyen Kullanıcı'}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        {new Date(msg.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })} {new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                                 <div
